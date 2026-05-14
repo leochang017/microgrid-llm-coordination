@@ -50,6 +50,25 @@ def test_outage_window_validation() -> None:
         )
 
 
+def test_scenario_rejects_nonpositive_dt_hours() -> None:
+    with pytest.raises(ValueError, match="dt_hours must be positive"):
+        Scenario(
+            scenario_id="bad",
+            start=datetime(2024, 7, 1),
+            end=datetime(2024, 7, 2),
+            dt_hours=0.0,
+            seed=0,
+            rows=5,
+            cols=6,
+            bus_max_kw=50.0,
+            bus_loss_factor=0.05,
+            strategy="no_coordination",
+            data_source="synthetic",
+            household_sampling={},
+            outages=(),
+        )
+
+
 def test_load_rejects_end_before_start(tmp_path: Path) -> None:
     bad = _SMOKE_YAML.replace(
         'start: "2024-07-01T00:00:00"', 'start: "2024-07-02T00:00:00"'

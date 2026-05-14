@@ -129,7 +129,10 @@ def settle_transfers(
         else:
             receiver_scale[r] = 1.0
 
-    # Stage 3: apply receiver clipping back to senders and tally final flows.
+    # Stage 3: apply receiver clipping back to senders and tally provisional flows.
+    # We track per-pair flows so the TRANSFER_EXECUTED events can be emitted AFTER
+    # bus saturation with the actually-delivered kW (not stale pre-saturation values).
+    provisional_pair_kw: list[tuple[str, str, float]] = []
     for sender, allocations in sender_alloc.items():
         for r, kw in allocations.items():
             final_send = kw * receiver_scale[r]
@@ -137,29 +140,38 @@ def settle_transfers(
                 continue
             actual_sent[sender] += final_send
             actual_received[r] += final_send * loss_factor
-            events.append(
-                Event(
-                    kind=EventKind.TRANSFER_EXECUTED,
-                    house_ids=(sender, r),
-                    kw=final_send,
-                )
-            )
+            provisional_pair_kw.append((sender, r, final_send))
 
-    # Bus saturation: if total gross out exceeds bus capacity, scale all flows
-    # proportionally and emit one BUS_SATURATED event with the unmet kW.
+    # Stage 4: bus saturation. If total gross out exceeds bus cap, scale all flows
+    # (and per-pair provisional values) proportionally so the TRANSFER_EXECUTED
+    # events report the final delivered amount.
     total_gross = sum(actual_sent.values())
+    sat_scale = 1.0
     if total_gross > n.bus_max_kw and total_gross > 0:
-        scale = n.bus_max_kw / total_gross
+        sat_scale = n.bus_max_kw / total_gross
         for hid in actual_sent:
-            actual_sent[hid] *= scale
+            actual_sent[hid] *= sat_scale
         for hid in actual_received:
-            actual_received[hid] *= scale
+            actual_received[hid] *= sat_scale
         events.append(
             Event(
                 kind=EventKind.BUS_SATURATED,
                 house_ids=tuple(sorted(actual_sent)),
                 kw=total_gross - n.bus_max_kw,
                 details=f"total {total_gross:.3f} kW exceeded bus cap {n.bus_max_kw:.3f} kW",
+            )
+        )
+
+    # Stage 5: emit TRANSFER_EXECUTED events with post-saturation kW values.
+    for sender, r, final_send in provisional_pair_kw:
+        delivered = final_send * sat_scale
+        if delivered <= 0:
+            continue
+        events.append(
+            Event(
+                kind=EventKind.TRANSFER_EXECUTED,
+                house_ids=(sender, r),
+                kw=delivered,
             )
         )
 

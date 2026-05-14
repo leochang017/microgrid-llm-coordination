@@ -112,6 +112,12 @@ def test_bus_saturation_clips_proportionally() -> None:
     assert result.actual_sent["r0c0"] == pytest.approx(25.0, abs=1e-6)
     assert result.actual_sent["r1c0"] == pytest.approx(25.0, abs=1e-6)
     assert any(e.kind == EventKind.BUS_SATURATED for e in result.events)
+    # TRANSFER_EXECUTED events must report the POST-saturation delivered kW,
+    # not the pre-saturation requested kW (review fix I5).
+    transfer_events = [e for e in result.events if e.kind == EventKind.TRANSFER_EXECUTED]
+    assert len(transfer_events) == 2
+    for e in transfer_events:
+        assert e.kw == pytest.approx(25.0, abs=1e-6)
 
 
 def test_no_wheeling_in_partial_island() -> None:

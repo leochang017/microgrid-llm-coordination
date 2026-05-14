@@ -44,6 +44,14 @@ class Scenario:
     data_paths: dict[str, str] = field(default_factory=dict)
     house_dataids: tuple[int, ...] = field(default_factory=tuple)
 
+    def __post_init__(self) -> None:
+        if self.dt_hours <= 0:
+            raise ValueError(f"dt_hours must be positive, got {self.dt_hours}")
+        if self.end <= self.start:
+            raise ValueError(f"end before start: {self.start} -> {self.end}")
+        if self.rows <= 0 or self.cols <= 0:
+            raise ValueError(f"rows and cols must be positive: rows={self.rows} cols={self.cols}")
+
     def timesteps(self) -> Iterator[datetime]:
         t = self.start
         dt = timedelta(hours=self.dt_hours)

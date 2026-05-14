@@ -58,6 +58,16 @@ def step(
     try to store it in the battery and then export to the grid (when connected);
     if negative we source the deficit from battery first, then grid (when
     connected), with anything still missing reported as unmet load.
+
+    Modeling choice: we net the four flows (solar, load, sent, received) before
+    routing the residual through the battery. This is the "DC-bypass" inverter
+    model — a hybrid inverter sees solar, battery, grid, and peer ports on a
+    shared DC bus, and routes energy from received -> sent (or solar -> load)
+    directly without round-tripping through the battery cell. Only the residual
+    that actually flows to/from stored charge incurs the sqrt(eta) RT loss.
+    This is more realistic than the worst-case "everything through the battery"
+    model but is a modeling choice rather than a derivation. See the spec's
+    "Known limitations" section.
     """
     sqrt_eff = math.sqrt(h.rt_efficiency)
     floor_kwh = h.dod_floor_frac * h.battery_kwh

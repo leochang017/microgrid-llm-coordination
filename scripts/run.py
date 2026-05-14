@@ -47,8 +47,10 @@ def main() -> None:
     ts = datetime.now().strftime("%Y%m%dT%H%M%S")
     run_dir = args.out_dir / scenario.scenario_id / ts
     logger = JsonlLogger(run_dir, scenario_id=scenario.scenario_id)
-    summary = run(scenario, decide, logger, strict=args.strict)
-    logger.close()
+    try:
+        summary = run(scenario, decide, logger, strict=args.strict)
+    finally:
+        logger.close()
 
     print(
         f"scenario={scenario.scenario_id} "

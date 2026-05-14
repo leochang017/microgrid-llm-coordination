@@ -61,3 +61,19 @@ def test_nrel_solar_deterministic_under_seed() -> None:
     sp2 = NRELSolar(csv_path=_FIXTURES / "nrel_sample.csv", seed=42)
     t = datetime(2024, 7, 1, 9, 0)
     assert sp1.get_kw(t) == sp2.get_kw(t)
+
+
+def test_nrel_solar_deterministic_under_call_order() -> None:
+    """Same (seed, t) -> same noise, regardless of what other timestamps have been
+    queried first. This is stronger than streaming-RNG determinism (review fix C2)."""
+    sp1 = NRELSolar(csv_path=_FIXTURES / "nrel_sample.csv", seed=42)
+    sp2 = NRELSolar(csv_path=_FIXTURES / "nrel_sample.csv", seed=42)
+    t = datetime(2024, 7, 1, 9, 0)
+    # sp1: query t once.
+    val1 = sp1.get_kw(t)
+    # sp2: query other timestamps first, then t.
+    sp2.get_kw(datetime(2024, 7, 1, 7, 0))
+    sp2.get_kw(datetime(2024, 7, 1, 8, 0))
+    sp2.get_kw(datetime(2024, 7, 1, 11, 0))
+    val2 = sp2.get_kw(t)
+    assert val1 == val2

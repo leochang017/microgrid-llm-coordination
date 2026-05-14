@@ -25,7 +25,13 @@ import pandas as pd
 
 
 class NRELSolar:
-    """Hourly NSRDB irradiance -> per-kW-peak solar generation at any timestamp."""
+    """Hourly NSRDB irradiance -> per-kW-peak solar generation at any timestamp.
+
+    Determinism: the noise term is drawn from a per-call RNG seeded by a hash of
+    (self.seed, t). Same (seed, t) -> same noise, regardless of call order. This
+    is stronger than a streaming RNG, which would couple the noise sequence to
+    the order calls happen to arrive in.
+    """
 
     def __init__(
         self,
@@ -41,7 +47,14 @@ class NRELSolar:
         self.df = df.set_index("datetime")
         self.derate = derate
         self.noise_std = noise_std
-        self._rng = np.random.default_rng(seed)
+        self.seed = seed
+
+    def _noise(self, t: datetime) -> float:
+        # Seed a fresh Generator from a stable mix of (self.seed, t). Using
+        # numpy's SeedSequence so two ints combine into a uniform-quality seed.
+        ss = np.random.SeedSequence([self.seed, int(t.timestamp())])
+        rng = np.random.default_rng(ss)
+        return float(rng.normal(0.0, self.noise_std))
 
     def get_kw(self, t: datetime) -> float:
         idx = self.df.index.searchsorted(t, side="right") - 1
@@ -58,7 +71,7 @@ class NRELSolar:
             ghi = g0 + frac * (g1 - g0)
         kw_per_peak = (ghi / 1000.0) * self.derate
         if kw_per_peak > 0:
-            kw_per_peak *= 1.0 + float(self._rng.normal(0, self.noise_std))
+            kw_per_peak *= 1.0 + self._noise(t)
         return max(0.0, kw_per_peak)
 
     def horizon(self) -> tuple[datetime, datetime]:

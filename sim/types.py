@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from enum import StrEnum
 
@@ -21,6 +22,8 @@ class Transfer:
     def __post_init__(self) -> None:
         if self.from_id == self.to_id:
             raise ValueError(f"self-transfer not allowed (id={self.from_id})")
+        if not math.isfinite(self.kw):
+            raise ValueError(f"transfer kw must be finite, got {self.kw}")
         if self.kw <= 0:
             raise ValueError(f"transfer kw must be positive, got {self.kw}")
 
