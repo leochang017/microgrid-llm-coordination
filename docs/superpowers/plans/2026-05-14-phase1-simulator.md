@@ -3657,7 +3657,7 @@ git commit -m "chore: fetch_data.py — NREL downloader + Pecan Street instructi
 - Modify: `README.md` (update Status section)
 - Verify all tests pass
 
-- [ ] **Step 1: Run the complete test suite**
+- [x] **Step 1: Run the complete test suite**
 
 ```bash
 pytest -v
@@ -3667,7 +3667,7 @@ mypy
 
 Expected: all tests pass, ruff clean, mypy clean.
 
-- [ ] **Step 2: Update README Status section**
+- [x] **Step 2: Update README Status section**
 
 Mark all Phase 1 deliverables complete:
 
@@ -3685,7 +3685,7 @@ Phase 1 deliverables:
 Next: Phase 2 — LLM agent layer (separate spec + plan).
 ```
 
-- [ ] **Step 3: Commit and tag**
+- [x] **Step 3: Commit and tag**
 
 ```bash
 git add README.md
@@ -3693,7 +3693,7 @@ git commit -m "docs: mark Phase 1 complete"
 git tag phase1-complete
 ```
 
-- [ ] **Step 4: Sanity check — run a full scenario from the CLI**
+- [x] **Step 4: Sanity check — run a full scenario from the CLI**
 
 ```bash
 python -m scripts.run --scenario configs/scenarios/24h_uniform.yaml

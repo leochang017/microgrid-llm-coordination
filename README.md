@@ -4,7 +4,7 @@ A research project asking: can a population of LLM agents — one per household 
 
 The contribution is on the CS/ML axis (natural-language coordination, robustness, explainability), not power systems. Classical optimization handles fairness under strong assumptions, struggles with robustness, and doesn't attempt explainability. That gap is what this project explores.
 
-**Status:** Phase 1 (physics-only simulator) — in progress, ~76% complete.
+**Status:** Phase 1 (physics-only simulator) — ✅ **complete.** 61 tests pass. CLI works end-to-end.
 
 📐 [Phase 1 design spec](docs/superpowers/specs/2026-05-14-phase1-simulator-design.md) · 📋 [Phase 1 implementation plan](docs/superpowers/plans/2026-05-14-phase1-simulator.md) · 🧠 [Project context (CLAUDE.md)](CLAUDE.md)
 
@@ -94,12 +94,14 @@ The **coordination strategy is an injected callback** — `decide_transfers(t, s
 - [x] Project scaffold, types, household physics (rate clamps, RT efficiency, DoD floor, grid coupling)
 - [x] Data layer + synthetic adapters
 - [x] Neighborhood + comm graph + settle_transfers (bus saturation, no-wheeling, sender/receiver clipping)
-- [x] Scenario YAML + two example scenarios
+- [x] Scenario YAML + three example scenarios (`synthetic_smoke`, `24h_uniform`, `24h_real`)
 - [x] Baseline strategies (no_coordination, round_robin)
 - [x] Engine main loop + JSONL logger + Gini/served-fraction summary
-- [x] CLI runner
+- [x] CLI runner + `scripts/fetch_data.py` (NREL NSRDB downloader)
 - [x] Integration test (round_robin beats no_coordination on Gini) + physics smoke test + determinism check
-- [ ] Real data adapters (Pecan Street + NREL NSRDB) — Tasks 21-23
+- [x] Real data adapters (Pecan Street + NREL NSRDB), engine dispatches on `data_source`
+
+**Phase 1 complete.** Next: Phase 2 — LLM agent layer (separate spec + plan, separate brainstorm).
 
 ## License
 
