@@ -3293,7 +3293,7 @@ git commit -m "feat(adapters): Pecan Street load adapter with gap-fill and crash
 
 NREL's NSRDB provides hourly irradiance (GHI: global horizontal irradiance, W/m²). Convert to per-kW-peak generation using the simple approximation: `kw_per_kw_peak = (GHI / 1000) × derate`. Linearly interpolate to 15-min ticks with a small seeded noise.
 
-- [ ] **Step 1: Create CSV fixture**
+- [x] **Step 1: Create CSV fixture**
 
 `tests/fixtures/nrel_sample.csv`:
 
@@ -3307,7 +3307,7 @@ Year,Month,Day,Hour,Minute,GHI
 2024,7,2,0,0,0
 ```
 
-- [ ] **Step 2: Write failing tests**
+- [x] **Step 2: Write failing tests**
 
 In `tests/test_adapters.py`:
 
@@ -3348,7 +3348,7 @@ def test_nrel_solar_deterministic_under_seed() -> None:
     assert sp1.get_kw(t) == sp2.get_kw(t)
 ```
 
-- [ ] **Step 3: Run and verify failure**
+- [x] **Step 3: Run and verify failure**
 
 ```bash
 pytest tests/test_adapters.py -v -k nrel
@@ -3356,7 +3356,7 @@ pytest tests/test_adapters.py -v -k nrel
 
 Expected: ImportError.
 
-- [ ] **Step 4: Implement `sim/adapters/nrel_solar.py`**
+- [x] **Step 4: Implement `sim/adapters/nrel_solar.py`**
 
 ```python
 """NREL NSRDB irradiance adapter."""
@@ -3407,7 +3407,7 @@ class NRELSolar:
 
 **Note on determinism:** the noise RNG is part of the object's state, so calling `get_kw(t1); get_kw(t2)` consumes different random draws from `get_kw(t1); get_kw(t1)`. The test `test_nrel_solar_deterministic_under_seed` passes because both instances start with the same seed and make the same call sequence.
 
-- [ ] **Step 5: Run tests and verify**
+- [x] **Step 5: Run tests and verify**
 
 ```bash
 pytest tests/test_adapters.py -v
@@ -3416,7 +3416,7 @@ mypy
 
 Expected: 7 adapter tests pass (3 PecanStreet + 4 NREL).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add sim/adapters/nrel_solar.py tests/test_adapters.py tests/fixtures/nrel_sample.csv
