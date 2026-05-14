@@ -31,7 +31,7 @@ Each phase has its own spec + implementation plan in `docs/superpowers/`.
 - **Approved:** 2026-05-14
 - **Execution mode:** Inline (Claude executes tasks in-session, batched ~5 at a time with check-ins). Not subagent-driven — per project conventions, every line must be understood by the student.
 - **Started executing:** 2026-05-14
-- **Current position:** Task 5 next (net export + grid coupling). Tasks 0-4 complete.
+- **Current position:** Task 6 next (data layer protocols + SyntheticAdapter). Tasks 0-5 complete — household physics done for Phase 1.
 
 ### Progress log
 
@@ -39,7 +39,8 @@ Update this after every committed task. Newest entries on top.
 
 | Date | Task | Commit | Tests | Note |
 |------|------|--------|-------|------|
-| 2026-05-14 | Infrastructure: CI + pre-commit + permissions + skills | _(this commit)_ | 8 ✓ | GitHub Actions CI workflow, ruff/mypy pre-commit hooks, `.claude/settings.json` allowlist, and four new skills: `/advisormeeting`, `/sweep`, `/explainphysics` (plus `/nextask` + `/simtest` from earlier today). |
+| 2026-05-14 | Task 5 — net export + grid coupling | _(this commit)_ | 11 ✓ | Wires up `desired_net_export_kw` and `grid_status`. Adds `grid_import_kwh`, `grid_export_kwh`, `achieved_net_export_kw` fields. Household physics now complete for Phase 1. |
+| 2026-05-14 | Infrastructure: CI + pre-commit + permissions + skills | `32757b0` | 8 ✓ | GitHub Actions CI workflow, ruff/mypy pre-commit hooks, `.claude/settings.json` allowlist, and four new skills: `/advisormeeting`, `/sweep`, `/explainphysics` (plus `/nextask` + `/simtest` from earlier today). |
 | 2026-05-14 | Task 4 — RT efficiency | `b34c754` | 8 ✓ | sqrt(eta) on each leg; full cycle returns eta*input. Ruff RUF002 caught a Unicode `×` in a docstring; replaced with `*`. |
 | 2026-05-14 | Task 3 — rate clamps + SoC bounds | `6b4ec72` | 6 ✓ | Added `wasted_kwh` / `unmet_kwh` accounting. |
 | 2026-05-14 | Task 2 — household basics | `0d71941` | 2 ✓ | Minimal `step()` with no constraints. |

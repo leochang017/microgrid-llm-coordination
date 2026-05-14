@@ -819,7 +819,7 @@ The flow is:
 3. If `surplus_kw < 0`: discharge the battery to make up the deficit (subject to rate + DoD + RT).
 4. If grid is connected, any unmet deficit is filled from the grid (up to `grid_max_kw`); any wasted surplus can be exported to the grid (up to `grid_max_kw`). Track `grid_import_kwh` / `grid_export_kwh`.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 ```python
 def test_export_to_peers_drains_battery() -> None:
@@ -859,7 +859,7 @@ def test_grid_disconnected_leaves_deficit_unmet() -> None:
     assert s1.grid_import_kwh == 0.0
 ```
 
-- [ ] **Step 2: Run and verify failure**
+- [x] **Step 2: Run and verify failure**
 
 ```bash
 pytest tests/test_household.py -v -k "export or grid"
@@ -867,7 +867,7 @@ pytest tests/test_household.py -v -k "export or grid"
 
 Expected: fails (no `grid_import_kwh` / `grid_export_kwh` fields, `desired_net_export_kw` ignored).
 
-- [ ] **Step 3: Extend `HouseholdState` and rewrite `step()`**
+- [x] **Step 3: Extend `HouseholdState` and rewrite `step()`**
 
 Add fields to `HouseholdState`:
 
@@ -978,7 +978,7 @@ Hand-verify on the three new tests:
 - `test_grid_fills_unmet_load_when_connected` (load=5, soc=0, max_rate=5, grid_max=10, grid up): deficit=5, available=0, delivered_from_battery=0, grid_import=5, unmet=0. ✓
 - `test_grid_disconnected_leaves_deficit_unmet` (same, grid down, dod=0): deficit=5, available=0, grid_import=0, unmet=5. ✓
 
-- [ ] **Step 4: Run all tests and verify passing**
+- [x] **Step 4: Run all tests and verify passing**
 
 ```bash
 pytest tests/test_household.py -v
@@ -987,7 +987,7 @@ mypy
 
 Expected: all household tests pass (including the three new ones).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sim/household.py tests/test_household.py
