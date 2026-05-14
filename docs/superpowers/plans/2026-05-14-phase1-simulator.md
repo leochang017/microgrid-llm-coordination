@@ -1004,7 +1004,7 @@ git commit -m "feat(household): handle net export + grid import/export"
 
 We need data adapters that produce a solar profile and load profile per timestep. The real Pecan Street + NREL adapters are deferred to Task 25 (they require external account approval). For now, ship a `SyntheticAdapter` that lets us run end-to-end and lets the tests pin physics in hand-computable scenarios.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 `tests/test_data.py`:
 
@@ -1062,7 +1062,7 @@ def test_protocols_are_satisfied() -> None:
     assert callable(sp.get_kw)
 ```
 
-- [ ] **Step 2: Run and verify failure**
+- [x] **Step 2: Run and verify failure**
 
 ```bash
 pytest tests/test_data.py -v
@@ -1070,7 +1070,7 @@ pytest tests/test_data.py -v
 
 Expected: ImportError.
 
-- [ ] **Step 3: Implement `sim/data.py`**
+- [x] **Step 3: Implement `sim/data.py`**
 
 ```python
 """Data adapters. Phase 1 ships only the synthetic adapter; real adapters land in Task 25."""
@@ -1130,7 +1130,7 @@ class SyntheticLoad:
         return (datetime(2000, 1, 1), datetime(2099, 12, 31))
 ```
 
-- [ ] **Step 4: Run tests and verify passing**
+- [x] **Step 4: Run tests and verify passing**
 
 ```bash
 pytest tests/test_data.py -v
@@ -1139,7 +1139,7 @@ mypy
 
 Expected: 6 tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sim/data.py tests/test_data.py
