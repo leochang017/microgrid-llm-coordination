@@ -25,15 +25,12 @@ def test_charge_from_surplus_no_constraints() -> None:
     h = make_house()
     s0 = HouseholdState(soc_kwh=5.0, last_solar_kw=0.0, last_load_kw=0.0, grid_connected=True)
     s1 = step(
-        h,
-        s0,
-        solar_kw=4.0,
-        load_kw=1.0,
-        desired_net_export_kw=0.0,
-        grid_status=True,
-        dt_hours=1.0,
+        h, s0, solar_kw=4.0, load_kw=1.0, desired_net_export_kw=0.0,
+        grid_status=True, dt_hours=1.0,
     )
     assert s1.soc_kwh == pytest.approx(8.0, abs=1e-9)
+    assert s1.wasted_kwh == 0.0
+    assert s1.unmet_kwh == 0.0
 
 
 def test_discharge_to_meet_load_no_constraints() -> None:
@@ -41,12 +38,59 @@ def test_discharge_to_meet_load_no_constraints() -> None:
     h = make_house()
     s0 = HouseholdState(soc_kwh=5.0, last_solar_kw=0.0, last_load_kw=0.0, grid_connected=False)
     s1 = step(
-        h,
-        s0,
-        solar_kw=0.0,
-        load_kw=2.0,
-        desired_net_export_kw=0.0,
-        grid_status=False,
-        dt_hours=0.25,
+        h, s0, solar_kw=0.0, load_kw=2.0, desired_net_export_kw=0.0,
+        grid_status=False, dt_hours=0.25,
     )
     assert s1.soc_kwh == pytest.approx(4.5, abs=1e-9)
+    assert s1.wasted_kwh == 0.0
+    assert s1.unmet_kwh == 0.0
+
+
+def test_charge_clamps_to_battery_max_rate() -> None:
+    """Solar surplus of 20 kW exceeds 5 kW battery rate → 5 kWh charged, 15 kWh wasted."""
+    h = make_house(battery_max_rate_kw=5.0)
+    s0 = HouseholdState(soc_kwh=5.0, last_solar_kw=0.0, last_load_kw=0.0, grid_connected=False)
+    s1 = step(
+        h, s0, solar_kw=20.0, load_kw=0.0, desired_net_export_kw=0.0,
+        grid_status=False, dt_hours=1.0,
+    )
+    assert s1.soc_kwh == pytest.approx(10.0, abs=1e-9)
+    assert s1.wasted_kwh == pytest.approx(15.0, abs=1e-9)
+    assert s1.unmet_kwh == pytest.approx(0.0, abs=1e-9)
+
+
+def test_discharge_clamps_to_battery_max_rate() -> None:
+    """Load deficit of 20 kW exceeds 5 kW battery rate → 5 kWh discharged, 15 kWh unmet."""
+    h = make_house(battery_max_rate_kw=5.0)
+    s0 = HouseholdState(soc_kwh=10.0, last_solar_kw=0.0, last_load_kw=0.0, grid_connected=False)
+    s1 = step(
+        h, s0, solar_kw=0.0, load_kw=20.0, desired_net_export_kw=0.0,
+        grid_status=False, dt_hours=1.0,
+    )
+    assert s1.soc_kwh == pytest.approx(5.0, abs=1e-9)
+    assert s1.unmet_kwh == pytest.approx(15.0, abs=1e-9)
+    assert s1.wasted_kwh == pytest.approx(0.0, abs=1e-9)
+
+
+def test_soc_clamped_at_capacity() -> None:
+    """Charging a full battery wastes the energy."""
+    h = make_house(battery_kwh=10.0, battery_max_rate_kw=5.0)
+    s0 = HouseholdState(soc_kwh=9.0, last_solar_kw=0.0, last_load_kw=0.0, grid_connected=False)
+    s1 = step(
+        h, s0, solar_kw=5.0, load_kw=0.0, desired_net_export_kw=0.0,
+        grid_status=False, dt_hours=1.0,
+    )
+    assert s1.soc_kwh == pytest.approx(10.0, abs=1e-9)
+    assert s1.wasted_kwh == pytest.approx(4.0, abs=1e-9)
+
+
+def test_soc_clamped_at_dod_floor() -> None:
+    """Discharging past DoD floor leaves the deficit as unmet."""
+    h = make_house(battery_kwh=10.0, battery_max_rate_kw=5.0, dod_floor_frac=0.1)
+    s0 = HouseholdState(soc_kwh=1.5, last_solar_kw=0.0, last_load_kw=0.0, grid_connected=False)
+    s1 = step(
+        h, s0, solar_kw=0.0, load_kw=5.0, desired_net_export_kw=0.0,
+        grid_status=False, dt_hours=1.0,
+    )
+    assert s1.soc_kwh == pytest.approx(1.0, abs=1e-9)  # floor = 0.1 * 10
+    assert s1.unmet_kwh == pytest.approx(4.5, abs=1e-9)
