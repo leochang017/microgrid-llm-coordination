@@ -2853,7 +2853,7 @@ def test_determinism_byte_identical(tmp_path) -> None:
     assert (out_a / "state.jsonl").read_bytes() == (out_b / "state.jsonl").read_bytes()
 ```
 
-- [ ] **Step 2: Run and verify**
+- [x] **Step 2: Run and verify**
 
 ```bash
 pytest tests/test_integration.py -v
@@ -2861,7 +2861,7 @@ pytest tests/test_integration.py -v
 
 This is the first test where physics, network, strategy, engine, and logging all interact. If round-robin doesn't actually equalize SoC, this fails — and *that's the signal* that the strategy or the network needs tuning. Don't paper over a failure here. Debug it.
 
-- [ ] **Step 3: If `test_round_robin_more_even_than_no_coord` fails**
+- [x] **Step 3: If `test_round_robin_more_even_than_no_coord` fails**
 
 Re-examine the strategy. Common causes of failure:
 - Round-robin shares too aggressively, hits bus saturation, energy is wasted in losses.
@@ -2870,7 +2870,7 @@ Re-examine the strategy. Common causes of failure:
 
 Tune `SHARE_FRACTION` in `sim/strategies/round_robin.py` if needed. Re-run.
 
-- [ ] **Step 4: Verify both tests pass, then commit**
+- [x] **Step 4: Verify both tests pass, then commit**
 
 ```bash
 pytest tests/test_integration.py -v
@@ -2887,7 +2887,7 @@ git commit -m "test: integration test for round-robin vs no-coordination + deter
 
 A 24-hour run with hand-computable synthetic data: constant 2 kW solar per house, constant 1 kW load, no outage. Expected end SoC: each house's start SoC + (2 - 1) × 24 × η_partial - capacity_overflow. We can hand-compute this. If the test ever fails, the physics has regressed.
 
-- [ ] **Step 1: Write the smoke test**
+- [x] **Step 1: Write the smoke test**
 
 `tests/test_physics_smoke.py`:
 
