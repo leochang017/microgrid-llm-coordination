@@ -91,14 +91,14 @@ academic/microgrid/
 - Create: `academic/microgrid/tests/__init__.py` (empty)
 - Create: `academic/microgrid/tests/conftest.py`
 
-- [ ] **Step 1: Initialize git repo and set up project directory**
+- [x] **Step 1: Initialize git repo and set up project directory**
 
 ```bash
 cd /Users/leochang/myproject/academic/microgrid
 git init
 ```
 
-- [ ] **Step 2: Write `.gitignore`**
+- [x] **Step 2: Write `.gitignore`**
 
 ```gitignore
 __pycache__/
@@ -121,13 +121,13 @@ runs/
 .idea/
 ```
 
-- [ ] **Step 3: Write `.python-version`**
+- [x] **Step 3: Write `.python-version`**
 
 ```
 3.12
 ```
 
-- [ ] **Step 4: Write `pyproject.toml`**
+- [x] **Step 4: Write `pyproject.toml`**
 
 ```toml
 [project]
@@ -162,7 +162,7 @@ testpaths = ["tests"]
 addopts = "-ra -q"
 ```
 
-- [ ] **Step 5: Write `README.md` stub**
+- [x] **Step 5: Write `README.md` stub**
 
 ```markdown
 # Microgrid Sim
@@ -182,11 +182,11 @@ pytest
 (Full data-download + run instructions will be added once the CLI lands — see Task 23.)
 ```
 
-- [ ] **Step 6: Create empty package init files**
+- [x] **Step 6: Create empty package init files**
 
 Create `sim/__init__.py` (empty) and `tests/__init__.py` (empty).
 
-- [ ] **Step 7: Write `tests/conftest.py`**
+- [x] **Step 7: Write `tests/conftest.py`**
 
 ```python
 """Shared test fixtures."""
@@ -200,7 +200,7 @@ def rng() -> np.random.Generator:
     return np.random.default_rng(seed=42)
 ```
 
-- [ ] **Step 8: Install and verify**
+- [x] **Step 8: Install and verify**
 
 ```bash
 cd /Users/leochang/myproject/academic/microgrid
@@ -217,7 +217,7 @@ Expected:
 - `ruff`: "All checks passed!"
 - `mypy`: "Success: no issues found"
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add .gitignore .python-version pyproject.toml README.md sim/ tests/
@@ -234,7 +234,7 @@ git commit -m "chore: initialize project scaffold with pytest/ruff/mypy"
 
 These are the dataclasses every other module references. Putting them in one file avoids circular imports.
 
-- [ ] **Step 1: Write failing test for `Transfer` dataclass**
+- [x] **Step 1: Write failing test for `Transfer` dataclass**
 
 `tests/test_types.py`:
 
@@ -280,7 +280,7 @@ def test_household_profile_flags() -> None:
     assert p.has_medical is True
 ```
 
-- [ ] **Step 2: Run and verify failure**
+- [x] **Step 2: Run and verify failure**
 
 ```bash
 pytest tests/test_types.py -v
@@ -288,7 +288,7 @@ pytest tests/test_types.py -v
 
 Expected: ImportError, `sim.types` does not exist.
 
-- [ ] **Step 3: Implement `sim/types.py`**
+- [x] **Step 3: Implement `sim/types.py`**
 
 ```python
 """Shared dataclass types used across the simulator."""
@@ -331,7 +331,7 @@ class HouseholdProfile:
     tags: tuple[str, ...] = field(default_factory=tuple)
 ```
 
-- [ ] **Step 4: Run tests and verify passing**
+- [x] **Step 4: Run tests and verify passing**
 
 ```bash
 pytest tests/test_types.py -v
@@ -341,7 +341,7 @@ ruff check sim tests
 
 Expected: 5 tests pass, mypy clean, ruff clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sim/types.py tests/test_types.py
@@ -358,7 +358,7 @@ git commit -m "feat(types): add Transfer and HouseholdProfile dataclasses"
 
 We start with the simplest case: solar > load, battery charges; solar < load, battery discharges. No RT efficiency yet, no rate limits yet, no DoD floor yet. We'll add each constraint in its own task so a regression in one is easy to localize.
 
-- [ ] **Step 1: Write failing test for basic charge from surplus**
+- [x] **Step 1: Write failing test for basic charge from surplus**
 
 `tests/test_household.py`:
 
@@ -417,7 +417,7 @@ def test_discharge_to_meet_load_no_constraints() -> None:
     assert s1.soc_kwh == pytest.approx(4.5, abs=1e-9)
 ```
 
-- [ ] **Step 2: Run and verify failure**
+- [x] **Step 2: Run and verify failure**
 
 ```bash
 pytest tests/test_household.py -v
@@ -425,7 +425,7 @@ pytest tests/test_household.py -v
 
 Expected: ImportError on `sim.household`.
 
-- [ ] **Step 3: Implement minimal `sim/household.py`**
+- [x] **Step 3: Implement minimal `sim/household.py`**
 
 ```python
 """Household physics: solar + battery + load with constraints applied each tick."""
@@ -485,7 +485,7 @@ def step(
     )
 ```
 
-- [ ] **Step 4: Run tests and verify passing**
+- [x] **Step 4: Run tests and verify passing**
 
 ```bash
 pytest tests/test_household.py -v
@@ -494,7 +494,7 @@ mypy
 
 Expected: 2 tests pass, mypy clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sim/household.py tests/test_household.py
@@ -511,7 +511,7 @@ git commit -m "feat(household): basic charge/discharge bookkeeping"
 
 Add: charge/discharge rate clamping to `battery_max_rate_kw`; SoC clamping at `[dod_floor_frac * battery_kwh, battery_kwh]`. Excess that can't fit becomes `wasted_kwh`; unmet load becomes `unmet_kwh`. Both reported in the returned state.
 
-- [ ] **Step 1: Extend `HouseholdState` and write failing tests**
+- [x] **Step 1: Extend `HouseholdState` and write failing tests**
 
 In `tests/test_household.py`, add:
 
@@ -568,7 +568,7 @@ def test_soc_clamped_at_dod_floor() -> None:
 
 Also adjust the first two tests to assert `s1.wasted_kwh == 0.0` and `s1.unmet_kwh == 0.0`.
 
-- [ ] **Step 2: Run and verify failure**
+- [x] **Step 2: Run and verify failure**
 
 ```bash
 pytest tests/test_household.py -v
@@ -576,7 +576,7 @@ pytest tests/test_household.py -v
 
 Expected: tests fail because `HouseholdState` has no `wasted_kwh` / `unmet_kwh` fields.
 
-- [ ] **Step 3: Update `HouseholdState` and `step` in `sim/household.py`**
+- [x] **Step 3: Update `HouseholdState` and `step` in `sim/household.py`**
 
 Replace the dataclass and step function with:
 
@@ -636,7 +636,7 @@ def step(
     )
 ```
 
-- [ ] **Step 4: Run tests and verify passing**
+- [x] **Step 4: Run tests and verify passing**
 
 ```bash
 pytest tests/test_household.py -v
@@ -645,7 +645,7 @@ mypy
 
 Expected: 6 tests pass, mypy clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sim/household.py tests/test_household.py
