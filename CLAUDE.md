@@ -31,7 +31,7 @@ Each phase has its own spec + implementation plan in `docs/superpowers/`.
 - **Approved:** 2026-05-14
 - **Execution mode:** Inline (Claude executes tasks in-session, batched ~5 at a time with check-ins). Not subagent-driven — per project conventions, every line must be understood by the student.
 - **Started executing:** 2026-05-14
-- **Current position:** Task 21 next (Pecan Street adapter skeleton). Tasks 0-20 complete — full README published. Repo is now fully documented and runnable for anyone cloning it.
+- **Current position:** Task 22 next (NREL solar irradiance adapter). Tasks 0-21 complete — Pecan Street adapter skeleton ships against an in-repo CSV fixture.
 
 ### Progress log
 
@@ -39,7 +39,8 @@ Update this after every committed task. Newest entries on top.
 
 | Date | Task | Commit | Tests | Note |
 |------|------|--------|-------|------|
-| 2026-05-14 | Task 20 — full README | _(this commit)_ | 54 ✓ | `README.md` rewritten: install, run, scenario YAML reference, architecture diagram, phase-1 status checklist. Anyone cloning the public repo can now figure out how to run the simulator. |
+| 2026-05-14 | Task 21 — Pecan Street adapter skeleton | _(this commit)_ | 57 ✓ | `sim/adapters/pecan_street.py` with `PecanStreetLoad(csv_path, dataid).get_kw(t)` against in-repo `tests/fixtures/pecan_sample.csv`. Forward-fills gaps ≤1 h; raises on longer (data must be clean, not silently fudged). pandas now in dep tree → added a `[[tool.mypy.overrides]]` for pandas to ignore missing stubs. Real-engine dispatch lands in Task 23. |
+| 2026-05-14 | Task 20 — full README | `e288128` | 54 ✓ | `README.md` rewritten: install, run, scenario YAML reference, architecture diagram, phase-1 status checklist. Anyone cloning the public repo can now figure out how to run the simulator. |
 | 2026-05-14 | Task 19 — CLI runner | `af1a0ff` | 54 ✓ | `scripts/run.py` ships `python -m scripts.run --scenario <yaml> [--out-dir runs] [--no-strict]`. Resolves the strategy by importing `sim.strategies.<scenario.strategy>` and calls its `decide_transfers`. Output to `runs/<scenario_id>/<timestamp>/`. Manually smoke-tested + clean-venv verified. Also adds `scripts` to CI's `ruff check`. |
 | 2026-05-14 | Task 18 — physics smoke test | `1748e46` | 54 ✓ | `tests/test_physics_smoke.py` runs a 2×2 grid for 24 h with monkey-patched flat 2 kW solar + 1 kW constant load + η=1 + DoD=0 + oversized batteries. Hand-computed end SoC: 50 + 24 = exactly 74.0 kWh per house. If this test ever fails, do NOT adjust the expected — `sim/household.py:step()` has regressed. |
 | 2026-05-14 | Task 17 — integration test (rr vs no-coord) | `63b8880` | 53 ✓ | `tests/test_integration.py` runs the 24h_uniform scenario end-to-end with both strategies and asserts `gini(round_robin) <= gini(no_coordination)`. Real numbers: no_coord = 99.9% served / 1.1 kWh unmet / 0 transfers; round_robin = 100% / 0 / 1,260 transfers. Synthetic data is too easy — Phase 3 with Pecan Street will produce more interesting differentiation. Determinism check (byte-identical state.jsonl) also lives here. |

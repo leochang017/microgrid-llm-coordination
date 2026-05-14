@@ -3166,7 +3166,7 @@ git commit -m "docs: full README with scenario reference and architecture"
 
 **Note:** This task is unblocked only once your Pecan Street researcher account is approved (apply on day 1 of work). Until then, this task ships only the *skeleton* against an in-repo CSV fixture so the test passes; the real data fetch is Task 22.
 
-- [ ] **Step 1: Create the CSV fixture**
+- [x] **Step 1: Create the CSV fixture**
 
 Create `tests/fixtures/pecan_sample.csv`:
 
@@ -3180,7 +3180,7 @@ dataid,local_15min,grid,solar,use
 
 (The columns mirror Pecan Street's 15-min table: grid imports, solar production, total use, all in kW.)
 
-- [ ] **Step 2: Write failing test**
+- [x] **Step 2: Write failing test**
 
 ```python
 """Tests for real-data adapters (skeleton; full data fetch is Task 22)."""
@@ -3214,7 +3214,7 @@ def test_pecan_street_load_crashes_on_long_gap() -> None:
         lp.get_kw(datetime(2024, 7, 1, 3, 0))
 ```
 
-- [ ] **Step 3: Run and verify failure**
+- [x] **Step 3: Run and verify failure**
 
 ```bash
 pytest tests/test_adapters.py -v
@@ -3222,7 +3222,7 @@ pytest tests/test_adapters.py -v
 
 Expected: ImportError on `sim.adapters.pecan_street`.
 
-- [ ] **Step 4: Implement `sim/adapters/pecan_street.py`**
+- [x] **Step 4: Implement `sim/adapters/pecan_street.py`**
 
 ```python
 """Pecan Street load profile adapter (15-min residential smart-meter data).
@@ -3267,7 +3267,7 @@ class PecanStreetLoad:
         return (self.df.index[0].to_pydatetime(), self.df.index[-1].to_pydatetime())
 ```
 
-- [ ] **Step 5: Run tests and verify**
+- [x] **Step 5: Run tests and verify**
 
 ```bash
 pytest tests/test_adapters.py -v
@@ -3276,7 +3276,7 @@ mypy
 
 Expected: 3 tests pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add sim/adapters/ tests/test_adapters.py tests/fixtures/

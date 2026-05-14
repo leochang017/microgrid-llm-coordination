@@ -29,6 +29,10 @@ python_version = "3.12"
 strict = true
 files = ["sim"]
 
+[[tool.mypy.overrides]]
+module = ["pandas", "pandas.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra -q"
