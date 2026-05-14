@@ -24,7 +24,7 @@ jobs:
           pip install -e ".[dev,data]"
 
       - name: Lint with ruff
-        run: ruff check sim tests
+        run: ruff check sim tests scripts
 
       - name: Type-check with mypy
         run: mypy

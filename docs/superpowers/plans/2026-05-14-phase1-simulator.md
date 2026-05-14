@@ -3024,7 +3024,7 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 2: Smoke-test the CLI manually**
+- [x] **Step 2: Smoke-test the CLI manually**
 
 ```bash
 python -m scripts.run --scenario configs/scenarios/24h_uniform.yaml
@@ -3032,7 +3032,7 @@ python -m scripts.run --scenario configs/scenarios/24h_uniform.yaml
 
 Expected: one line of output, a fresh directory under `runs/24h_uniform/<timestamp>/` with `state.jsonl`, `events.jsonl`, `config.json`, `summary.json`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add scripts/__init__.py scripts/run.py
