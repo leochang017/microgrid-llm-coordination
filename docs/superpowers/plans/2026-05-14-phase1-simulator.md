@@ -1156,7 +1156,7 @@ git commit -m "feat(data): protocols and synthetic adapters"
 
 A `Neighborhood` holds the houses and the 4-neighbor spatial comm graph. Builds from a 5×6 layout.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 `tests/test_network.py`:
 
@@ -1196,7 +1196,7 @@ def test_bus_capacity_stored() -> None:
     assert n.bus_loss_factor == 0.05
 ```
 
-- [ ] **Step 2: Run and verify failure**
+- [x] **Step 2: Run and verify failure**
 
 ```bash
 pytest tests/test_network.py -v
@@ -1204,7 +1204,7 @@ pytest tests/test_network.py -v
 
 Expected: ImportError.
 
-- [ ] **Step 3: Implement `sim/network.py` (initial version)**
+- [x] **Step 3: Implement `sim/network.py` (initial version)**
 
 ```python
 """Neighborhood: spatial comm graph + shared physical bus + transfer settlement.
@@ -1240,7 +1240,7 @@ def build_grid_neighborhood(
     return Neighborhood(comm_graph=graph, bus_max_kw=bus_max_kw, bus_loss_factor=bus_loss_factor)
 ```
 
-- [ ] **Step 4: Run tests and verify passing**
+- [x] **Step 4: Run tests and verify passing**
 
 ```bash
 pytest tests/test_network.py -v
@@ -1249,7 +1249,7 @@ mypy
 
 Expected: 5 tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sim/network.py tests/test_network.py
