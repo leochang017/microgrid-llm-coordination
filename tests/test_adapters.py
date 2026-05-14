@@ -12,6 +12,7 @@ import pytest
 
 from sim.adapters.nrel_solar import NRELSolar
 from sim.adapters.pecan_street import PecanStreetLoad
+from sim.adapters.resstock import ResStockLoad
 
 _FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -77,3 +78,26 @@ def test_nrel_solar_deterministic_under_call_order() -> None:
     sp2.get_kw(datetime(2024, 7, 1, 11, 0))
     val2 = sp2.get_kw(t)
     assert val1 == val2
+
+
+def test_resstock_load_reads_fixture() -> None:
+    """ResStock files store energy-per-15-min-interval in kWh; adapter converts to kW."""
+    lp = ResStockLoad(path=_FIXTURES / "resstock_sample.csv", dt_hours=0.25)
+    # 0.31 kWh per 15-min -> 1.24 kW
+    assert lp.get_kw(datetime(2024, 7, 1, 0, 0)) == pytest.approx(1.24, abs=1e-6)
+    # Forward-fill within the gap tolerance.
+    assert lp.get_kw(datetime(2024, 7, 1, 0, 5)) == pytest.approx(1.24, abs=1e-6)
+
+
+def test_resstock_load_crashes_on_long_gap() -> None:
+    lp = ResStockLoad(path=_FIXTURES / "resstock_sample.csv", dt_hours=0.25)
+    # Fixture ends at 01:45; querying 04:00 = 2 h 15 min later, exceeds 1 h max gap.
+    with pytest.raises(ValueError, match="gap"):
+        lp.get_kw(datetime(2024, 7, 1, 4, 0))
+
+
+def test_resstock_load_rejects_unknown_file_type(tmp_path: Path) -> None:
+    bogus = tmp_path / "bogus.txt"
+    bogus.write_text("hello")
+    with pytest.raises(ValueError, match="unsupported file extension"):
+        ResStockLoad(path=bogus, dt_hours=0.25)

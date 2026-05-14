@@ -43,6 +43,9 @@ class Scenario:
     outages: tuple[OutageWindow, ...] = field(default_factory=tuple)
     data_paths: dict[str, str] = field(default_factory=dict)
     house_dataids: tuple[int, ...] = field(default_factory=tuple)
+    # For data_source=resstock: per-house ResStock filename (e.g. "bldg0000123-up00.parquet")
+    # under data_paths["load_dir"]. Strings, not ints, because ResStock IDs are zero-padded.
+    house_building_files: tuple[str, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         if self.dt_hours <= 0:
@@ -104,4 +107,5 @@ def load_scenario(path: Path | str) -> Scenario:
         outages=tuple(outages),
         data_paths=dict(raw.get("data_paths", {}) or {}),
         house_dataids=tuple(int(x) for x in (raw.get("house_dataids", []) or [])),
+        house_building_files=tuple(str(x) for x in (raw.get("house_building_files", []) or [])),
     )

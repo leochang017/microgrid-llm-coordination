@@ -1,0 +1,66 @@
+# Real-data scenario using NREL ResStock residential load profiles + NREL
+# NSRDB solar irradiance. Both publicly downloadable, no university affiliation.
+#
+# Download instructions:
+#   python -m scripts.fetch_data resstock --state TX -n 30 --out-dir data/resstock/
+#   python -m scripts.fetch_data nrel --lat 30.27 --lon -97.74 --year 2018 \
+#     --out data/nrel_solar/austin_2018.csv   # needs NREL_API_KEY env var
+#
+# Run:
+#   python -m scripts.run --scenario configs/scenarios/24h_resstock.yaml
+
+scenario_id: 24h_resstock
+start: "2018-07-01T00:00:00"   # ResStock AMY 2018 covers calendar year 2018
+end:   "2018-07-02T00:00:00"
+dt_hours: 0.25
+seed: 42
+rows: 5
+cols: 6
+bus_max_kw: 50.0
+bus_loss_factor: 0.05
+strategy: round_robin
+data_source: resstock
+data_paths:
+  solar_csv: data/nrel_solar/austin_2018.csv
+  load_dir:  data/resstock/
+# 30 real ResStock building IDs for Texas (download via fetch_data resstock).
+# IDs are NREL's internal building numbers; pick any 30. These are the first
+# 30 by S3 listing order.
+house_building_files:
+  - 100025-0.parquet
+  - 100032-0.parquet
+  - 100040-0.parquet
+  - 100041-0.parquet
+  - 100052-0.parquet
+  - 100065-0.parquet
+  - 100072-0.parquet
+  - 100074-0.parquet
+  - 100082-0.parquet
+  - 100110-0.parquet
+  - 100114-0.parquet
+  - 10014-0.parquet
+  - 100155-0.parquet
+  - 10017-0.parquet
+  - 100186-0.parquet
+  - 100193-0.parquet
+  - 1002-0.parquet
+  - 100202-0.parquet
+  - 100203-0.parquet
+  - 100204-0.parquet
+  - 100206-0.parquet
+  - 10022-0.parquet
+  - 100223-0.parquet
+  - 100253-0.parquet
+  - 100288-0.parquet
+  - 100310-0.parquet
+  - 100322-0.parquet
+  - 100334-0.parquet
+  - 100346-0.parquet
+  - 100347-0.parquet
+household_sampling:
+  pv_kw_peak: [4.0, 12.0]
+  battery_kwh: [10.0, 27.0]
+  rt_efficiency: 0.9
+  dod_floor_frac: 0.1
+  grid_max_kw: 10.0
+outages: []

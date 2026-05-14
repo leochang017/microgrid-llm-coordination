@@ -256,4 +256,27 @@ def _build_data(
             load_map[hid] = PecanStreetLoad(csv_path=scenario.data_paths["load_csv"], dataid=dataid)
         return nrel, load_map
 
+    if scenario.data_source == "resstock":
+        from pathlib import Path
+
+        from sim.adapters.nrel_solar import NRELSolar
+        from sim.adapters.resstock import ResStockLoad
+
+        if "solar_csv" not in scenario.data_paths or "load_dir" not in scenario.data_paths:
+            raise ValueError(
+                "data_source=resstock requires scenario.data_paths.solar_csv "
+                "and scenario.data_paths.load_dir"
+            )
+        if len(scenario.house_building_files) != scenario.rows * scenario.cols:
+            raise ValueError(
+                f"house_building_files has {len(scenario.house_building_files)} "
+                f"entries, need {scenario.rows * scenario.cols}"
+            )
+        nrel = NRELSolar(csv_path=scenario.data_paths["solar_csv"], seed=scenario.seed)
+        load_dir = Path(scenario.data_paths["load_dir"])
+        rs_load_map: dict[str, LoadProfile] = {}
+        for (hid, _), fname in zip(households.items(), scenario.house_building_files, strict=True):
+            rs_load_map[hid] = ResStockLoad(path=load_dir / fname, dt_hours=scenario.dt_hours)
+        return nrel, rs_load_map
+
     raise ValueError(f"unknown data_source: {scenario.data_source!r}")
