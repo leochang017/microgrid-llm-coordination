@@ -35,6 +35,55 @@ def test_bus_capacity_stored() -> None:
     assert n.bus_loss_factor == 0.05
 
 
+def test_sender_cap_clips_transfer() -> None:
+    """Sender wants to send 5 kW but can only spare 3 -> sent=3, event emitted."""
+    n = build_grid_neighborhood(rows=5, cols=6, bus_max_kw=50.0)
+    transfers = [Transfer(from_id="r0c0", to_id="r0c1", kw=5.0)]
+    grid_status = {f"r{r}c{c}": False for r in range(5) for c in range(6)}
+    sender_caps = {hid: 10.0 for hid in grid_status}
+    sender_caps["r0c0"] = 3.0
+    receiver_caps = {hid: 10.0 for hid in grid_status}
+
+    result = settle_transfers(n, transfers, grid_status, sender_caps, receiver_caps)
+    assert result.actual_sent["r0c0"] == pytest.approx(3.0, abs=1e-9)
+    assert result.actual_received["r0c1"] == pytest.approx(3.0 * 0.95, abs=1e-9)
+    assert any(e.kind == EventKind.SENDER_DOD_FLOOR for e in result.events)
+
+
+def test_receiver_cap_clips_transfer() -> None:
+    """Receiver can only absorb 1 kW post-loss -> sender send is 1/0.95 kW."""
+    n = build_grid_neighborhood(rows=5, cols=6, bus_max_kw=50.0)
+    transfers = [Transfer(from_id="r0c0", to_id="r0c1", kw=5.0)]
+    grid_status = {f"r{r}c{c}": False for r in range(5) for c in range(6)}
+    sender_caps = {hid: 10.0 for hid in grid_status}
+    receiver_caps = {hid: 10.0 for hid in grid_status}
+    receiver_caps["r0c1"] = 1.0
+
+    result = settle_transfers(n, transfers, grid_status, sender_caps, receiver_caps)
+    assert result.actual_received["r0c1"] == pytest.approx(1.0, abs=1e-9)
+    assert result.actual_sent["r0c0"] == pytest.approx(1.0 / 0.95, abs=1e-6)
+    assert any(e.kind == EventKind.RECEIVER_FULL for e in result.events)
+
+
+def test_multiple_transfers_share_sender_cap_proportionally() -> None:
+    """Sender has 3 kW cap, requests 4 + 2 to two neighbors -> 2 + 1 (proportional)."""
+    n = build_grid_neighborhood(rows=5, cols=6, bus_max_kw=50.0)
+    transfers = [
+        Transfer(from_id="r0c0", to_id="r0c1", kw=4.0),
+        Transfer(from_id="r0c0", to_id="r1c0", kw=2.0),
+    ]
+    grid_status = {f"r{r}c{c}": False for r in range(5) for c in range(6)}
+    sender_caps = {hid: 10.0 for hid in grid_status}
+    sender_caps["r0c0"] = 3.0
+    receiver_caps = {hid: 10.0 for hid in grid_status}
+
+    result = settle_transfers(n, transfers, grid_status, sender_caps, receiver_caps)
+    assert result.actual_sent["r0c0"] == pytest.approx(3.0, abs=1e-9)
+    # Proportional share: r0c1 gets 4/6 * 3 = 2.0; r1c0 gets 2/6 * 3 = 1.0 (pre-loss kW)
+    assert result.actual_received["r0c1"] == pytest.approx(2.0 * 0.95, abs=1e-6)
+    assert result.actual_received["r1c0"] == pytest.approx(1.0 * 0.95, abs=1e-6)
+
+
 def test_single_transfer_no_clipping() -> None:
     """One 2 kW transfer through 50 kW bus with 5% loss -> sender sends 2, receiver gets 1.9."""
     n = build_grid_neighborhood(rows=5, cols=6, bus_max_kw=50.0, bus_loss_factor=0.05)

@@ -45,15 +45,16 @@ def settle_transfers(
 ) -> SettlementResult:
     """Resolve requested peer transfers against physical limits, return what really moved.
 
-    Task 8 ships only the happy path: each transfer goes through as requested,
-    receiver gets `kw * (1 - bus_loss_factor)`, an event is emitted. Sender/
-    receiver caps are accepted as arguments but ignored here — Task 9 wires
-    those constraints in. Bus saturation and no-wheeling land in Task 10.
+    Two-stage clipping:
+      1. Per sender: if total requested out > sender cap, scale each outgoing
+         transfer proportionally and emit a SENDER_DOD_FLOOR event.
+      2. Per receiver: if total *received* (post-bus-loss) > receiver cap, scale
+         all transfers into that receiver proportionally and emit RECEIVER_FULL.
+         The sender's actual_sent is reduced accordingly.
+
+    Task 10 adds bus saturation and the no-wheeling rule for partial outages.
+    grid_status is accepted in the signature for forward-compatibility.
     """
-    # The sender_caps and receiver_caps args are unused in Task 8's happy path.
-    # They are part of the public signature so Tasks 9-10 don't have to change
-    # callers when they wire the constraints in.
-    del sender_caps_kw, receiver_caps_kw
     del grid_status
 
     actual_sent: dict[str, float] = dict.fromkeys(n.comm_graph, 0.0)
@@ -61,17 +62,68 @@ def settle_transfers(
     events: list[Event] = []
     loss_factor = 1.0 - n.bus_loss_factor
 
+    # Group by sender so we can clip each sender's outgoing pool proportionally.
+    by_sender: dict[str, list[Transfer]] = {}
     for t in requested:
-        actual_sent[t.from_id] += t.kw
-        actual_received[t.to_id] += t.kw * loss_factor
-        events.append(
-            Event(
-                kind=EventKind.TRANSFER_EXECUTED,
-                house_ids=(t.from_id, t.to_id),
-                kw=t.kw,
-                details="happy path",
+        by_sender.setdefault(t.from_id, []).append(t)
+
+    # Stage 1: sender-cap clipping (gives a per-(sender, receiver) provisional kw).
+    sender_alloc: dict[str, dict[str, float]] = {}
+    for sender, transfers in by_sender.items():
+        total_req = sum(t.kw for t in transfers)
+        cap = sender_caps_kw.get(sender, 0.0)
+        if total_req <= cap or total_req == 0.0:
+            allocations = {t.to_id: t.kw for t in transfers}
+        else:
+            scale = cap / total_req
+            allocations = {t.to_id: t.kw * scale for t in transfers}
+            events.append(
+                Event(
+                    kind=EventKind.SENDER_DOD_FLOOR,
+                    house_ids=(sender,),
+                    kw=total_req - cap,
+                    details=f"requested {total_req:.3f} kW, cap {cap:.3f} kW",
+                )
             )
-        )
+        sender_alloc[sender] = allocations
+
+    # Stage 2: receiver-cap clipping (over post-loss received kW).
+    receiver_want_net: dict[str, float] = dict.fromkeys(n.comm_graph, 0.0)
+    for allocations in sender_alloc.values():
+        for r, kw in allocations.items():
+            receiver_want_net[r] += kw * loss_factor
+
+    receiver_scale: dict[str, float] = {}
+    for r, want_net in receiver_want_net.items():
+        cap = receiver_caps_kw.get(r, 0.0)
+        if want_net > cap and want_net > 0.0:
+            receiver_scale[r] = cap / want_net
+            events.append(
+                Event(
+                    kind=EventKind.RECEIVER_FULL,
+                    house_ids=(r,),
+                    kw=want_net - cap,
+                    details=f"wanted {want_net:.3f} kW net, cap {cap:.3f} kW",
+                )
+            )
+        else:
+            receiver_scale[r] = 1.0
+
+    # Stage 3: apply receiver clipping back to senders and tally final flows.
+    for sender, allocations in sender_alloc.items():
+        for r, kw in allocations.items():
+            final_send = kw * receiver_scale[r]
+            if final_send <= 0:
+                continue
+            actual_sent[sender] += final_send
+            actual_received[r] += final_send * loss_factor
+            events.append(
+                Event(
+                    kind=EventKind.TRANSFER_EXECUTED,
+                    house_ids=(sender, r),
+                    kw=final_send,
+                )
+            )
 
     return SettlementResult(
         actual_sent=actual_sent,

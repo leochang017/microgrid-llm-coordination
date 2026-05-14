@@ -31,7 +31,7 @@ Each phase has its own spec + implementation plan in `docs/superpowers/`.
 - **Approved:** 2026-05-14
 - **Execution mode:** Inline (Claude executes tasks in-session, batched ~5 at a time with check-ins). Not subagent-driven — per project conventions, every line must be understood by the student.
 - **Started executing:** 2026-05-14
-- **Current position:** Task 9 next (sender/receiver cap clipping). Tasks 0-8 complete — settle_transfers happy path lands.
+- **Current position:** Task 10 next (bus saturation + no-wheeling). Tasks 0-9 complete — sender/receiver cap clipping lands.
 
 ### Progress log
 
@@ -39,7 +39,8 @@ Update this after every committed task. Newest entries on top.
 
 | Date | Task | Commit | Tests | Note |
 |------|------|--------|-------|------|
-| 2026-05-14 | Task 8 — settle_transfers happy path | _(this commit)_ | 23 ✓ | Adds `EventKind` (StrEnum), `Event`, `SettlementResult` to `sim/types.py`. Minimal `settle_transfers`: receiver gets `kw × (1 - bus_loss_factor)`; emits `TRANSFER_EXECUTED` event. Sender/receiver caps accepted but ignored — Task 9 wires them in. Ruff caught a `class EventKind(str, Enum)` pattern; switched to `StrEnum` (Python 3.11+). |
+| 2026-05-14 | Task 9 — sender/receiver cap clipping | _(this commit)_ | 26 ✓ | Two-stage clipping in `settle_transfers`: senders that requested more than their cap have outgoing transfers scaled proportionally (`SENDER_DOD_FLOOR` event); receivers whose total inbound exceeds their cap force a back-scale on the sender side (`RECEIVER_FULL` event). Includes workflow-preferences and project-skills sections added to this CLAUDE.md per user request. |
+| 2026-05-14 | Task 8 — settle_transfers happy path | `3508a1b` | 23 ✓ | Adds `EventKind` (StrEnum), `Event`, `SettlementResult` to `sim/types.py`. Minimal `settle_transfers`: receiver gets `kw × (1 - bus_loss_factor)`; emits `TRANSFER_EXECUTED` event. Sender/receiver caps accepted but ignored — Task 9 wires them in. Ruff caught a `class EventKind(str, Enum)` pattern; switched to `StrEnum` (Python 3.11+). |
 | 2026-05-14 | Task 7 — Neighborhood + comm graph | `a5a0226` | 22 ✓ | `Neighborhood` dataclass + `build_grid_neighborhood(rows, cols)` — 5×6 grid, 4-neighbor comm graph (corners 2, edges 3, interior 4). Network structure only; settle_transfers lands in Tasks 8-10. |
 | 2026-05-14 | Task 6 — data layer + SyntheticAdapter | `d9c489e` | 17 ✓ | `LoadProfile`/`SolarProfile` protocols + `SyntheticSolar` (half-sine 6 AM–6 PM) + `SyntheticLoad` (constant). Real Pecan Street + NREL adapters deferred to Tasks 21-22. |
 | 2026-05-14 | Task 5 — net export + grid coupling | `9aea280` | 11 ✓ | Wires up `desired_net_export_kw` and `grid_status`. Adds `grid_import_kwh`, `grid_export_kwh`, `achieved_net_export_kw` fields. Household physics now complete for Phase 1. |
@@ -72,6 +73,30 @@ These are decisions you should NOT re-litigate without explicit user re-approval
 - High school student, comfortable with Python, new to power systems / energy / multi-agent systems.
 - Working on this as a research project under mentor/advisor guidance. Advisor framing is in the kickoff message in session history. No fixed deadline — summer + potentially next school year.
 - Capable and engaged — don't be condescending, but do explain power-systems terminology when it first comes up (DoD, RT efficiency, distribution bus, etc.). Don't black-box the work via subagents; the student is here to learn the material.
+
+## Workflow preferences (durable)
+
+These are the user's explicit preferences for how Claude should operate on this project. They override default Claude Code behavior where they conflict.
+
+- **Inline execution, not subagent-driven.** Tasks are executed in the active session, batched ~3-5 at a time with check-ins between. The student wants to see the work happen and learn the material, not have it produced by a fresh agent each time.
+- **No `Co-Authored-By: Claude` trailer in commits.** All commits attributed solely to the user.
+- **Update `CLAUDE.md` progress log after every completed task**, in the *same* commit as the task's code changes — never a separate "docs" commit.
+- **After completing each task, preview the next one** — end the response with a 1-2 sentence summary of what's coming next so the student can decide whether to keep going.
+- **Mark plan checkboxes as `- [x]` after each task**, in the same commit. The plan file is the source of truth for what's done; `/nextask` reads the first `- [ ]`.
+- **Public GitHub repo from day 1.** Repo: github.com/leochang017/microgrid-llm-coordination. MIT licensed.
+- **Pre-commit hooks gate every commit.** If a hook reformats files, re-stage and retry — never bypass with `--no-verify`.
+- **Explain power-systems jargon when it first appears**, but don't be condescending — the student is capable, just new to the domain.
+
+## Project skills (invoke with `/<name>`)
+
+Project-specific Claude Code skills authored for this project, all at `~/.claude/skills/<name>/SKILL.md`. Available in every session:
+
+- **`/readclaude`** — Load this CLAUDE.md into working context at the start of a session.
+- **`/nextask`** — Find the next unchecked step in the plan and report what it will do. Waits for go-ahead.
+- **`/simtest`** — Run `pytest + ruff + mypy` and report a one-line summary (or first failure).
+- **`/explainphysics`** — Plain-language walkthrough of a `sim/` file with hand-traced numeric examples.
+- **`/advisormeeting`** — Draft a 2-paragraph status update for an advisor meeting using the progress log + git history.
+- **`/sweep`** — (Phase 3) Run scenarios × strategies × seeds and tabulate summary metrics.
 
 ## Conventions (Phase 1)
 

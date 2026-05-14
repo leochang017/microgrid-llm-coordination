@@ -1404,7 +1404,7 @@ git commit -m "feat(network): settle_transfers happy path with bus-loss accounti
 
 Now apply sender DoD / receiver-full constraints. When a sender's cap is below the requested kW, clip and emit a `SENDER_DOD_FLOOR` event. When a receiver's cap is below what it would receive, clip the *sender's* send and emit `RECEIVER_FULL`. Multiple transfers from the same sender share the sender's cap proportionally.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 ```python
 def test_sender_cap_clips_transfer() -> None:
@@ -1456,7 +1456,7 @@ def test_multiple_transfers_share_sender_cap_proportionally() -> None:
     assert result.actual_received["r1c0"] == pytest.approx(1.0 * 0.95, abs=1e-6)
 ```
 
-- [ ] **Step 2: Run and verify failure**
+- [x] **Step 2: Run and verify failure**
 
 ```bash
 pytest tests/test_network.py -v -k "cap or proportional"
@@ -1464,7 +1464,7 @@ pytest tests/test_network.py -v -k "cap or proportional"
 
 Expected: 3 failures (current implementation ignores caps).
 
-- [ ] **Step 3: Replace `settle_transfers` with cap-aware version**
+- [x] **Step 3: Replace `settle_transfers` with cap-aware version**
 
 ```python
 def settle_transfers(
@@ -1544,7 +1544,7 @@ def settle_transfers(
     return SettlementResult(actual_sent=actual_sent, actual_received=actual_received, events=events)
 ```
 
-- [ ] **Step 4: Run tests and verify passing**
+- [x] **Step 4: Run tests and verify passing**
 
 ```bash
 pytest tests/test_network.py -v
@@ -1553,7 +1553,7 @@ mypy
 
 Expected: 8 tests pass (previous 5 + 3 new).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sim/network.py tests/test_network.py
