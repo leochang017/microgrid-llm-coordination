@@ -2471,7 +2471,7 @@ git commit -m "feat(logging): finalize computes Gini, served fraction, transfer 
 
 `sample_households(scenario, rng) -> dict[str, Household]` builds the 30 households from scenario config + RNG. Deterministic — same seed → same households.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 `tests/test_engine.py`:
 
@@ -2529,7 +2529,7 @@ def test_sample_households_in_range() -> None:
         assert h.rt_efficiency == 0.9
 ```
 
-- [ ] **Step 2: Run and verify failure**
+- [x] **Step 2: Run and verify failure**
 
 ```bash
 pytest tests/test_engine.py -v
@@ -2537,7 +2537,7 @@ pytest tests/test_engine.py -v
 
 Expected: ImportError.
 
-- [ ] **Step 3: Implement `sim/engine.py` initial bits**
+- [x] **Step 3: Implement `sim/engine.py` initial bits**
 
 ```python
 """Simulation engine: builds households, owns the clock, drives the per-tick loop."""
@@ -2573,7 +2573,7 @@ def sample_households(scenario: Scenario, rng: np.random.Generator) -> dict[str,
     return households
 ```
 
-- [ ] **Step 4: Run tests and verify passing**
+- [x] **Step 4: Run tests and verify passing**
 
 ```bash
 pytest tests/test_engine.py -v
@@ -2582,7 +2582,7 @@ mypy
 
 Expected: 3 tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sim/engine.py tests/test_engine.py
