@@ -31,7 +31,7 @@ Each phase has its own spec + implementation plan in `docs/superpowers/`.
 - **Approved:** 2026-05-14
 - **Execution mode:** Inline (Claude executes tasks in-session, batched ~5 at a time with check-ins). Not subagent-driven — per project conventions, every line must be understood by the student.
 - **Started executing:** 2026-05-14
-- **Current position:** Task 8 next (settle_transfers happy path). Tasks 0-7 complete — household physics + data layer + neighborhood graph done.
+- **Current position:** Task 9 next (sender/receiver cap clipping). Tasks 0-8 complete — settle_transfers happy path lands.
 
 ### Progress log
 
@@ -39,7 +39,8 @@ Update this after every committed task. Newest entries on top.
 
 | Date | Task | Commit | Tests | Note |
 |------|------|--------|-------|------|
-| 2026-05-14 | Task 7 — Neighborhood + comm graph | _(this commit)_ | 22 ✓ | `Neighborhood` dataclass + `build_grid_neighborhood(rows, cols)` — 5×6 grid, 4-neighbor comm graph (corners 2, edges 3, interior 4). Network structure only; settle_transfers lands in Tasks 8-10. |
+| 2026-05-14 | Task 8 — settle_transfers happy path | _(this commit)_ | 23 ✓ | Adds `EventKind` (StrEnum), `Event`, `SettlementResult` to `sim/types.py`. Minimal `settle_transfers`: receiver gets `kw × (1 - bus_loss_factor)`; emits `TRANSFER_EXECUTED` event. Sender/receiver caps accepted but ignored — Task 9 wires them in. Ruff caught a `class EventKind(str, Enum)` pattern; switched to `StrEnum` (Python 3.11+). |
+| 2026-05-14 | Task 7 — Neighborhood + comm graph | `a5a0226` | 22 ✓ | `Neighborhood` dataclass + `build_grid_neighborhood(rows, cols)` — 5×6 grid, 4-neighbor comm graph (corners 2, edges 3, interior 4). Network structure only; settle_transfers lands in Tasks 8-10. |
 | 2026-05-14 | Task 6 — data layer + SyntheticAdapter | `d9c489e` | 17 ✓ | `LoadProfile`/`SolarProfile` protocols + `SyntheticSolar` (half-sine 6 AM–6 PM) + `SyntheticLoad` (constant). Real Pecan Street + NREL adapters deferred to Tasks 21-22. |
 | 2026-05-14 | Task 5 — net export + grid coupling | `9aea280` | 11 ✓ | Wires up `desired_net_export_kw` and `grid_status`. Adds `grid_import_kwh`, `grid_export_kwh`, `achieved_net_export_kw` fields. Household physics now complete for Phase 1. |
 | 2026-05-14 | Infrastructure: CI + pre-commit + permissions + skills | `32757b0` | 8 ✓ | GitHub Actions CI workflow, ruff/mypy pre-commit hooks, `.claude/settings.json` allowlist, and four new skills: `/advisormeeting`, `/sweep`, `/explainphysics` (plus `/nextask` + `/simtest` from earlier today). |

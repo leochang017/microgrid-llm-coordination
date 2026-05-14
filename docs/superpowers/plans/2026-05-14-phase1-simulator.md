@@ -1267,7 +1267,7 @@ git commit -m "feat(network): grid neighborhood construction with 4-neighbor com
 
 `settle_transfers` accepts a list of requested transfers and the current per-house state, returns the actual flows. Start with the simplest case: one sender, one receiver, no clipping. Add a `SettlementResult` type and a `SettlementEvent` for the event log.
 
-- [ ] **Step 1: Add event/result types to `sim/types.py`**
+- [x] **Step 1: Add event/result types to `sim/types.py`**
 
 Append to `sim/types.py`:
 
@@ -1302,7 +1302,7 @@ class SettlementResult:
     events: list[Event]
 ```
 
-- [ ] **Step 2: Write failing test for happy path**
+- [x] **Step 2: Write failing test for happy path**
 
 In `tests/test_network.py`:
 
@@ -1328,7 +1328,7 @@ def test_single_transfer_no_clipping() -> None:
     assert any(e.kind == EventKind.TRANSFER_EXECUTED for e in result.events)
 ```
 
-- [ ] **Step 3: Run and verify failure**
+- [x] **Step 3: Run and verify failure**
 
 ```bash
 pytest tests/test_network.py -v -k single_transfer
@@ -1336,7 +1336,7 @@ pytest tests/test_network.py -v -k single_transfer
 
 Expected: ImportError on `settle_transfers`.
 
-- [ ] **Step 4: Implement happy path in `sim/network.py`**
+- [x] **Step 4: Implement happy path in `sim/network.py`**
 
 Add to `sim/network.py`:
 
@@ -1378,7 +1378,7 @@ def settle_transfers(
     )
 ```
 
-- [ ] **Step 5: Run tests and verify passing**
+- [x] **Step 5: Run tests and verify passing**
 
 ```bash
 pytest tests/test_network.py -v
@@ -1387,7 +1387,7 @@ mypy
 
 Expected: 6 tests pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add sim/types.py sim/network.py tests/test_network.py
