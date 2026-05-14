@@ -71,3 +71,68 @@ class JsonlLogger:
     def close(self) -> None:
         self._state_file.close()
         self._events_file.close()
+
+    def finalize(self, dt_hours: float) -> dict[str, Any]:
+        """Compute top-level summary metrics from state + events, write summary.json."""
+        # Re-read state.jsonl
+        self._state_file.flush()
+        load_by_house: dict[str, float] = {}
+        unmet_by_house: dict[str, float] = {}
+        wasted_total = 0.0
+        with (self.run_dir / "state.jsonl").open() as f:
+            for line in f:
+                row = json.loads(line)
+                h = row["house_id"]
+                load_by_house[h] = load_by_house.get(h, 0.0) + row["load_kw"] * dt_hours
+                unmet_by_house[h] = unmet_by_house.get(h, 0.0) + row["unmet_kwh"]
+                wasted_total += row["wasted_kwh"]
+
+        total_load = sum(load_by_house.values())
+        total_unmet = sum(unmet_by_house.values())
+        served_frac = 1.0 - (total_unmet / total_load if total_load > 0 else 0.0)
+        per_house_served = [
+            (load_by_house[h] - unmet_by_house.get(h, 0.0)) / load_by_house[h]
+            if load_by_house[h] > 0
+            else 1.0
+            for h in load_by_house
+        ]
+
+        # Count transfers from events.jsonl
+        self._events_file.flush()
+        transfer_count = 0
+        with (self.run_dir / "events.jsonl").open() as f:
+            for line in f:
+                row = json.loads(line)
+                if row["kind"] == "transfer_executed":
+                    transfer_count += 1
+
+        summary: dict[str, Any] = {
+            "scenario_id": self.scenario_id,
+            "served_load_fraction": served_frac,
+            "unmet_kwh_total": total_unmet,
+            "wasted_kwh_total": wasted_total,
+            "gini_welfare": _gini(per_house_served),
+            "transfer_count": transfer_count,
+        }
+        with (self.run_dir / "summary.json").open("w") as f:
+            json.dump(summary, f, indent=2)
+        return summary
+
+
+def _gini(values: list[float]) -> float:
+    """Standard Gini coefficient.
+
+    Returns 0 for perfectly equal welfare across households, approaches 1 for
+    maximally unequal. Phase 1 uses per-household served-load fraction as the
+    welfare proxy; Phase 3 will replace this with a needs-weighted welfare
+    informed by the energy-justice literature.
+    """
+    if not values:
+        return 0.0
+    sorted_v = sorted(values)
+    n = len(sorted_v)
+    total = sum(sorted_v)
+    if total <= 0:
+        return 0.0
+    cum = sum((i + 1) * v for i, v in enumerate(sorted_v))
+    return (2 * cum) / (n * total) - (n + 1) / n

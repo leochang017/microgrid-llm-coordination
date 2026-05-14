@@ -2344,7 +2344,7 @@ git commit -m "feat(logging): JsonlLogger writes state, events, and config"
 - `transfer_count`
 - `unmet_kwh_total`
 
-- [ ] **Step 1: Write failing test**
+- [x] **Step 1: Write failing test**
 
 In `tests/test_logging.py`:
 
@@ -2373,7 +2373,7 @@ def test_finalize_writes_summary(tmp_path) -> None:
 
 Add `import pytest` and `from datetime import datetime` if missing.
 
-- [ ] **Step 2: Run and verify failure**
+- [x] **Step 2: Run and verify failure**
 
 ```bash
 pytest tests/test_logging.py::test_finalize_writes_summary -v
@@ -2381,7 +2381,7 @@ pytest tests/test_logging.py::test_finalize_writes_summary -v
 
 Expected: AttributeError on `finalize`.
 
-- [ ] **Step 3: Implement `finalize` and helper**
+- [x] **Step 3: Implement `finalize` and helper**
 
 Add to `sim/logging.py`:
 
@@ -2445,7 +2445,7 @@ Add method to `JsonlLogger`:
         return summary
 ```
 
-- [ ] **Step 4: Run tests and verify passing**
+- [x] **Step 4: Run tests and verify passing**
 
 ```bash
 pytest tests/test_logging.py -v
@@ -2454,7 +2454,7 @@ mypy
 
 Expected: 4 tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sim/logging.py tests/test_logging.py
