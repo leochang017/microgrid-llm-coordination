@@ -3435,7 +3435,7 @@ git commit -m "feat(adapters): NREL NSRDB solar adapter with linear interpolatio
 
 When `data_source: pecan_street` is set, the engine should build a `PecanStreetLoad` per household (one `dataid` per house from the YAML) and a single `NRELSolar` scaled per-house. The synthetic adapters stay the default.
 
-- [ ] **Step 1: Add `data_paths` to `Scenario`**
+- [x] **Step 1: Add `data_paths` to `Scenario`**
 
 In `sim/scenario.py`, add a field:
 
@@ -3459,7 +3459,7 @@ And in `load_scenario`, pick these up from the YAML:
     )
 ```
 
-- [ ] **Step 2: Update engine to dispatch on `data_source`**
+- [x] **Step 2: Update engine to dispatch on `data_source`**
 
 In `sim/engine.py`, replace the synthetic-only data construction with a dispatch:
 
@@ -3500,7 +3500,7 @@ Then update the `run()` loop to call `_build_data` and use the per-house load di
 
 Remove the previous monkey-patched smoke-test setup at the top of `run()` (we no longer construct `SyntheticSolar`/`SyntheticLoad` directly there) and update `tests/test_physics_smoke.py` accordingly: the test should monkeypatch `_build_data` instead of `SyntheticSolar`/`SyntheticLoad`.
 
-- [ ] **Step 3: Update the smoke test for the new dispatch**
+- [x] **Step 3: Update the smoke test for the new dispatch**
 
 Replace the monkeypatch block in `tests/test_physics_smoke.py`:
 
@@ -3518,7 +3518,7 @@ def test_24h_constant_solar_load_balances(tmp_path, monkeypatch) -> None:
     # ... rest unchanged
 ```
 
-- [ ] **Step 4: Write a `24h_real.yaml` scenario template**
+- [x] **Step 4: Write a `24h_real.yaml` scenario template**
 
 `configs/scenarios/24h_real.yaml`:
 
@@ -3547,7 +3547,7 @@ household_sampling:
 outages: []
 ```
 
-- [ ] **Step 5: Run all tests and verify**
+- [x] **Step 5: Run all tests and verify**
 
 ```bash
 pytest
@@ -3556,7 +3556,7 @@ mypy
 
 Expected: every test still passes; engine now dispatches on data_source.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add sim/engine.py sim/scenario.py configs/scenarios/24h_real.yaml tests/test_physics_smoke.py

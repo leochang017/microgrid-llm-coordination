@@ -1,0 +1,25 @@
+scenario_id: 24h_real
+start: "2024-07-01T00:00:00"
+end:   "2024-07-02T00:00:00"
+dt_hours: 0.25
+seed: 42
+rows: 5
+cols: 6
+bus_max_kw: 50.0
+bus_loss_factor: 0.05
+strategy: round_robin
+data_source: pecan_street
+data_paths:
+  # Run scripts/fetch_data.py (Task 24) for NREL; download Pecan Street manually.
+  solar_csv: data/nrel_solar/austin_2024.csv
+  load_csv: data/pecan_street/austin_2024_15min.csv
+# Fill in 30 Pecan Street dataids in row-major order (r0c0, r0c1, …, r4c5)
+# from your approved researcher account. Empty list = scenario won't run.
+house_dataids: []
+household_sampling:
+  pv_kw_peak: [4.0, 12.0]
+  battery_kwh: [10.0, 27.0]
+  rt_efficiency: 0.9
+  dod_floor_frac: 0.1
+  grid_max_kw: 10.0
+outages: []

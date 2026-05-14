@@ -13,7 +13,7 @@ from typing import Any
 
 import numpy as np
 
-from sim.data import SyntheticLoad, SyntheticSolar
+from sim.data import LoadProfile, SolarProfile, SyntheticLoad, SyntheticSolar
 from sim.household import Household, HouseholdState, step
 from sim.logging import JsonlLogger
 from sim.network import Neighborhood, build_grid_neighborhood, settle_transfers
@@ -100,14 +100,7 @@ def run(
         bus_loss_factor=scenario.bus_loss_factor,
     )
 
-    # Phase 1 ships only the synthetic data path. Task 23 wires in
-    # data_source="pecan_street" by dispatching here on scenario.data_source.
-    if scenario.data_source != "synthetic":
-        raise ValueError(
-            f"unsupported data_source={scenario.data_source!r}; " "real adapters land in Task 23"
-        )
-    solar_profile = SyntheticSolar(peak_kw=1.0)  # normalized; scaled per-house by pv_kw_peak
-    load_profile = SyntheticLoad(base_kw=1.5)
+    solar_profile, load_profiles = _build_data(scenario, households)
 
     # Initialize states: every battery starts at 50% capacity, every house
     # presumed grid-connected at t=0 unless the outage schedule says otherwise.
@@ -151,7 +144,7 @@ def run(
 
     for t in scenario.timesteps():
         solar_kw = {hid: solar_profile.get_kw(t) * h.pv_kw_peak for hid, h in households.items()}
-        load_kw = {hid: load_profile.get_kw(t) for hid in households}
+        load_kw = {hid: load_profiles[hid].get_kw(t) for hid in households}
         grid = {hid: scenario.grid_status_at(t, hid) for hid in households}
 
         outage_events: list[Event] = []
@@ -222,3 +215,40 @@ def run(
         logger.write_events(outage_events + settlement.events, t=t)
 
     return logger.finalize(dt_hours=scenario.dt_hours)
+
+
+def _build_data(
+    scenario: Scenario, households: dict[str, Household]
+) -> tuple[SolarProfile, dict[str, LoadProfile]]:
+    """Dispatch on scenario.data_source to build the solar + per-house load adapters.
+
+    Returns (solar_profile, load_profiles_by_house_id). The engine scales solar
+    per-house by pv_kw_peak.
+    """
+    if scenario.data_source == "synthetic":
+        solar: SolarProfile = SyntheticSolar(peak_kw=1.0)
+        loads: dict[str, LoadProfile] = {hid: SyntheticLoad(base_kw=1.5) for hid in households}
+        return solar, loads
+
+    if scenario.data_source == "pecan_street":
+        # Local imports keep the synthetic-only path from depending on pandas.
+        from sim.adapters.nrel_solar import NRELSolar
+        from sim.adapters.pecan_street import PecanStreetLoad
+
+        if "solar_csv" not in scenario.data_paths or "load_csv" not in scenario.data_paths:
+            raise ValueError(
+                "data_source=pecan_street requires scenario.data_paths.solar_csv "
+                "and scenario.data_paths.load_csv"
+            )
+        if len(scenario.house_dataids) != scenario.rows * scenario.cols:
+            raise ValueError(
+                f"house_dataids has {len(scenario.house_dataids)} entries, "
+                f"need {scenario.rows * scenario.cols}"
+            )
+        nrel = NRELSolar(csv_path=scenario.data_paths["solar_csv"], seed=scenario.seed)
+        load_map: dict[str, LoadProfile] = {}
+        for (hid, _), dataid in zip(households.items(), scenario.house_dataids, strict=True):
+            load_map[hid] = PecanStreetLoad(csv_path=scenario.data_paths["load_csv"], dataid=dataid)
+        return nrel, load_map
+
+    raise ValueError(f"unknown data_source: {scenario.data_source!r}")

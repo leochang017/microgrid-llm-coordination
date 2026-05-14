@@ -41,6 +41,8 @@ class Scenario:
     data_source: str
     household_sampling: dict[str, Any]
     outages: tuple[OutageWindow, ...] = field(default_factory=tuple)
+    data_paths: dict[str, str] = field(default_factory=dict)
+    house_dataids: tuple[int, ...] = field(default_factory=tuple)
 
     def timesteps(self) -> Iterator[datetime]:
         t = self.start
@@ -92,4 +94,6 @@ def load_scenario(path: Path | str) -> Scenario:
         data_source=str(raw["data_source"]),
         household_sampling=dict(raw["household_sampling"]),
         outages=tuple(outages),
+        data_paths=dict(raw.get("data_paths", {}) or {}),
+        house_dataids=tuple(int(x) for x in (raw.get("house_dataids", []) or [])),
     )

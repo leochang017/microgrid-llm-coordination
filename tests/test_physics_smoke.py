@@ -35,11 +35,11 @@ def test_24h_constant_solar_load_balances(tmp_path: Path, monkeypatch) -> None: 
     """Every house must end at exactly 74.0 kWh after 24 h of net +1 kW."""
     flat_solar = FlatSolar(peak_kw=1.0)
     flat_load = SyntheticLoad(base_kw=1.0)
-    # Replace the constructors used inside sim.engine.run with no-op lambdas
-    # that return the pre-built constants. This bypasses the half-sine /
-    # default-1.5-kW configuration without changing engine code.
-    monkeypatch.setattr("sim.engine.SyntheticSolar", lambda peak_kw: flat_solar)
-    monkeypatch.setattr("sim.engine.SyntheticLoad", lambda base_kw: flat_load)
+
+    def fake_build_data(scenario, households):  # type: ignore[no-untyped-def]
+        return flat_solar, {hid: flat_load for hid in households}
+
+    monkeypatch.setattr("sim.engine._build_data", fake_build_data)
 
     s = Scenario(
         scenario_id="smoke",
