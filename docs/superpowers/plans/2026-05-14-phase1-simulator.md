@@ -2007,7 +2007,7 @@ def decide_transfers(
 ) -> list[Transfer]: ...
 ```
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 `tests/test_strategies.py`:
 
@@ -2061,7 +2061,7 @@ def test_round_robin_moves_from_high_soc_to_low_soc_neighbor() -> None:
     assert any(t.from_id == "r0c0" and t.to_id == "r0c1" for t in transfers)
 ```
 
-- [ ] **Step 2: Run and verify failure**
+- [x] **Step 2: Run and verify failure**
 
 ```bash
 pytest tests/test_strategies.py -v
@@ -2069,7 +2069,7 @@ pytest tests/test_strategies.py -v
 
 Expected: ImportError.
 
-- [ ] **Step 3: Implement strategies**
+- [x] **Step 3: Implement strategies**
 
 `sim/strategies/__init__.py`: empty.
 
@@ -2159,7 +2159,7 @@ def decide_transfers(
     return transfers
 ```
 
-- [ ] **Step 4: Run tests and verify passing**
+- [x] **Step 4: Run tests and verify passing**
 
 ```bash
 pytest tests/test_strategies.py -v
@@ -2168,7 +2168,7 @@ mypy
 
 Expected: 2 tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sim/strategies/ tests/test_strategies.py
