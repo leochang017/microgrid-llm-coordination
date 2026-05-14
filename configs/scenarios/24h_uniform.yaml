@@ -1,0 +1,51 @@
+scenario_id: 24h_uniform
+start: "2024-07-01T00:00:00"
+end:   "2024-07-02T00:00:00"
+dt_hours: 0.25
+seed: 42
+rows: 5
+cols: 6
+bus_max_kw: 50.0
+bus_loss_factor: 0.05
+strategy: round_robin
+data_source: synthetic
+household_sampling:
+  pv_kw_peak: [4.0, 12.0]
+  battery_kwh: [10.0, 27.0]
+  rt_efficiency: 0.9
+  dod_floor_frac: 0.1
+  grid_max_kw: 10.0
+outages:
+  - start: "2024-07-01T08:00:00"
+    end:   "2024-07-02T00:00:00"
+    affected_houses:
+      - r0c0
+      - r0c1
+      - r0c2
+      - r0c3
+      - r0c4
+      - r0c5
+      - r1c0
+      - r1c1
+      - r1c2
+      - r1c3
+      - r1c4
+      - r1c5
+      - r2c0
+      - r2c1
+      - r2c2
+      - r2c3
+      - r2c4
+      - r2c5
+      - r3c0
+      - r3c1
+      - r3c2
+      - r3c3
+      - r3c4
+      - r3c5
+      - r4c0
+      - r4c1
+      - r4c2
+      - r4c3
+      - r4c4
+      - r4c5

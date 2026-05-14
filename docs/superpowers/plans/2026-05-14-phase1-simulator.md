@@ -1706,7 +1706,7 @@ git commit -m "feat(network): bus saturation clipping and no-wheeling rule for p
 
 A `Scenario` dataclass holds everything one run needs: start/end time, dt_hours, seed, layout (rows × cols), bus parameters, household sampling parameters, outage schedule, strategy name. Loaded from YAML.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 `tests/test_scenario.py`:
 
@@ -1811,7 +1811,7 @@ def test_timesteps_count() -> None:
     ]
 ```
 
-- [ ] **Step 2: Run and verify failure**
+- [x] **Step 2: Run and verify failure**
 
 ```bash
 pytest tests/test_scenario.py -v
@@ -1819,7 +1819,7 @@ pytest tests/test_scenario.py -v
 
 Expected: ImportError.
 
-- [ ] **Step 3: Implement `sim/scenario.py`**
+- [x] **Step 3: Implement `sim/scenario.py`**
 
 ```python
 """Scenario configuration: dataclasses + YAML loader."""
@@ -1911,7 +1911,7 @@ def load_scenario(path: Path | str) -> Scenario:
     )
 ```
 
-- [ ] **Step 4: Write the two scenario YAML files**
+- [x] **Step 4: Write the two scenario YAML files**
 
 `configs/scenarios/synthetic_smoke.yaml`:
 
@@ -1966,7 +1966,7 @@ outages:
                       "r4c0","r4c1","r4c2","r4c3","r4c4","r4c5"]
 ```
 
-- [ ] **Step 5: Run tests and verify passing**
+- [x] **Step 5: Run tests and verify passing**
 
 ```bash
 pytest tests/test_scenario.py -v
@@ -1975,7 +1975,7 @@ mypy
 
 Expected: 4 tests pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add sim/scenario.py tests/test_scenario.py configs/

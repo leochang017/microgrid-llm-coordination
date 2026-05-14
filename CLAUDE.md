@@ -31,7 +31,7 @@ Each phase has its own spec + implementation plan in `docs/superpowers/`.
 - **Approved:** 2026-05-14
 - **Execution mode:** Inline (Claude executes tasks in-session, batched ~5 at a time with check-ins). Not subagent-driven — per project conventions, every line must be understood by the student.
 - **Started executing:** 2026-05-14
-- **Current position:** Task 11 next (Scenario config). Tasks 0-10 complete — network module fully done for Phase 1.
+- **Current position:** Task 12 next (strategies: no_coordination + round_robin). Tasks 0-11 complete — Scenario YAML loader + two example scenarios land.
 
 ### Progress log
 
@@ -39,7 +39,8 @@ Update this after every committed task. Newest entries on top.
 
 | Date | Task | Commit | Tests | Note |
 |------|------|--------|-------|------|
-| 2026-05-14 | Task 10 — bus saturation + no-wheeling | _(this commit)_ | 30 ✓ | Adds no-wheeling filter (sender's grid status != receiver's grid status → reject + `NO_WHEELING_REJECTED` event) and bus-saturation scaling (total gross out > `bus_max_kw` → scale all flows proportionally + `BUS_SATURATED` event). Network module fully done for Phase 1. |
+| 2026-05-14 | Task 11 — Scenario config | _(this commit)_ | 35 ✓ | `sim/scenario.py` with `OutageWindow` + `Scenario` dataclasses and `load_scenario(path)` YAML reader. `Scenario.timesteps()` iterates the simulation clock; `grid_status_at(t, house_id)` checks the outage schedule. Ships `configs/scenarios/synthetic_smoke.yaml` (24 h, no outage, no_coordination) and `configs/scenarios/24h_uniform.yaml` (24 h, full neighborhood outage from 08:00, round_robin). Also adds the "continuous execution" workflow preference. |
+| 2026-05-14 | Task 10 — bus saturation + no-wheeling | `87891c2` | 30 ✓ | Adds no-wheeling filter (sender's grid status != receiver's grid status → reject + `NO_WHEELING_REJECTED` event) and bus-saturation scaling (total gross out > `bus_max_kw` → scale all flows proportionally + `BUS_SATURATED` event). Network module fully done for Phase 1. |
 | 2026-05-14 | Task 9 — sender/receiver cap clipping | `a82dbd1` | 26 ✓ | Two-stage clipping in `settle_transfers`: senders that requested more than their cap have outgoing transfers scaled proportionally (`SENDER_DOD_FLOOR` event); receivers whose total inbound exceeds their cap force a back-scale on the sender side (`RECEIVER_FULL` event). Includes workflow-preferences and project-skills sections added to this CLAUDE.md per user request. |
 | 2026-05-14 | Task 8 — settle_transfers happy path | `3508a1b` | 23 ✓ | Adds `EventKind` (StrEnum), `Event`, `SettlementResult` to `sim/types.py`. Minimal `settle_transfers`: receiver gets `kw × (1 - bus_loss_factor)`; emits `TRANSFER_EXECUTED` event. Sender/receiver caps accepted but ignored — Task 9 wires them in. Ruff caught a `class EventKind(str, Enum)` pattern; switched to `StrEnum` (Python 3.11+). |
 | 2026-05-14 | Task 7 — Neighborhood + comm graph | `a5a0226` | 22 ✓ | `Neighborhood` dataclass + `build_grid_neighborhood(rows, cols)` — 5×6 grid, 4-neighbor comm graph (corners 2, edges 3, interior 4). Network structure only; settle_transfers lands in Tasks 8-10. |
@@ -82,7 +83,8 @@ These are the user's explicit preferences for how Claude should operate on this 
 - **Inline execution, not subagent-driven.** Tasks are executed in the active session, batched ~3-5 at a time with check-ins between. The student wants to see the work happen and learn the material, not have it produced by a fresh agent each time.
 - **No `Co-Authored-By: Claude` trailer in commits.** All commits attributed solely to the user.
 - **Update `CLAUDE.md` progress log after every completed task**, in the *same* commit as the task's code changes — never a separate "docs" commit.
-- **After completing each task, preview the next one** — end the response with a 1-2 sentence summary of what's coming next so the student can decide whether to keep going.
+- **After completing each task, preview the next one** — end the response with a 1-2 sentence summary of what's coming next.
+- **Continuous execution: do NOT pause between tasks to ask "want me to continue?"** — just keep going. Stop only on real blockers: ambiguous spec, failing test you can't fix, decision the user hasn't authorized, or anything affecting the public surface area of the repo. The user explicitly opted into "fire-and-forget" execution on 2026-05-14.
 - **Mark plan checkboxes as `- [x]` after each task**, in the same commit. The plan file is the source of truth for what's done; `/nextask` reads the first `- [ ]`.
 - **Public GitHub repo from day 1.** Repo: github.com/leochang017/microgrid-llm-coordination. MIT licensed.
 - **Pre-commit hooks gate every commit.** If a hook reformats files, re-stage and retry — never bypass with `--no-verify`.
