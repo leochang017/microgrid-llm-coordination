@@ -39,6 +39,7 @@ Update this after every committed task. Newest entries on top.
 
 | Date | Task | Commit | Tests | Note |
 |------|------|--------|-------|------|
+| 2026-05-14 | Infrastructure: CI + pre-commit + permissions + skills | _(this commit)_ | 8 ✓ | GitHub Actions CI workflow, ruff/mypy pre-commit hooks, `.claude/settings.json` allowlist, and four new skills: `/advisormeeting`, `/sweep`, `/explainphysics` (plus `/nextask` + `/simtest` from earlier today). |
 | 2026-05-14 | Task 4 — RT efficiency | `b34c754` | 8 ✓ | sqrt(eta) on each leg; full cycle returns eta*input. Ruff RUF002 caught a Unicode `×` in a docstring; replaced with `*`. |
 | 2026-05-14 | Task 3 — rate clamps + SoC bounds | `6b4ec72` | 6 ✓ | Added `wasted_kwh` / `unmet_kwh` accounting. |
 | 2026-05-14 | Task 2 — household basics | `0d71941` | 2 ✓ | Minimal `step()` with no constraints. |
@@ -64,9 +65,9 @@ These are decisions you should NOT re-litigate without explicit user re-approval
 
 ## User context
 
-- CS undergrad, comfortable with Python, new to power systems / energy / multi-agent systems.
-- This is for a course / research project under advisor guidance. Advisor framing is in the kickoff message in session history.
-- Wants to learn and stay engaged — explain power-systems concepts when they come up, don't black-box the work via subagents.
+- High school student, comfortable with Python, new to power systems / energy / multi-agent systems.
+- Working on this as a research project under mentor/advisor guidance. Advisor framing is in the kickoff message in session history. No fixed deadline — summer + potentially next school year.
+- Capable and engaged — don't be condescending, but do explain power-systems terminology when it first comes up (DoD, RT efficiency, distribution bus, etc.). Don't black-box the work via subagents; the student is here to learn the material.
 
 ## Conventions (Phase 1)
 
