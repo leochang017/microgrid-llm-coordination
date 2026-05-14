@@ -30,7 +30,21 @@ Each phase has its own spec + implementation plan in `docs/superpowers/`.
 - **Plan:** `docs/superpowers/plans/2026-05-14-phase1-simulator.md` (26 tasks, TDD)
 - **Approved:** 2026-05-14
 - **Execution mode:** Inline (Claude executes tasks in-session, batched ~5 at a time with check-ins). Not subagent-driven — per project conventions, every line must be understood by the student.
-- **Started executing:** _(to update once Task 0 lands)_
+- **Started executing:** 2026-05-14
+- **Current position:** Task 5 next (net export + grid coupling). Tasks 0-4 complete.
+
+### Progress log
+
+Update this after every committed task. Newest entries on top.
+
+| Date | Task | Commit | Tests | Note |
+|------|------|--------|-------|------|
+| 2026-05-14 | Task 4 — RT efficiency | `b34c754` | 8 ✓ | sqrt(eta) on each leg; full cycle returns eta*input. Ruff RUF002 caught a Unicode `×` in a docstring; replaced with `*`. |
+| 2026-05-14 | Task 3 — rate clamps + SoC bounds | `6b4ec72` | 6 ✓ | Added `wasted_kwh` / `unmet_kwh` accounting. |
+| 2026-05-14 | Task 2 — household basics | `0d71941` | 2 ✓ | Minimal `step()` with no constraints. |
+| 2026-05-14 | Task 1 — shared types | `261e830` | 5 ✓ | `Transfer` + `HouseholdProfile`. |
+| 2026-05-14 | Task 0 — scaffold | `76b013d` | 0 ✓ | pyproject.toml + venv + pytest/ruff/mypy. Used built-in `python3 -m venv` (no `uv` installed). |
+| 2026-05-14 | Initial commit | `f0169f4` | — | Spec + plan + CLAUDE.md + LICENSE. |
 
 ## Locked Phase 1 design decisions
 
