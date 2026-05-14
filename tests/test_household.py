@@ -1,4 +1,6 @@
 """Tests for household physics: battery dynamics, constraints, energy accounting."""
+import math
+
 import pytest
 
 from sim.household import Household, HouseholdState, step
@@ -94,3 +96,33 @@ def test_soc_clamped_at_dod_floor() -> None:
     )
     assert s1.soc_kwh == pytest.approx(1.0, abs=1e-9)  # floor = 0.1 * 10
     assert s1.unmet_kwh == pytest.approx(4.5, abs=1e-9)
+
+
+def test_rt_efficiency_on_charge() -> None:
+    """rt_efficiency=0.9: 10 kWh solar surplus → sqrt(0.9) * 10 = ~9.487 kWh stored."""
+    h = make_house(rt_efficiency=0.9, battery_max_rate_kw=20.0)
+    s0 = HouseholdState(soc_kwh=0.0, last_solar_kw=0.0, last_load_kw=0.0, grid_connected=False)
+    s1 = step(
+        h, s0, solar_kw=10.0, load_kw=0.0, desired_net_export_kw=0.0,
+        grid_status=False, dt_hours=1.0,
+    )
+    expected = math.sqrt(0.9) * 10.0
+    assert s1.soc_kwh == pytest.approx(expected, abs=1e-6)
+    # Energy "lost" to RT inefficiency is logged as wasted.
+    assert s1.wasted_kwh == pytest.approx(10.0 - expected, abs=1e-6)
+
+
+def test_rt_efficiency_full_cycle() -> None:
+    """Charge X kWh into the battery, drain it: end up with eta * X served to load."""
+    h = make_house(rt_efficiency=0.9, battery_max_rate_kw=20.0, battery_kwh=20.0)
+    s = HouseholdState(soc_kwh=0.0, last_solar_kw=0.0, last_load_kw=0.0, grid_connected=False)
+    # Charge for 1 hour at 10 kW
+    s = step(h, s, solar_kw=10.0, load_kw=0.0, desired_net_export_kw=0.0,
+             grid_status=False, dt_hours=1.0)
+    soc_after_charge = s.soc_kwh
+    # Discharge what's in the battery (large enough load to drain it fully)
+    s = step(h, s, solar_kw=0.0, load_kw=20.0, desired_net_export_kw=0.0,
+             grid_status=False, dt_hours=1.0)
+    # Original input was 10 kWh; full cycle returns 0.9 * 10 = 9 kWh to the load.
+    delivered_to_load = math.sqrt(0.9) * soc_after_charge
+    assert delivered_to_load == pytest.approx(9.0, abs=1e-6)

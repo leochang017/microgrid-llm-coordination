@@ -662,7 +662,7 @@ git commit -m "feat(household): rate clamping and SoC bounds with wasted/unmet a
 
 RT efficiency models real battery losses. We charge the battery `√η` and discharge it `√η`, so a full cycle (charge X, discharge X) returns `η × X`. For `η = 0.9`: charge with 0.9487 multiplier, discharge with 0.9487 multiplier. Net result: charge 10 kWh into battery, drain it back, get 9 kWh out.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 In `tests/test_household.py`:
 
@@ -702,7 +702,7 @@ def test_rt_efficiency_full_cycle() -> None:
     assert delivered_to_load == pytest.approx(9.0, abs=1e-6)
 ```
 
-- [ ] **Step 2: Run and verify failure**
+- [x] **Step 2: Run and verify failure**
 
 ```bash
 pytest tests/test_household.py -v -k rt_efficiency
@@ -710,7 +710,7 @@ pytest tests/test_household.py -v -k rt_efficiency
 
 Expected: 2 failures (assertions about soc_kwh and wasted_kwh).
 
-- [ ] **Step 3: Apply √η factor in `step()`**
+- [x] **Step 3: Apply √η factor in `step()`**
 
 In `sim/household.py`, modify `step()`. The cleanest formulation:
 
@@ -785,7 +785,7 @@ Verify on `test_rt_efficiency_full_cycle` after the discharge step (initial soc_
 
 **Important:** the earlier tests from Task 3 (`test_charge_clamps_to_battery_max_rate`, etc.) use `rt_efficiency=1.0` via `make_house` defaults, so `sqrt_eff = 1.0` and the new formulas reduce to the Task 3 behavior. Re-run them after the change to confirm.
 
-- [ ] **Step 4: Run all household tests and verify passing**
+- [x] **Step 4: Run all household tests and verify passing**
 
 ```bash
 pytest tests/test_household.py -v
@@ -794,7 +794,7 @@ mypy
 
 Expected: 8 tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sim/household.py tests/test_household.py

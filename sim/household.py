@@ -1,6 +1,7 @@
 """Household physics: solar + battery + load with constraints applied each tick."""
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, replace
 
 from sim.types import HouseholdProfile
@@ -41,31 +42,47 @@ def step(
     grid_status: bool,
     dt_hours: float,
 ) -> HouseholdState:
-    """Advance one tick honoring battery rate limits and SoC bounds.
+    """Advance one tick honoring battery rate limits, SoC bounds, and RT efficiency.
 
-    Task 3 scope: rate clamping + capacity ceiling + DoD floor. Still ignores
-    desired_net_export_kw, grid_status, and RT efficiency (Tasks 4-5 wire those up).
+    Round-trip efficiency is modeled as a sqrt(eta) factor on each leg: energy drawn
+    from the grid/solar side is multiplied by sqrt(eta) when stored; energy released
+    from the battery to load is also multiplied by sqrt(eta). A full charge-then-
+    discharge cycle therefore returns eta * input to the load. RT loss is logged
+    to wasted_kwh.
+
+    Task 4 scope: rate clamps + SoC bounds + RT efficiency. Still ignores
+    desired_net_export_kw and grid_status (Task 5 wires those up).
     """
     net_kw = solar_kw - load_kw
-    if net_kw >= 0:
-        charge_kw = min(net_kw, h.battery_max_rate_kw)
-        wasted_from_rate = (net_kw - charge_kw) * dt_hours
+    net_kwh = net_kw * dt_hours
+    sqrt_eff = math.sqrt(h.rt_efficiency)
+    floor_kwh = h.dod_floor_frac * h.battery_kwh
+    max_step_kwh = h.battery_max_rate_kw * dt_hours
+
+    if net_kwh >= 0:
+        # Charge: draw `gross_in` from surplus, store `gross_in * sqrt_eff` in battery.
+        # Constraints: surplus available, battery rate, battery headroom.
         headroom_kwh = h.battery_kwh - s.soc_kwh
-        delivered_kwh = min(charge_kw * dt_hours, headroom_kwh)
-        wasted_from_capacity = max(0.0, charge_kw * dt_hours - headroom_kwh)
-        new_soc = s.soc_kwh + delivered_kwh
-        wasted = wasted_from_rate + wasted_from_capacity
+        max_drawable_for_storage = headroom_kwh / sqrt_eff if sqrt_eff > 0 else float("inf")
+        gross_in = min(net_kwh, max_step_kwh, max_drawable_for_storage)
+        stored = gross_in * sqrt_eff
+        rt_loss = gross_in - stored
+        surplus_overflow = net_kwh - gross_in   # solar surplus that couldn't enter the cycle
+        wasted = rt_loss + surplus_overflow
         unmet = 0.0
+        new_soc = s.soc_kwh + stored
     else:
-        discharge_kw = min(-net_kw, h.battery_max_rate_kw)
-        unmet_from_rate = (-net_kw - discharge_kw) * dt_hours
-        floor_kwh = h.dod_floor_frac * h.battery_kwh
+        deficit_kwh = -net_kwh
+        # Discharge: deliver up to deficit_kwh to the load. Drawing X delivers X*sqrt_eff.
         available_kwh = max(0.0, s.soc_kwh - floor_kwh)
-        drawn_kwh = min(discharge_kw * dt_hours, available_kwh)
-        unmet_from_floor = max(0.0, discharge_kw * dt_hours - available_kwh)
-        new_soc = s.soc_kwh - drawn_kwh
-        unmet = unmet_from_rate + unmet_from_floor
-        wasted = 0.0
+        max_drawable = min(max_step_kwh, available_kwh)
+        max_deliverable = max_drawable * sqrt_eff
+        delivered = min(deficit_kwh, max_deliverable)
+        drawn = delivered / sqrt_eff if sqrt_eff > 0 else 0.0
+        rt_loss = drawn - delivered
+        unmet = deficit_kwh - delivered
+        wasted = rt_loss
+        new_soc = s.soc_kwh - drawn
 
     return replace(
         s,
