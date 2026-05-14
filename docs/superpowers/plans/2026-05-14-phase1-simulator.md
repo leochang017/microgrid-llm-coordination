@@ -3572,7 +3572,7 @@ git commit -m "feat(engine): dispatch on data_source, support Pecan Street + NRE
 
 A small CLI that downloads NREL NSRDB solar for a given lat/lon/year and instructs the user how to obtain Pecan Street data (which requires manual application). It writes into `data/`.
 
-- [ ] **Step 1: Implement `scripts/fetch_data.py`**
+- [x] **Step 1: Implement `scripts/fetch_data.py`**
 
 ```python
 """Download NREL NSRDB solar irradiance for a location/year.
@@ -3642,7 +3642,7 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 2: Commit (no test — this hits a real network)**
+- [x] **Step 2: Commit (no test — this hits a real network)**
 
 ```bash
 git add scripts/fetch_data.py

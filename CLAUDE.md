@@ -31,7 +31,7 @@ Each phase has its own spec + implementation plan in `docs/superpowers/`.
 - **Approved:** 2026-05-14
 - **Execution mode:** Inline (Claude executes tasks in-session, batched ~5 at a time with check-ins). Not subagent-driven — per project conventions, every line must be understood by the student.
 - **Started executing:** 2026-05-14
-- **Current position:** Task 24 next (`scripts/fetch_data.py` — NREL downloader + Pecan Street instructions). Tasks 0-23 complete — engine now dispatches on `data_source`; real adapters wired in via `_build_data(scenario, households)`.
+- **Current position:** Task 25 next (final wrap-up — run full suite, tag `phase1-complete`). Tasks 0-24 complete — `scripts/fetch_data.py` ships.
 
 ### Progress log
 
@@ -39,7 +39,8 @@ Update this after every committed task. Newest entries on top.
 
 | Date | Task | Commit | Tests | Note |
 |------|------|--------|-------|------|
-| 2026-05-14 | Task 23 — wire real adapters into engine | _(this commit)_ | 61 ✓ | Adds `data_paths: dict[str,str]` and `house_dataids: tuple[int,...]` to `Scenario`. Refactors `sim/engine.py` data construction into `_build_data(scenario, households)` dispatching on `scenario.data_source` (`"synthetic"` | `"pecan_street"`). Adapter imports stay local to the `pecan_street` branch so the synthetic-only path doesn't pull pandas. Adds `configs/scenarios/24h_real.yaml` template. Smoke test now monkey-patches `_build_data`. |
+| 2026-05-14 | Task 24 — `scripts/fetch_data.py` | _(this commit)_ | 61 ✓ | One-shot NREL NSRDB downloader: `python -m scripts.fetch_data --lat … --lon … --year …` writes hourly GHI CSV. Requires `NREL_API_KEY` + `NREL_EMAIL` env vars (free signup at developer.nrel.gov). Prints instructions for the Pecan Street manual download (researcher account at pecanstreet.org/dataport). No test — would hit the live network. |
+| 2026-05-14 | Task 23 — wire real adapters into engine | `7ec721e` | 61 ✓ | Adds `data_paths: dict[str,str]` and `house_dataids: tuple[int,...]` to `Scenario`. Refactors `sim/engine.py` data construction into `_build_data(scenario, households)` dispatching on `scenario.data_source` (`"synthetic"` | `"pecan_street"`). Adapter imports stay local to the `pecan_street` branch so the synthetic-only path doesn't pull pandas. Adds `configs/scenarios/24h_real.yaml` template. Smoke test now monkey-patches `_build_data`. |
 | 2026-05-14 | Task 22 — NREL solar irradiance adapter | `85196f8` | 61 ✓ | `sim/adapters/nrel_solar.py` with `NRELSolar(csv_path, seed, derate=0.85, noise_std=0.02)`. Reads hourly GHI W/m² from an NSRDB CSV, linearly interpolates to any sub-hourly timestamp, applies a small seeded multiplicative noise. Same seed + same call sequence → byte-identical outputs (determinism test). Ships against `tests/fixtures/nrel_sample.csv`. |
 | 2026-05-14 | Task 21 — Pecan Street adapter skeleton | `ffb0c45` | 57 ✓ | `sim/adapters/pecan_street.py` with `PecanStreetLoad(csv_path, dataid).get_kw(t)` against in-repo `tests/fixtures/pecan_sample.csv`. Forward-fills gaps ≤1 h; raises on longer (data must be clean, not silently fudged). pandas now in dep tree → added a `[[tool.mypy.overrides]]` for pandas to ignore missing stubs. Real-engine dispatch lands in Task 23. |
 | 2026-05-14 | Task 20 — full README | `e288128` | 54 ✓ | `README.md` rewritten: install, run, scenario YAML reference, architecture diagram, phase-1 status checklist. Anyone cloning the public repo can now figure out how to run the simulator. |
