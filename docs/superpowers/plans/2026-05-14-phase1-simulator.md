@@ -2951,7 +2951,7 @@ def test_24h_constant_solar_load_balances(tmp_path, monkeypatch) -> None:
         assert abs(soc - 74.0) < 0.01, f"{hid}: expected 74.0 kWh, got {soc}"
 ```
 
-- [ ] **Step 2: Run and check**
+- [x] **Step 2: Run and check**
 
 ```bash
 pytest tests/test_physics_smoke.py -v
@@ -2959,7 +2959,7 @@ pytest tests/test_physics_smoke.py -v
 
 If it fails: the physics is wrong. Walk through Task 2-5 implementations on paper for one tick of this scenario. Do not adjust the test's expected value to match the bug. Fix the physics.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add tests/test_physics_smoke.py
@@ -2976,7 +2976,7 @@ git commit -m "test: physics smoke test with hand-computable end state"
 
 A tiny CLI that loads a scenario YAML, picks the strategy by name, runs the simulation, and prints a one-line summary.
 
-- [ ] **Step 1: Implement `scripts/run.py`**
+- [x] **Step 1: Implement `scripts/run.py`**
 
 ```python
 """CLI: python -m scripts.run --scenario configs/scenarios/24h_uniform.yaml"""
