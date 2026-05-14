@@ -30,7 +30,10 @@ from pathlib import Path
 
 import requests
 
-NSRDB_URL = "https://developer.nrel.gov/api/nsrdb/v2/solar/psm3-2-2-download.csv"
+# NREL deprecated psm3-2-2 in favor of the v4 GOES-aggregated dataset (2024).
+NSRDB_URL = (
+    "https://developer.nrel.gov/api/nsrdb/v2/solar/nsrdb-GOES-aggregated-v4-0-0-download.csv"
+)
 
 
 def fetch_nrel(
@@ -53,11 +56,17 @@ def fetch_nrel(
         "leap_day": "false",
     }
     print(f"Requesting NREL NSRDB for ({lat}, {lon}) {year}…", file=sys.stderr)
-    r = requests.get(NSRDB_URL, params=params, timeout=120)
+    r = requests.get(NSRDB_URL, params=params, timeout=120, allow_redirects=True)
     r.raise_for_status()
+    # NSRDB v4 prefixes the CSV with 2 metadata lines before the actual data
+    # header (`Year,Month,Day,Hour,Minute,GHI`). Strip them so the file matches
+    # what sim.adapters.nrel_solar.NRELSolar expects.
+    lines = r.text.splitlines()
+    if len(lines) >= 3 and lines[0].startswith("Source,"):
+        lines = lines[2:]
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_bytes(r.content)
-    print(f"Wrote {out_path}", file=sys.stderr)
+    out_path.write_text("\n".join(lines) + "\n")
+    print(f"Wrote {out_path} ({len(lines)} rows)", file=sys.stderr)
 
 
 _RESSTOCK_LIST_URL = (
