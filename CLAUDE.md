@@ -31,7 +31,7 @@ Each phase has its own spec + implementation plan in `docs/superpowers/`.
 - **Approved:** 2026-05-14
 - **Execution mode:** Inline (Claude executes tasks in-session, batched ~5 at a time with check-ins). Not subagent-driven — per project conventions, every line must be understood by the student.
 - **Started executing:** 2026-05-14
-- **Current position:** Task 20 next (full README). Tasks 0-19 complete — CLI runner ships. `python -m scripts.run --scenario configs/scenarios/24h_uniform.yaml` runs the simulator and prints a one-line summary; output to `runs/<scenario_id>/<timestamp>/`.
+- **Current position:** Task 21 next (Pecan Street adapter skeleton). Tasks 0-20 complete — full README published. Repo is now fully documented and runnable for anyone cloning it.
 
 ### Progress log
 
@@ -39,7 +39,8 @@ Update this after every committed task. Newest entries on top.
 
 | Date | Task | Commit | Tests | Note |
 |------|------|--------|-------|------|
-| 2026-05-14 | Task 19 — CLI runner | _(this commit)_ | 54 ✓ | `scripts/run.py` ships `python -m scripts.run --scenario <yaml> [--out-dir runs] [--no-strict]`. Resolves the strategy by importing `sim.strategies.<scenario.strategy>` and calls its `decide_transfers`. Output to `runs/<scenario_id>/<timestamp>/`. Manually smoke-tested + clean-venv verified. Also adds `scripts` to CI's `ruff check`. |
+| 2026-05-14 | Task 20 — full README | _(this commit)_ | 54 ✓ | `README.md` rewritten: install, run, scenario YAML reference, architecture diagram, phase-1 status checklist. Anyone cloning the public repo can now figure out how to run the simulator. |
+| 2026-05-14 | Task 19 — CLI runner | `af1a0ff` | 54 ✓ | `scripts/run.py` ships `python -m scripts.run --scenario <yaml> [--out-dir runs] [--no-strict]`. Resolves the strategy by importing `sim.strategies.<scenario.strategy>` and calls its `decide_transfers`. Output to `runs/<scenario_id>/<timestamp>/`. Manually smoke-tested + clean-venv verified. Also adds `scripts` to CI's `ruff check`. |
 | 2026-05-14 | Task 18 — physics smoke test | `1748e46` | 54 ✓ | `tests/test_physics_smoke.py` runs a 2×2 grid for 24 h with monkey-patched flat 2 kW solar + 1 kW constant load + η=1 + DoD=0 + oversized batteries. Hand-computed end SoC: 50 + 24 = exactly 74.0 kWh per house. If this test ever fails, do NOT adjust the expected — `sim/household.py:step()` has regressed. |
 | 2026-05-14 | Task 17 — integration test (rr vs no-coord) | `63b8880` | 53 ✓ | `tests/test_integration.py` runs the 24h_uniform scenario end-to-end with both strategies and asserts `gini(round_robin) <= gini(no_coordination)`. Real numbers: no_coord = 99.9% served / 1.1 kWh unmet / 0 transfers; round_robin = 100% / 0 / 1,260 transfers. Synthetic data is too easy — Phase 3 with Pecan Street will produce more interesting differentiation. Determinism check (byte-identical state.jsonl) also lives here. |
 | 2026-05-14 | Task 16 — engine main loop + invariants | `660fddd` | 51 ✓ | `run(scenario, decide_transfers, logger, strict=True)` drives the per-tick loop: lookup solar/load/grid, emit OUTAGE_* on transitions, decide transfers, build sender/receiver caps from current state (battery rate + DoD/headroom + √η), settle, step each house, assert SoC bounds + non-negative wasted/unmet in strict mode, log state+events, finalize. **Simulator runs end-to-end** on `synthetic_smoke.yaml` (2880 state rows / run) and same-seed runs are byte-identical (determinism test). Phase 1 currently only supports `data_source: synthetic`; Task 23 adds real-data dispatch. |

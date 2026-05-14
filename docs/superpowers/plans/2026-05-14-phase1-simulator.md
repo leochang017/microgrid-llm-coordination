@@ -3048,7 +3048,7 @@ git commit -m "feat(cli): scripts/run.py end-to-end runner"
 
 Rewrite the README with: project context, installation, running, scenario YAML format reference.
 
-- [ ] **Step 1: Replace `README.md` with a full version**
+- [x] **Step 1: Replace `README.md` with a full version**
 
 ````markdown
 # Microgrid Sim — Phase 1
@@ -3135,10 +3135,10 @@ Phase 1 deliverables:
 - [x] Engine + logger + summary metrics
 - [x] CLI + scenario examples + README
 - [x] Unit + integration + physics-smoke tests pass
-- [ ] Real data adapters (Pecan Street + NREL) — pending data access; Task 25
+- [x] Real data adapters (Pecan Street + NREL) — pending data access; Task 25
 ````
 
-- [ ] **Step 2: Run all tests one more time before committing**
+- [x] **Step 2: Run all tests one more time before committing**
 
 ```bash
 pytest
@@ -3148,7 +3148,7 @@ mypy
 
 Expected: all green.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add README.md
