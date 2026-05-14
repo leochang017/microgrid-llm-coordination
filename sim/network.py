@@ -52,15 +52,35 @@ def settle_transfers(
          all transfers into that receiver proportionally and emit RECEIVER_FULL.
          The sender's actual_sent is reduced accordingly.
 
-    Task 10 adds bus saturation and the no-wheeling rule for partial outages.
-    grid_status is accepted in the signature for forward-compatibility.
+    Task 10 adds two more constraints:
+      - No wheeling in partial-island scenarios: if a sender's grid status differs
+        from the receiver's, the transfer is rejected (a connected house cannot
+        pass grid energy to an islanded neighbor through the bus).
+      - Bus saturation: if total gross outgoing exceeds n.bus_max_kw, scale all
+        flows proportionally and emit BUS_SATURATED.
     """
-    del grid_status
-
     actual_sent: dict[str, float] = dict.fromkeys(n.comm_graph, 0.0)
     actual_received: dict[str, float] = dict.fromkeys(n.comm_graph, 0.0)
     events: list[Event] = []
     loss_factor = 1.0 - n.bus_loss_factor
+
+    # No-wheeling filter: reject any transfer where sender's and receiver's grid
+    # status differ. Done before any other math so rejected transfers don't
+    # consume sender capacity in the proportional-share step below.
+    filtered: list[Transfer] = []
+    for t in requested:
+        if grid_status.get(t.from_id, False) != grid_status.get(t.to_id, False):
+            events.append(
+                Event(
+                    kind=EventKind.NO_WHEELING_REJECTED,
+                    house_ids=(t.from_id, t.to_id),
+                    kw=t.kw,
+                    details="grid status differs between sender and receiver",
+                )
+            )
+        else:
+            filtered.append(t)
+    requested = filtered
 
     # Group by sender so we can clip each sender's outgoing pool proportionally.
     by_sender: dict[str, list[Transfer]] = {}
@@ -124,6 +144,24 @@ def settle_transfers(
                     kw=final_send,
                 )
             )
+
+    # Bus saturation: if total gross out exceeds bus capacity, scale all flows
+    # proportionally and emit one BUS_SATURATED event with the unmet kW.
+    total_gross = sum(actual_sent.values())
+    if total_gross > n.bus_max_kw and total_gross > 0:
+        scale = n.bus_max_kw / total_gross
+        for hid in actual_sent:
+            actual_sent[hid] *= scale
+        for hid in actual_received:
+            actual_received[hid] *= scale
+        events.append(
+            Event(
+                kind=EventKind.BUS_SATURATED,
+                house_ids=tuple(sorted(actual_sent)),
+                kw=total_gross - n.bus_max_kw,
+                details=f"total {total_gross:.3f} kW exceeded bus cap {n.bus_max_kw:.3f} kW",
+            )
+        )
 
     return SettlementResult(
         actual_sent=actual_sent,

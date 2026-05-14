@@ -97,3 +97,52 @@ def test_single_transfer_no_clipping() -> None:
     assert result.actual_sent["r0c0"] == pytest.approx(2.0, abs=1e-9)
     assert result.actual_received["r0c1"] == pytest.approx(2.0 * 0.95, abs=1e-9)
     assert any(e.kind == EventKind.TRANSFER_EXECUTED for e in result.events)
+
+
+def test_bus_saturation_clips_proportionally() -> None:
+    """Two transfers of 30 kW each through a 50 kW bus -> clipped to 25 kW each."""
+    n = build_grid_neighborhood(rows=5, cols=6, bus_max_kw=50.0, bus_loss_factor=0.0)
+    transfers = [
+        Transfer(from_id="r0c0", to_id="r0c1", kw=30.0),
+        Transfer(from_id="r1c0", to_id="r1c1", kw=30.0),
+    ]
+    grid_status = {f"r{r}c{c}": False for r in range(5) for c in range(6)}
+    caps = {hid: 100.0 for hid in grid_status}
+    result = settle_transfers(n, transfers, grid_status, caps, caps)
+    assert result.actual_sent["r0c0"] == pytest.approx(25.0, abs=1e-6)
+    assert result.actual_sent["r1c0"] == pytest.approx(25.0, abs=1e-6)
+    assert any(e.kind == EventKind.BUS_SATURATED for e in result.events)
+
+
+def test_no_wheeling_in_partial_island() -> None:
+    """Sender grid-connected, receiver islanded -> transfer blocked, event emitted."""
+    n = build_grid_neighborhood(rows=5, cols=6, bus_max_kw=50.0)
+    transfers = [Transfer(from_id="r0c0", to_id="r0c1", kw=2.0)]
+    grid_status = {f"r{r}c{c}": False for r in range(5) for c in range(6)}
+    grid_status["r0c0"] = True  # sender connected
+    grid_status["r0c1"] = False  # receiver islanded
+    caps = {hid: 100.0 for hid in grid_status}
+    result = settle_transfers(n, transfers, grid_status, caps, caps)
+    assert result.actual_sent["r0c0"] == 0.0
+    assert result.actual_received["r0c1"] == 0.0
+    assert any(e.kind == EventKind.NO_WHEELING_REJECTED for e in result.events)
+
+
+def test_all_islanded_allows_transfer() -> None:
+    """All houses islanded -> transfers work normally."""
+    n = build_grid_neighborhood(rows=5, cols=6, bus_max_kw=50.0, bus_loss_factor=0.05)
+    transfers = [Transfer(from_id="r0c0", to_id="r0c1", kw=2.0)]
+    grid_status = {f"r{r}c{c}": False for r in range(5) for c in range(6)}
+    caps = {hid: 100.0 for hid in grid_status}
+    result = settle_transfers(n, transfers, grid_status, caps, caps)
+    assert result.actual_sent["r0c0"] == pytest.approx(2.0, abs=1e-9)
+
+
+def test_all_connected_allows_transfer() -> None:
+    """All houses grid-connected -> transfers work normally (the outage-free default)."""
+    n = build_grid_neighborhood(rows=5, cols=6, bus_max_kw=50.0, bus_loss_factor=0.05)
+    transfers = [Transfer(from_id="r0c0", to_id="r0c1", kw=2.0)]
+    grid_status = {f"r{r}c{c}": True for r in range(5) for c in range(6)}
+    caps = {hid: 100.0 for hid in grid_status}
+    result = settle_transfers(n, transfers, grid_status, caps, caps)
+    assert result.actual_sent["r0c0"] == pytest.approx(2.0, abs=1e-9)

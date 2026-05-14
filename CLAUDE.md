@@ -31,7 +31,7 @@ Each phase has its own spec + implementation plan in `docs/superpowers/`.
 - **Approved:** 2026-05-14
 - **Execution mode:** Inline (Claude executes tasks in-session, batched ~5 at a time with check-ins). Not subagent-driven — per project conventions, every line must be understood by the student.
 - **Started executing:** 2026-05-14
-- **Current position:** Task 10 next (bus saturation + no-wheeling). Tasks 0-9 complete — sender/receiver cap clipping lands.
+- **Current position:** Task 11 next (Scenario config). Tasks 0-10 complete — network module fully done for Phase 1.
 
 ### Progress log
 
@@ -39,7 +39,8 @@ Update this after every committed task. Newest entries on top.
 
 | Date | Task | Commit | Tests | Note |
 |------|------|--------|-------|------|
-| 2026-05-14 | Task 9 — sender/receiver cap clipping | _(this commit)_ | 26 ✓ | Two-stage clipping in `settle_transfers`: senders that requested more than their cap have outgoing transfers scaled proportionally (`SENDER_DOD_FLOOR` event); receivers whose total inbound exceeds their cap force a back-scale on the sender side (`RECEIVER_FULL` event). Includes workflow-preferences and project-skills sections added to this CLAUDE.md per user request. |
+| 2026-05-14 | Task 10 — bus saturation + no-wheeling | _(this commit)_ | 30 ✓ | Adds no-wheeling filter (sender's grid status != receiver's grid status → reject + `NO_WHEELING_REJECTED` event) and bus-saturation scaling (total gross out > `bus_max_kw` → scale all flows proportionally + `BUS_SATURATED` event). Network module fully done for Phase 1. |
+| 2026-05-14 | Task 9 — sender/receiver cap clipping | `a82dbd1` | 26 ✓ | Two-stage clipping in `settle_transfers`: senders that requested more than their cap have outgoing transfers scaled proportionally (`SENDER_DOD_FLOOR` event); receivers whose total inbound exceeds their cap force a back-scale on the sender side (`RECEIVER_FULL` event). Includes workflow-preferences and project-skills sections added to this CLAUDE.md per user request. |
 | 2026-05-14 | Task 8 — settle_transfers happy path | `3508a1b` | 23 ✓ | Adds `EventKind` (StrEnum), `Event`, `SettlementResult` to `sim/types.py`. Minimal `settle_transfers`: receiver gets `kw × (1 - bus_loss_factor)`; emits `TRANSFER_EXECUTED` event. Sender/receiver caps accepted but ignored — Task 9 wires them in. Ruff caught a `class EventKind(str, Enum)` pattern; switched to `StrEnum` (Python 3.11+). |
 | 2026-05-14 | Task 7 — Neighborhood + comm graph | `a5a0226` | 22 ✓ | `Neighborhood` dataclass + `build_grid_neighborhood(rows, cols)` — 5×6 grid, 4-neighbor comm graph (corners 2, edges 3, interior 4). Network structure only; settle_transfers lands in Tasks 8-10. |
 | 2026-05-14 | Task 6 — data layer + SyntheticAdapter | `d9c489e` | 17 ✓ | `LoadProfile`/`SolarProfile` protocols + `SyntheticSolar` (half-sine 6 AM–6 PM) + `SyntheticLoad` (constant). Real Pecan Street + NREL adapters deferred to Tasks 21-22. |

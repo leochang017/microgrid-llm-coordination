@@ -1573,7 +1573,7 @@ Two more constraints:
 1. **Bus saturation:** if the *total* gross sent through the bus exceeds `bus_max_kw`, scale everything down proportionally and emit `BUS_SATURATED`.
 2. **No wheeling in partial islands:** if some houses are grid-connected and others aren't, transfers between a connected sender and an islanded receiver (or vice versa) are blocked. Emit `NO_WHEELING_REJECTED`.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 ```python
 def test_bus_saturation_clips_proportionally() -> None:
@@ -1625,7 +1625,7 @@ def test_all_connected_allows_transfer() -> None:
     assert result.actual_sent["r0c0"] == pytest.approx(2.0, abs=1e-9)
 ```
 
-- [ ] **Step 2: Run and verify failure**
+- [x] **Step 2: Run and verify failure**
 
 ```bash
 pytest tests/test_network.py -v -k "saturation or wheeling"
@@ -1633,7 +1633,7 @@ pytest tests/test_network.py -v -k "saturation or wheeling"
 
 Expected: 2 failures.
 
-- [ ] **Step 3: Apply both constraints in `settle_transfers`**
+- [x] **Step 3: Apply both constraints in `settle_transfers`**
 
 Modify `settle_transfers` to filter out wheeling transfers at the top, then add a final bus-saturation step before returning. Insert at the start of the function (before the existing grouping):
 
@@ -1678,7 +1678,7 @@ And replace the closing return block with:
     return SettlementResult(actual_sent=actual_sent, actual_received=actual_received, events=events)
 ```
 
-- [ ] **Step 4: Run all network tests and verify**
+- [x] **Step 4: Run all network tests and verify**
 
 ```bash
 pytest tests/test_network.py -v
@@ -1687,7 +1687,7 @@ mypy
 
 Expected: 12 tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sim/network.py tests/test_network.py
