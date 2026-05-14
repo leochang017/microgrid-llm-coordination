@@ -226,8 +226,13 @@ def _build_data(
     per-house by pv_kw_peak.
     """
     if scenario.data_source == "synthetic":
+        # Per-house synthetic load level is configurable via household_sampling.
+        # Default 1.5 kW for back-compat with scenarios that don't specify it.
+        base_load_kw = float(scenario.household_sampling.get("synthetic_load_kw", 1.5))
         solar: SolarProfile = SyntheticSolar(peak_kw=1.0)
-        loads: dict[str, LoadProfile] = {hid: SyntheticLoad(base_kw=1.5) for hid in households}
+        loads: dict[str, LoadProfile] = {
+            hid: SyntheticLoad(base_kw=base_load_kw) for hid in households
+        }
         return solar, loads
 
     if scenario.data_source == "pecan_street":

@@ -87,6 +87,57 @@ def test_run_smoke_no_coordination(tmp_path) -> None:
     assert len(rows) == 30 * 96
 
 
+def test_run_real_data_path_end_to_end(tmp_path) -> None:
+    """Exercise the data_source='pecan_street' dispatch end-to-end against the
+    in-repo CSV fixtures (review fix C3). This was the largest coverage gap —
+    the real-data branch in engine._build_data was previously only smoke-tested
+    via its adapter unit tests, never run as part of a full engine.run."""
+    from datetime import datetime, timedelta
+    from pathlib import Path
+
+    from sim.engine import run
+    from sim.logging import JsonlLogger
+    from sim.scenario import Scenario
+    from sim.strategies.no_coordination import decide_transfers
+
+    fixtures = Path(__file__).parent / "fixtures"
+    s = Scenario(
+        scenario_id="real_data_smoke",
+        start=datetime(2024, 7, 1, 0, 0),
+        end=datetime(2024, 7, 1, 0, 0) + timedelta(minutes=45),  # 3 ticks at 15 min
+        dt_hours=0.25,
+        seed=42,
+        rows=2,
+        cols=2,
+        bus_max_kw=50.0,
+        bus_loss_factor=0.05,
+        strategy="no_coordination",
+        data_source="pecan_street",
+        household_sampling={
+            "pv_kw_peak": [4.0, 12.0],
+            "battery_kwh": [10.0, 27.0],
+            "rt_efficiency": 0.9,
+            "dod_floor_frac": 0.1,
+            "grid_max_kw": 10.0,
+        },
+        outages=(),
+        data_paths={
+            "solar_csv": str(fixtures / "nrel_sample.csv"),
+            "load_csv": str(fixtures / "pecan_sample.csv"),
+        },
+        house_dataids=(1234, 1235, 1236, 1237),
+    )
+    out = tmp_path / "real"
+    logger = JsonlLogger(out, scenario_id=s.scenario_id)
+    summary = run(s, decide_transfers, logger, strict=True)
+    logger.close()
+    # 4 houses x 3 ticks = 12 state rows
+    rows = (out / "state.jsonl").read_text().splitlines()
+    assert len(rows) == 12
+    # Sanity: served fraction is in [0, 1]
+    assert 0.0 <= summary["served_load_fraction"] <= 1.0
+
+
 def test_run_smoke_deterministic_byte_identical(tmp_path) -> None:
     """Two runs of the same scenario yield byte-identical state.jsonl."""
     from pathlib import Path

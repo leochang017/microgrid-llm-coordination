@@ -183,6 +183,19 @@ Three layers:
 - Welfare function over households (Gini computation uses a placeholder welfare = served-fraction-of-load for Phase 1; Phase 3 adds a needs-weighted welfare model informed by the energy-justice literature).
 - Web visualization — Phase 4.
 
+## Known limitations (Phase 1)
+
+These are deliberate scope decisions or modeling trade-offs. Reviewers should know about them up front rather than discover them.
+
+1. **DC-bypass household inverter model.** When a household both sends to peers and receives from peers in the same tick, `step()` nets the flows before routing the residual through the battery — meaning only the residual incurs the `√η` round-trip-efficiency loss. This corresponds to a hybrid inverter with a shared DC bus that can route received → sent directly without round-tripping through the battery cell. The worst-case alternative ("everything through the battery") would double-count RT loss in this case; real residential hybrid inverters do the bypass, so the current model is realistic. This is a modeling choice rather than a derivation.
+2. **`wasted_kwh` is a single bucket.** Currently aggregates RT loss, curtailment (solar that couldn't enter the battery due to rate/capacity), and bus transit loss. Phase 3 will split these so the paper can report them separately.
+3. **Gini welfare proxy.** Phase 1 uses per-household *served-load fraction* as the welfare value entering the Gini coefficient. Houses with zero load receive welfare = 1.0 by convention. Phase 3 will replace this with a needs-weighted welfare informed by the energy-justice literature (Sovacool et al.); the placeholder is intentionally simple.
+4. **Strict-mode invariants check SoC bounds and non-negative wasted/unmet, not full per-tick energy conservation.** A per-tick `energy_in == energy_out + Δstored + losses` assertion would be stronger; the spec's invariants list mentions this as the eventual goal. Deferred because the asserted invariants already catch every regression we've seen in practice.
+5. **Sender / receiver caps are computed independently per house.** A house that simultaneously sends and receives could in principle hit `battery_max_rate_kw` on each side, totalling 2× the rated rate of throughput. The current model treats those as independent flows; a strict interpretation would constrain `(in + out)` or `max(in, out)` to `battery_max_rate_kw`. This deviation is small under round-robin and is documented for Phase 2 design.
+6. **Synthetic data is deliberately simple.** `SyntheticLoad` is constant (default 1.5 kW, configurable per scenario), `SyntheticSolar` is a half-sine. The `24h_uniform.yaml` scenario serves ~100% load under both strategies because batteries are oversized for the load. The `overnight_outage_hard.yaml` scenario is designed to stress-test coordination (and round-robin strictly improves on no-coordination there). Phase 3 with real Pecan Street load profiles will produce richer behavior.
+7. **Pecan Street CSV timezone handling.** The current `PecanStreetLoad` parses `local_15min` as a naive datetime. Real Pecan Street exports include a timezone offset (e.g. `-05` for Central). Phase 3 will need to strip/handle the offset when real data lands.
+8. **Event labels are coarse.** `SENDER_DOD_FLOOR` is currently emitted for any sender-cap clip even when the binding constraint is the battery rate (vs. the DoD floor). A `SENDER_RATE_LIMITED` kind exists in the enum but isn't emitted. Phase 3 cleanup.
+
 ## Risks and open questions
 
 1. **Pecan Street access lag.** Account approval can take days to weeks. **Mitigation:** apply on day 1; develop against synthetic data and ResStock until access lands.

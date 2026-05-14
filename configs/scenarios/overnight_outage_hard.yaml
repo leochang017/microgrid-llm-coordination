@@ -1,0 +1,56 @@
+# A deliberately stressful scenario: overnight outage with no solar to recharge.
+# Heterogeneous battery sizes (5-15 kWh) and a high constant load (3 kW per house)
+# guarantee that some houses run out before sunrise. Used by the integration test
+# to verify that round_robin actually redistributes welfare versus no_coordination.
+scenario_id: overnight_outage_hard
+start: "2024-07-01T00:00:00"
+end:   "2024-07-02T00:00:00"
+dt_hours: 0.25
+seed: 17
+rows: 5
+cols: 6
+bus_max_kw: 50.0
+bus_loss_factor: 0.05
+strategy: round_robin
+data_source: synthetic
+household_sampling:
+  pv_kw_peak: [4.0, 12.0]
+  battery_kwh: [5.0, 15.0]        # smaller range -> heterogeneity
+  rt_efficiency: 0.9
+  dod_floor_frac: 0.1
+  grid_max_kw: 10.0
+  synthetic_load_kw: 3.0          # 2x the default 1.5 -> outage stresses batteries
+outages:
+  - start: "2024-07-01T18:00:00"  # sunset -> sunrise next day
+    end:   "2024-07-02T06:00:00"
+    affected_houses:
+      - r0c0
+      - r0c1
+      - r0c2
+      - r0c3
+      - r0c4
+      - r0c5
+      - r1c0
+      - r1c1
+      - r1c2
+      - r1c3
+      - r1c4
+      - r1c5
+      - r2c0
+      - r2c1
+      - r2c2
+      - r2c3
+      - r2c4
+      - r2c5
+      - r3c0
+      - r3c1
+      - r3c2
+      - r3c3
+      - r3c4
+      - r3c5
+      - r4c0
+      - r4c1
+      - r4c2
+      - r4c3
+      - r4c4
+      - r4c5

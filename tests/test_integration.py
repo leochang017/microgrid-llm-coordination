@@ -26,17 +26,37 @@ def _run_to_summary(scenario_path: Path, strategy, out: Path) -> dict:  # type: 
     return summary
 
 
-def test_round_robin_more_even_than_no_coord(tmp_path: Path) -> None:
-    """Round-robin sharing should produce strictly more even welfare distribution
-    (lower Gini) than no-coordination on the 24h_uniform outage scenario."""
+def test_round_robin_no_worse_than_no_coord_on_easy_scenario(tmp_path: Path) -> None:
+    """On the synthetic 24h_uniform scenario both strategies serve ~100% load
+    (batteries are oversized), so the test only checks that round_robin is no
+    worse than no_coordination on Gini or served fraction (not strict improvement).
+    The strict-improvement test lives on the harsh overnight scenario below.
+    """
     scenario = _SCENARIOS_DIR / "24h_uniform.yaml"
     rr_summary = _run_to_summary(scenario, round_robin, tmp_path / "rr")
     nc_summary = _run_to_summary(scenario, no_coord, tmp_path / "nc")
-    # Lower Gini = more equal welfare. Round-robin should not be worse than no-coord.
     assert rr_summary["gini_welfare"] <= nc_summary["gini_welfare"]
-    # Round-robin moves energy around with bus losses, so served fraction may
-    # be slightly worse. Allow a small margin but not collapse.
     assert rr_summary["served_load_fraction"] >= nc_summary["served_load_fraction"] - 0.05
+
+
+def test_round_robin_strictly_helps_on_harsh_overnight_outage(tmp_path: Path) -> None:
+    """On the overnight_outage_hard scenario (12 h outage with no solar to recharge,
+    high load, heterogeneous batteries) round_robin must STRICTLY improve on
+    no_coordination on at least one of: unmet kWh (lower), Gini (lower). This is
+    the test that proves coordination does something — the easy scenario's
+    sub-test passes vacuously because both strategies hit Gini=0."""
+    scenario = _SCENARIOS_DIR / "overnight_outage_hard.yaml"
+    rr_summary = _run_to_summary(scenario, round_robin, tmp_path / "rr")
+    nc_summary = _run_to_summary(scenario, no_coord, tmp_path / "nc")
+    # Round-robin must reduce total unmet load by at least 10 kWh (review fix I2).
+    assert rr_summary["unmet_kwh_total"] <= nc_summary["unmet_kwh_total"] - 10.0, (
+        f"round_robin unmet={rr_summary['unmet_kwh_total']:.1f} vs "
+        f"no_coord unmet={nc_summary['unmet_kwh_total']:.1f}"
+    )
+    # And Gini (welfare inequality) must not be worse.
+    assert rr_summary["gini_welfare"] <= nc_summary["gini_welfare"]
+    # And round_robin must actually perform transfers (sanity check the strategy ran).
+    assert rr_summary["transfer_count"] > 0
 
 
 def test_determinism_byte_identical(tmp_path: Path) -> None:
