@@ -31,7 +31,7 @@ Each phase has its own spec + implementation plan in `docs/superpowers/`.
 - **Approved:** 2026-05-14
 - **Execution mode:** Inline (Claude executes tasks in-session, batched ~5 at a time with check-ins). Not subagent-driven — per project conventions, every line must be understood by the student.
 - **Started executing:** 2026-05-14
-- **Current position:** Task 13 next (logging — JSONL writers). Tasks 0-12 complete — both Phase 1 baseline strategies land.
+- **Current position:** Task 14 next (logging summary metrics — Gini, served fraction). Tasks 0-13 complete — JsonlLogger lands.
 
 ### Progress log
 
@@ -39,7 +39,8 @@ Update this after every committed task. Newest entries on top.
 
 | Date | Task | Commit | Tests | Note |
 |------|------|--------|-------|------|
-| 2026-05-14 | Task 12 — strategies (no_coordination + round_robin) | _(this commit)_ | 37 ✓ | `sim/strategies/no_coordination.py` returns `[]` (every house hoards). `sim/strategies/round_robin.py` shares 5% of each above-mean-SoC islanded house's above-floor headroom with its below-mean spatial neighbors. Both implement the `decide_transfers` signature the engine will plug into in Task 16. |
+| 2026-05-14 | Task 13 — JsonlLogger | _(this commit)_ | 40 ✓ | `sim/logging.py` with `JsonlLogger(run_dir, scenario_id)`: writes per-(house, tick) state rows to `state.jsonl`, discrete events to `events.jsonl`, resolved scenario to `config.json`. `summary.json` lands in Task 14. |
+| 2026-05-14 | Task 12 — strategies (no_coordination + round_robin) | `b984e28` | 37 ✓ | `sim/strategies/no_coordination.py` returns `[]` (every house hoards). `sim/strategies/round_robin.py` shares 5% of each above-mean-SoC islanded house's above-floor headroom with its below-mean spatial neighbors. Both implement the `decide_transfers` signature the engine will plug into in Task 16. |
 | 2026-05-14 | Task 11 — Scenario config | `c05ee3a` | 35 ✓ | `sim/scenario.py` with `OutageWindow` + `Scenario` dataclasses and `load_scenario(path)` YAML reader. `Scenario.timesteps()` iterates the simulation clock; `grid_status_at(t, house_id)` checks the outage schedule. Ships `configs/scenarios/synthetic_smoke.yaml` (24 h, no outage, no_coordination) and `configs/scenarios/24h_uniform.yaml` (24 h, full neighborhood outage from 08:00, round_robin). Also adds the "continuous execution" workflow preference. |
 | 2026-05-14 | Task 10 — bus saturation + no-wheeling | `87891c2` | 30 ✓ | Adds no-wheeling filter (sender's grid status != receiver's grid status → reject + `NO_WHEELING_REJECTED` event) and bus-saturation scaling (total gross out > `bus_max_kw` → scale all flows proportionally + `BUS_SATURATED` event). Network module fully done for Phase 1. |
 | 2026-05-14 | Task 9 — sender/receiver cap clipping | `a82dbd1` | 26 ✓ | Two-stage clipping in `settle_transfers`: senders that requested more than their cap have outgoing transfers scaled proportionally (`SENDER_DOD_FLOOR` event); receivers whose total inbound exceeds their cap force a back-scale on the sender side (`RECEIVER_FULL` event). Includes workflow-preferences and project-skills sections added to this CLAUDE.md per user request. |

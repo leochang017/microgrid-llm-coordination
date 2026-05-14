@@ -2185,7 +2185,7 @@ git commit -m "feat(strategies): no_coordination and round_robin baselines"
 
 `JsonlLogger` writes per-tick state rows and events to two separate JSONL files. Opens the files in `__init__`, exposes `write_state(t, states, solar, load, grid)`, `write_events(events)`, and `finalize() -> RunSummary`.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 `tests/test_logging.py`:
 
@@ -2241,7 +2241,7 @@ def test_logger_creates_config_json(tmp_path) -> None:
     assert cfg == {"foo": "bar"}
 ```
 
-- [ ] **Step 2: Run and verify failure**
+- [x] **Step 2: Run and verify failure**
 
 ```bash
 pytest tests/test_logging.py -v
@@ -2249,7 +2249,7 @@ pytest tests/test_logging.py -v
 
 Expected: ImportError.
 
-- [ ] **Step 3: Implement `sim/logging.py`**
+- [x] **Step 3: Implement `sim/logging.py`**
 
 ```python
 """Run logging: state.jsonl, events.jsonl, config.json, summary.json."""
@@ -2312,7 +2312,7 @@ class JsonlLogger:
         self._events_file.close()
 ```
 
-- [ ] **Step 4: Run tests and verify passing**
+- [x] **Step 4: Run tests and verify passing**
 
 ```bash
 pytest tests/test_logging.py -v
@@ -2321,7 +2321,7 @@ mypy
 
 Expected: 3 tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sim/logging.py tests/test_logging.py
