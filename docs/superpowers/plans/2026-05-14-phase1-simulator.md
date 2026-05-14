@@ -2622,7 +2622,7 @@ For the strict check we use a relaxed form: `solar_kwh + grid_import + received_
 
 A simpler test: total energy in = total energy accounted for. We verify the sum-of-changes balances.
 
-- [ ] **Step 1: Write failing test for engine.run on the smoke scenario**
+- [x] **Step 1: Write failing test for engine.run on the smoke scenario**
 
 ```python
 def test_run_smoke_no_coordination(tmp_path) -> None:
@@ -2645,7 +2645,7 @@ def test_run_smoke_no_coordination(tmp_path) -> None:
     assert len(rows) == 30 * 96
 ```
 
-- [ ] **Step 2: Run and verify failure**
+- [x] **Step 2: Run and verify failure**
 
 ```bash
 pytest tests/test_engine.py::test_run_smoke_no_coordination -v
@@ -2653,7 +2653,7 @@ pytest tests/test_engine.py::test_run_smoke_no_coordination -v
 
 Expected: ImportError or AttributeError on `run`.
 
-- [ ] **Step 3: Implement `run`**
+- [x] **Step 3: Implement `run`**
 
 Append to `sim/engine.py`:
 
@@ -2784,7 +2784,7 @@ def run(
     return logger.finalize(dt_hours=scenario.dt_hours)
 ```
 
-- [ ] **Step 4: Run tests and verify**
+- [x] **Step 4: Run tests and verify**
 
 ```bash
 pytest tests/test_engine.py -v
@@ -2793,7 +2793,7 @@ mypy
 
 Expected: 4 tests pass (including the new smoke test). It may take a few seconds to run a full 24h scenario.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add sim/engine.py tests/test_engine.py
@@ -2809,7 +2809,7 @@ git commit -m "feat(engine): main loop with strict-mode SoC bound checks"
 
 The first cross-cutting sanity check: on a scenario with an outage, round-robin must produce a strictly more even SoC distribution at the end than no-coordination, given the same seed.
 
-- [ ] **Step 1: Write failing test**
+- [x] **Step 1: Write failing test**
 
 `tests/test_integration.py`:
 
