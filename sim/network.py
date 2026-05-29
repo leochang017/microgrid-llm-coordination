@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+import numpy as np
+
 from sim.types import Event, EventKind, SettlementResult, Transfer
 
 
@@ -88,6 +90,27 @@ def build_overlay_neighborhood(
         bus_loss_factor=bus_loss_factor,
         edges_by_type=edges_by_type,
     )
+
+
+def default_affiliations(rows: int, cols: int, seed: int) -> dict[str, dict[str, tuple[str, ...]]]:
+    """A plausible default trust-circle structure for a rows x cols neighborhood.
+
+    Emits three overlay layers, deterministically given `seed`:
+      - owner: two owners each holding 3 scattered properties
+      - hoa:   one HOA covering the top row (a contiguous block)
+      - dr_aggregator: one demand-response aggregator enrolling 4 scattered homes
+    """
+    rng = np.random.default_rng(seed)
+    ids = [f"r{r}c{c}" for r in range(rows) for c in range(cols)]
+    picks = rng.permutation(len(ids))
+    pick = [ids[i] for i in picks]
+    owner = {
+        "owner_a": tuple(sorted(pick[0:3])),
+        "owner_b": tuple(sorted(pick[3:6])),
+    }
+    hoa = {"hoa_top": tuple(f"r0c{c}" for c in range(cols))}
+    dr = {"agg_gridflex": tuple(sorted(pick[6:10]))}
+    return {"owner": owner, "hoa": hoa, "dr_aggregator": dr}
 
 
 def settle_transfers(

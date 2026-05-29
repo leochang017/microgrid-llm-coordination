@@ -42,6 +42,7 @@ Update this after every committed task. Newest entries on top.
 
 | Date | Task | Commit | Tests | Note |
 |------|------|--------|-------|------|
+| 2026-05-29 | **P1.6 Task 4 — default_affiliations** ✅ | _(this commit)_ | 79 ✓ | Seeded generator for a plausible default trust-circle structure (2 multi-property owners, 1 top-row HOA, 1 DR aggregator). Deterministic per seed. |
 | 2026-05-29 | **P1.6 Task 3 — build_overlay_neighborhood** ✅ | _(this commit)_ | 77 ✓ | New builder layers affiliation cliques (type→group→members, each group a clique) atop the geographic graph. Empty affiliations ⇒ geographic-only. Foundation for ownership/management trust circles. |
 | 2026-05-29 | **P1.6 Task 2 — edge layers + union_neighbors** ✅ | _(this commit)_ | 75 ✓ | `Neighborhood` gains `edges_by_type` (per-type adjacency incl. reserved `"geographic"`) + `union_neighbors(hid)` (sorted dedup union across layers, falls back to comm_graph). `build_grid_neighborhood` now populates the geographic layer. Back-compat: comm_graph unchanged. |
 | 2026-05-29 | **P1.6 Task 1 — Household.affiliations** ✅ | _(this commit)_ | 72 ✓ | `Household` gains `affiliations: dict[str,str]` (affiliation-type → group-id) defaulting empty, the per-house substrate for comm-graph overlay edges. No physics change; existing scenarios unaffected. |

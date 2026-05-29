@@ -204,3 +204,22 @@ def test_overlay_no_affiliations_equals_geographic() -> None:
     n = build_overlay_neighborhood(rows=2, cols=2, affiliations={}, bus_max_kw=50.0)
     assert set(n.edges_by_type) == {"geographic"}
     assert n.union_neighbors("r0c0") == ["r0c1", "r1c0"]
+
+
+def test_default_affiliations_deterministic_and_typed() -> None:
+    from sim.network import default_affiliations
+
+    a1 = default_affiliations(rows=5, cols=6, seed=17)
+    a2 = default_affiliations(rows=5, cols=6, seed=17)
+    assert a1 == a2
+    assert {"owner", "hoa", "dr_aggregator"} <= set(a1)
+    valid = {f"r{r}c{c}" for r in range(5) for c in range(6)}
+    for groups in a1.values():
+        for members in groups.values():
+            assert set(members) <= valid
+
+
+def test_default_affiliations_different_seed_differs() -> None:
+    from sim.network import default_affiliations
+
+    assert default_affiliations(5, 6, seed=1) != default_affiliations(5, 6, seed=2)
