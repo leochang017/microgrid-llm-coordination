@@ -11,16 +11,19 @@ The contribution is on the **CS/ML axis** (natural-language agent coordination, 
 ## Timeline + venue
 
 - Started: 2026-05-14. Runway: summer + potentially the following school year (no fixed deadline).
-- Target venues: ICLR Tackling Climate Change with ML workshop, NeurIPS Computational Sustainability, or AAMAS applied track. **Not** main NeurIPS — contribution isn't ML-methodological in the way they care about.
+- Target venues (refined per advisor 2026-05-26): Climate Change AI workshop @ NeurIPS, multi-agent LLM workshops, AAMAS COIN-style venues, or AAAI Student Abstracts (good fit for career stage). **Not** main NeurIPS — contribution isn't ML-methodological in the way they care about.
 
 ## Four-phase plan
 
 | Phase | Weeks | Status | What it builds |
 |-------|-------|--------|----------------|
-| 1 — Simulator | 1-4 | **in progress** | Deterministic discrete-time microgrid sim, no agents |
+| 1 — Simulator | 1-4 | **complete** | Deterministic discrete-time microgrid sim, no agents |
+| 1.6 — Pre-Phase-2 hardening | — | **next (advisor-gated)** | Ownership/management comm-graph overlays, stress scenarios that break round-robin, centralized LP upper-bound baseline, 1-2 more public datasets |
 | 2 — LLM agent layer | 5-8 | not started | Per-household LLM agent, natural-language P2P messaging |
 | 3 — Benchmark & experiments | 9-14 | not started | Scenario suite + baselines + metrics (Gini, served-critical-load, explanation quality) |
 | 4 — Web demo & paper writeup | 15-20 | not started | SvelteKit/Next.js visualization on Vercel + paper |
+
+> **Phase 1.6 is a hard gate on Phase 2**, inserted by advisor (Yongfeng) on 2026-05-26. Rationale: the current 12h-July-overnight scenario has a 98.5% no-coordination ceiling, leaving only ~0.5% headroom for the LLM layer — Phase 2 would be a null result by construction. Must establish a regime where round-robin visibly fails before building LLM agents.
 
 Each phase has its own spec + implementation plan in `docs/superpowers/`.
 
@@ -31,7 +34,7 @@ Each phase has its own spec + implementation plan in `docs/superpowers/`.
 - **Approved:** 2026-05-14
 - **Execution mode:** Inline (Claude executes tasks in-session, batched ~5 at a time with check-ins). Not subagent-driven — per project conventions, every line must be understood by the student.
 - **Started executing:** 2026-05-14
-- **Current position:** ✅ **Phase 1 complete + Phase 1.5 NREL ResStock integration done.** 70 tests pass; mypy + ruff clean. Three data sources work: synthetic (toy), pecan_street (requires university affiliation — not used), resstock (public, no signup). On real Texas ResStock load + 12h overnight outage: no_coord serves 81.3% with 254 kWh unmet; round_robin serves 83.9% with 218 kWh unmet. Round-robin saves **35.7 kWh of real residential load** and reduces welfare Gini by 15%. The advisor email is drafted asking whether to use ResStock primary or have him sponsor Pecan Street access. Tagged `phase1-complete`. Next: Phase 2 brainstorming (LLM agent layer).
+- **Current position:** ✅ **Phase 1 complete + Phase 1.5 NREL ResStock integration done.** 70 tests pass; mypy + ruff clean. Three data sources work: synthetic (toy), pecan_street (requires university affiliation — not used), resstock (public, no signup). On real Texas ResStock load + 12h overnight outage: no_coord serves 81.3% with 254 kWh unmet; round_robin serves 83.9% with 218 kWh unmet. Round-robin saves **35.7 kWh of real residential load** and reduces welfare Gini by 15%. The advisor email is drafted asking whether to use ResStock primary or have him sponsor Pecan Street access. Tagged `phase1-complete`. **Advisor approved Phase 1 on 2026-05-26 but gated Phase 2 behind a Phase 1.6** (ownership/management comm-graph overlays + round-robin-breaking stress scenarios + centralized LP upper-bound baseline + 1-2 more public datasets — see "Locked Phase 1.6 design decisions"). Next: brainstorm Phase 1.6 → spec + plan, then execute, then Phase 2 brainstorming.
 
 ### Progress log
 
@@ -78,13 +81,26 @@ These are decisions you should NOT re-litigate without explicit user re-approval
 - **Physics:** energy model + basic constraints (battery rate, RT efficiency 0.9, DoD floor 0.1, bus transit loss 0.05). No AC power flow.
 - **Temporal:** 15-min ticks for both physics and decisions in v1. Architecture supports evolving to 5-min physics / 15-min decisions in Phase 2.
 - **Neighborhood:** 30 households on a 5×6 grid. 4-neighbor communication graph + shared physical bus (50 kW default). Configurable.
-- **Data:** Pecan Street (Austin TX) primary + NREL ResStock as a robustness check + NREL NSRDB for solar irradiance. Adapter pattern in `sim/adapters/`.
+- **Data:** NREL ResStock primary (advisor confirmed 2026-05-26 — public reproducibility is a paper strength; Pecan Street dropped, can't get HS-student affiliation) + NREL NSRDB for solar irradiance. Adapter pattern in `sim/adapters/`. **Phase 1.6 adds 1-2 more public datasets** for cross-dataset robustness (another ResStock state, NREL ComStock, or EULP).
 - **Outage model:** schedule of `(start, end, affected_houses)` tuples. Partial-island supported but **no wheeling** (grid-connected houses can't pass grid energy through the bus to islanded neighbors).
 - **Coordination plug-point:** `decide_transfers(t, states, households, solar, load, grid, neighborhood, dt_hours) -> list[Transfer]`. Phase 2 LLM agents plug in here without modifying the simulator core.
 - **Output:** state.jsonl + events.jsonl + summary.json under `runs/<scenario_id>/<timestamp>/`. `messages.jsonl` reserved for Phase 2.
 
-## Locked Phase 2 references
+## Locked Phase 1.6 design decisions (advisor 2026-05-26)
 
+These are advisor-mandated and gate Phase 2. Do NOT skip or re-scope without re-approval.
+
+- **Communication graph — ownership/management overlays.** 4-neighbor geographic adjacency is insufficient on its own. Add cross-cutting edges that follow real coordination relationships: single owner of multiple properties, property-management companies, HOAs, demand-response aggregators. Agents end up in multiple *partially overlapping trust circles* (geographic neighbors, same owner, same manager). This is the structure where natural-language negotiation should outperform fixed protocols — it's the core research setting, not a nice-to-have.
+- **Stress scenarios that break round-robin.** Current 12h-July-overnight (98.5% no-coord ceiling) is too forgiving. Build scenarios where round-robin leaves *substantial* unmet demand and unequal welfare. Directions: 24-72h or repeated outages with no recovery window, winter morning peak with low solar, heterogeneous "have" vs "have-not" battery/solar capacity, heatwave + AC load. Target a regime with meaningful unmet kWh and Gini well above zero after round-robin.
+- **Centralized LP upper-bound baseline.** Add a centralized linear-program allocator with full information as a third strategy. It defines the achievable ceiling. Reframe all results as **"LLM coordination closes X% of the gap between round-robin and LP-optimal"** rather than "beats round-robin by Y%".
+- **Welfare measure:** served-load fraction confirmed fine for Phase 1; needs-weighting (medical loads, thermal comfort thresholds) in Phase 3 confirmed as the right trajectory.
+
+## Locked Phase 2 design decisions (advisor 2026-05-26)
+
+- **Failure modes the LLM layer must be tested against** (advisor's top three):
+  1. *Strategic / selfish agents* — some agents misreport state or refuse to share. Does language-based negotiation surface and route around defectors better than a fixed protocol?
+  2. *Noisy / faulty observations* — imperfect knowledge of own SoC or load forecast. Memory + reflection should help in ways a rule-based protocol can't.
+  3. *Communication constraints* — limited message budget, partial link failures. Agents must reason about which trust circle to route through (ties back to the ownership/management overlays).
 - **Park et al., "Generative Agents" (arXiv:2304.03442):** advisor-recommended. Decision: do NOT fork the codebase (their world is a 2D social town, fundamentally different from a physics-based microgrid). Treat as a Phase 2 reference for agent architecture patterns (memory stream, reflection, natural-language messaging) which we reimplement adapted to microgrid coordination and cite prominently.
 
 ## User context
