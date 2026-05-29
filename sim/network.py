@@ -17,6 +17,20 @@ class Neighborhood:
     comm_graph: dict[str, list[str]] = field(default_factory=dict)
     bus_max_kw: float = 50.0
     bus_loss_factor: float = 0.05
+    edges_by_type: dict[str, dict[str, list[str]]] = field(default_factory=dict)
+
+    def union_neighbors(self, hid: str) -> list[str]:
+        """Sorted union of a house's neighbors across every edge layer.
+
+        Falls back to comm_graph when edges_by_type is empty (e.g. a
+        Neighborhood built without overlays).
+        """
+        layers = self.edges_by_type or {"geographic": self.comm_graph}
+        acc: set[str] = set()
+        for layer in layers.values():
+            acc.update(layer.get(hid, []))
+        acc.discard(hid)
+        return sorted(acc)
 
 
 def build_grid_neighborhood(
@@ -33,7 +47,12 @@ def build_grid_neighborhood(
                 if 0 <= nr < rows and 0 <= nc < cols:
                     neighbors.append(f"r{nr}c{nc}")
             graph[key] = neighbors
-    return Neighborhood(comm_graph=graph, bus_max_kw=bus_max_kw, bus_loss_factor=bus_loss_factor)
+    return Neighborhood(
+        comm_graph=graph,
+        bus_max_kw=bus_max_kw,
+        bus_loss_factor=bus_loss_factor,
+        edges_by_type={"geographic": graph},
+    )
 
 
 def settle_transfers(

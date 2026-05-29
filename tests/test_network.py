@@ -152,3 +152,33 @@ def test_all_connected_allows_transfer() -> None:
     caps = {hid: 100.0 for hid in grid_status}
     result = settle_transfers(n, transfers, grid_status, caps, caps)
     assert result.actual_sent["r0c0"] == pytest.approx(2.0, abs=1e-9)
+
+
+def test_build_grid_populates_geographic_layer() -> None:
+    from sim.network import build_grid_neighborhood
+
+    n = build_grid_neighborhood(rows=5, cols=6, bus_max_kw=50.0)
+    assert "geographic" in n.edges_by_type
+    assert sorted(n.edges_by_type["geographic"]["r0c0"]) == ["r0c1", "r1c0"]
+
+
+def test_union_neighbors_unions_layers_and_excludes_self() -> None:
+    from sim.network import Neighborhood
+
+    n = Neighborhood(
+        comm_graph={"a": ["b"], "b": ["a"], "c": []},
+        edges_by_type={
+            "geographic": {"a": ["b"], "b": ["a"], "c": []},
+            "owner": {"a": ["c"], "b": [], "c": ["a"]},
+        },
+        bus_max_kw=50.0,
+    )
+    assert n.union_neighbors("a") == ["b", "c"]
+    assert n.union_neighbors("c") == ["a"]
+
+
+def test_union_neighbors_falls_back_to_geographic_only() -> None:
+    from sim.network import build_grid_neighborhood
+
+    n = build_grid_neighborhood(rows=5, cols=6, bus_max_kw=50.0)
+    assert n.union_neighbors("r0c0") == ["r0c1", "r1c0"]
