@@ -2,12 +2,19 @@
 
 Solved once via prepare(): a single linear program over the whole scenario
 horizon with perfect foresight and full-bus access (ignores the comm graph).
-Its per-tick send/recv flows are converted to pairwise Transfers that the engine
-executes through normal physics, so its reported served-load is measured on the
-exact same path as every other strategy.
-
 Objective: maximize total served load power. No fairness tiebreak (documented
-future refinement). HiGHS is deterministic, so the schedule is reproducible.
+future refinement). HiGHS is deterministic, so the result is reproducible.
+
+Two ways to consume the solution:
+  - `optimal_served_fraction(...)` returns the LP objective as a served-load
+    fraction. **This is the reported ceiling** for the "% of gap closed between
+    round_robin and LP-optimal" framing — the true theoretical upper bound.
+  - `prepare(...)` returns a per-tick transfer schedule so the LP can also be
+    run as a strategy through the engine (for visualization / state logs). Note
+    the engine's greedy per-tick `step()` dispatch will NOT faithfully execute
+    the LP's planned battery schedule, so the engine-realized served-load can
+    fall below the LP optimum (and even below round_robin). Always use
+    `optimal_served_fraction` for the ceiling figure, never the realized run.
 """
 
 from __future__ import annotations
