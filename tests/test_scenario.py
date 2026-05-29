@@ -1,5 +1,6 @@
 """Tests for scenario config loading and validation."""
 
+import textwrap
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -136,3 +137,61 @@ def test_grid_status_at_during_outage() -> None:
     # Outside the outage window, r0c0 is connected.
     assert s.grid_status_at(datetime(2024, 7, 1, 6), "r0c0") is True
     assert s.grid_status_at(datetime(2024, 7, 1, 14), "r0c0") is True
+
+
+_AFFIL_BASE = """
+scenario_id: t
+start: "2018-01-01T00:00:00"
+end: "2018-01-01T06:00:00"
+dt_hours: 0.25
+seed: 1
+rows: 2
+cols: 2
+bus_max_kw: 50.0
+strategy: round_robin
+data_source: synthetic
+household_sampling:
+  pv_kw_peak: [4.0, 8.0]
+  battery_kwh: [5.0, 10.0]
+  rt_efficiency: 0.9
+  dod_floor_frac: 0.1
+"""
+
+
+def _write_affil(tmp_path: Path, body: str) -> Path:
+    p = tmp_path / "s.yaml"
+    p.write_text(textwrap.dedent(body))
+    return p
+
+
+def test_affiliations_parsed_into_nested_tuples(tmp_path: Path) -> None:
+    p = _write_affil(
+        tmp_path,
+        _AFFIL_BASE
+        + """
+affiliations:
+  owner:
+    owner_a: [r0c0, r1c1]
+""",
+    )
+    sc = load_scenario(p)
+    assert sc.affiliations == {"owner": {"owner_a": ("r0c0", "r1c1")}}
+
+
+def test_affiliations_default_empty(tmp_path: Path) -> None:
+    sc = load_scenario(_write_affil(tmp_path, _AFFIL_BASE))
+    assert sc.affiliations == {}
+
+
+def test_affiliations_rejects_unknown_house(tmp_path: Path) -> None:
+    p = _write_affil(
+        tmp_path,
+        _AFFIL_BASE
+        + """
+affiliations:
+  owner:
+    owner_a: [r0c0, r9c9]
+""",
+    )
+    with pytest.raises(ValueError, match="r9c9"):
+        load_scenario(p)

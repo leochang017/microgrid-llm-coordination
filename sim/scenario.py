@@ -46,6 +46,7 @@ class Scenario:
     # For data_source=resstock: per-house ResStock filename (e.g. "bldg0000123-up00.parquet")
     # under data_paths["load_dir"]. Strings, not ints, because ResStock IDs are zero-padded.
     house_building_files: tuple[str, ...] = field(default_factory=tuple)
+    affiliations: dict[str, dict[str, tuple[str, ...]]] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.dt_hours <= 0:
@@ -91,6 +92,23 @@ def load_scenario(path: Path | str) -> Scenario:
             )
         )
 
+    rows_i = int(raw["rows"])
+    cols_i = int(raw["cols"])
+    valid_ids = {f"r{r}c{c}" for r in range(rows_i) for c in range(cols_i)}
+    affiliations: dict[str, dict[str, tuple[str, ...]]] = {}
+    for atype, groups in (raw.get("affiliations", {}) or {}).items():
+        parsed_groups: dict[str, tuple[str, ...]] = {}
+        for gid, members in (groups or {}).items():
+            members_t = tuple(str(m) for m in members)
+            for m in members_t:
+                if m not in valid_ids:
+                    raise ValueError(
+                        f"affiliations[{atype!r}][{gid!r}] references unknown house {m!r} "
+                        f"(grid is {rows_i}x{cols_i})"
+                    )
+            parsed_groups[str(gid)] = members_t
+        affiliations[str(atype)] = parsed_groups
+
     return Scenario(
         scenario_id=raw["scenario_id"],
         start=start,
@@ -108,4 +126,5 @@ def load_scenario(path: Path | str) -> Scenario:
         data_paths=dict(raw.get("data_paths", {}) or {}),
         house_dataids=tuple(int(x) for x in (raw.get("house_dataids", []) or [])),
         house_building_files=tuple(str(x) for x in (raw.get("house_building_files", []) or [])),
+        affiliations=affiliations,
     )
