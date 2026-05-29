@@ -49,3 +49,11 @@ def test_protocols_are_satisfied() -> None:
     sp: SolarProfile = SyntheticSolar(peak_kw=10.0)
     assert callable(lp.get_kw)
     assert callable(sp.get_kw)
+
+
+def test_resstock_cold_fixture_kw_conversion() -> None:
+    from sim.adapters.resstock import ResStockLoad
+
+    rs = ResStockLoad(path="tests/fixtures/resstock_cold_sample.csv", dt_hours=0.25)
+    # 0.90 kWh in a 15-min interval -> 3.6 kW
+    assert rs.get_kw(datetime(2018, 1, 15, 6, 30)) == 3.6
