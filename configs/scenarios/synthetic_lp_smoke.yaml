@@ -1,0 +1,32 @@
+# Tiny synthetic scenario for the LP end-to-end ordering + determinism tests.
+# 2x3 grid, fully islanded for 3 h, bimodal "have"/"have-not" capacity so there
+# is real heterogeneity for coordination to flatten. An owner affiliation links
+# two non-adjacent corners so round_robin_overlay can route where geographic
+# round_robin cannot.
+
+scenario_id: synthetic_lp_smoke
+start: "2018-01-01T00:00:00"
+end:   "2018-01-01T03:00:00"
+dt_hours: 0.25
+seed: 7
+rows: 2
+cols: 3
+bus_max_kw: 50.0
+bus_loss_factor: 0.05
+strategy: lp_optimal
+data_source: synthetic
+household_sampling:
+  mode: bimodal
+  have:    {pv_kw_peak: [0.0, 0.0], battery_kwh: [28.0, 32.0]}
+  havenot: {pv_kw_peak: [0.0, 0.0], battery_kwh: [1.0, 2.0]}
+  have_fraction: 0.5
+  rt_efficiency: 0.9
+  dod_floor_frac: 0.1
+  synthetic_load_kw: 2.0
+affiliations:
+  owner:
+    owner_corners: [r0c0, r1c2]
+outages:
+  - start: "2018-01-01T00:00:00"
+    end:   "2018-01-01T03:00:00"
+    affected_houses: [r0c0, r0c1, r0c2, r1c0, r1c1, r1c2]

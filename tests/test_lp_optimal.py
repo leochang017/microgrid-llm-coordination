@@ -1,10 +1,15 @@
 """Tests for the centralized full-horizon LP optimal baseline."""
 
+import dataclasses
+import importlib
 from datetime import datetime, timedelta
+from pathlib import Path
 
+from sim.engine import run
 from sim.household import Household
+from sim.logging import JsonlLogger
 from sim.network import build_overlay_neighborhood
-from sim.scenario import OutageWindow, Scenario
+from sim.scenario import OutageWindow, Scenario, load_scenario
 from sim.strategies import lp_optimal
 from sim.types import HouseholdProfile
 
@@ -75,3 +80,37 @@ def test_lp_moves_energy_from_full_house_to_deficit_house() -> None:
     assert transfers, "LP produced no transfers"
     assert all(t.from_id == "r0c0" and t.to_id == "r0c1" for t in transfers)
     assert sum(t.kw for t in transfers) > 1.5  # serving 2 kW load -> ~2 kW gross
+
+
+def _run_strategy(strategy: str, tmp_path: Path) -> dict:
+    sc = load_scenario("configs/scenarios/synthetic_lp_smoke.yaml")
+    sc = dataclasses.replace(sc, strategy=strategy)
+    mod = importlib.import_module(f"sim.strategies.{strategy}")
+    prepare = getattr(mod, "prepare", None)
+    decide = getattr(mod, "decide_transfers", None)
+    logger = JsonlLogger(run_dir=str(tmp_path / strategy), scenario_id=sc.scenario_id)
+    return run(sc, decide, logger, prepare=prepare)
+
+
+def test_lp_dominates_all_other_strategies(tmp_path: Path) -> None:
+    # The only guaranteed invariant is that the full-foresight, full-bus LP is an
+    # upper bound on served load — it must be >= every heuristic. (Whether
+    # round_robin beats no_coordination is empirical and scenario-dependent: lossy,
+    # poorly-targeted sharing can be net-negative vs. hoarding. That is exactly why
+    # the "gap closed" metric is measured *relative to* round_robin, and why the
+    # stress scenarios in test_stress_scenarios exist.)
+    served = {
+        s: _run_strategy(s, tmp_path)["served_load_fraction"]
+        for s in ("no_coordination", "round_robin", "round_robin_overlay", "lp_optimal")
+    }
+    for s in ("no_coordination", "round_robin", "round_robin_overlay"):
+        assert served["lp_optimal"] >= served[s] - 1e-6, (s, served)
+
+
+def test_lp_run_deterministic(tmp_path: Path) -> None:
+    a = _run_strategy("lp_optimal", tmp_path / "a")
+    b = _run_strategy("lp_optimal", tmp_path / "b")
+    assert a == b
+    sa = (tmp_path / "a" / "lp_optimal" / "state.jsonl").read_text()
+    sb = (tmp_path / "b" / "lp_optimal" / "state.jsonl").read_text()
+    assert sa == sb
