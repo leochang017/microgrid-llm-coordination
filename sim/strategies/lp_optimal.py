@@ -242,6 +242,43 @@ def _solve(
     return _schedule_from_solution(x, col, ids, ticks, grid_at, neighborhood.bus_loss_factor)
 
 
+def optimal_metrics(
+    scenario: Scenario,
+    households: dict[str, Household],
+    solar_profile: SolarProfile,
+    load_profiles: dict[str, LoadProfile],
+    neighborhood: Neighborhood,
+) -> dict[str, float]:
+    """The LP optimum expressed as engine-comparable summary metrics.
+
+    Returns served_load_fraction (the reported ceiling), unmet_kwh_total, and
+    gini_welfare — all computed directly from the LP solution, the same way the
+    engine's summary.json defines them, so the LP row is honest in comparisons.
+    The LP is NOT run through the engine for these figures, because the engine's
+    greedy per-tick dispatch would not faithfully execute the LP's planned
+    battery schedule (see module docstring).
+    """
+    from sim.logging import _gini
+
+    x, col, ids, ticks, _grid_at, load_at = _solve_lp(
+        scenario, households, solar_profile, load_profiles, neighborhood
+    )
+    served_by_house = {
+        hid: sum(float(x[col[("served", hid, k)]]) for k in range(len(ticks))) for hid in ids
+    }
+    load_by_house = {hid: sum(load_at[(hid, k)] for k in range(len(ticks))) for hid in ids}
+    total_served = sum(served_by_house.values())
+    total_load = sum(load_by_house.values())
+    per_house_frac = [
+        served_by_house[hid] / load_by_house[hid] for hid in ids if load_by_house[hid] > 0
+    ]
+    return {
+        "served_load_fraction": total_served / total_load if total_load > 0 else 1.0,
+        "unmet_kwh_total": (total_load - total_served) * scenario.dt_hours,
+        "gini_welfare": _gini(per_house_frac),
+    }
+
+
 def optimal_served_fraction(
     scenario: Scenario,
     households: dict[str, Household],
@@ -251,19 +288,12 @@ def optimal_served_fraction(
 ) -> float:
     """The LP's optimal served-load fraction — the theoretical ceiling.
 
-    This is the LP objective expressed the same way as the engine's
-    summary.json `served_load_fraction` (served energy / total load energy), so
-    it is directly comparable to the heuristic strategies' realized numbers.
-    Reported as the upper bound in the "% of gap closed" framing; the LP is NOT
-    run through the engine for this figure, because the engine's greedy per-tick
-    dispatch would not faithfully execute the LP's planned battery schedule.
+    Thin wrapper over optimal_metrics for callers that only need the headline
+    fraction (e.g. the stress-scenario acceptance test).
     """
-    x, col, ids, ticks, _grid_at, load_at = _solve_lp(
-        scenario, households, solar_profile, load_profiles, neighborhood
-    )
-    total_served = sum(float(x[col[("served", hid, k)]]) for hid in ids for k in range(len(ticks)))
-    total_load = sum(load_at.values())
-    return total_served / total_load if total_load > 0 else 1.0
+    return optimal_metrics(scenario, households, solar_profile, load_profiles, neighborhood)[
+        "served_load_fraction"
+    ]
 
 
 def _schedule_from_solution(
