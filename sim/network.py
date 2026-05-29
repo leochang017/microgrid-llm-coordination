@@ -55,6 +55,41 @@ def build_grid_neighborhood(
     )
 
 
+def build_overlay_neighborhood(
+    rows: int,
+    cols: int,
+    affiliations: dict[str, dict[str, tuple[str, ...]]],
+    *,
+    bus_max_kw: float,
+    bus_loss_factor: float = 0.05,
+) -> Neighborhood:
+    """Geographic 4-neighbor graph plus one clique layer per affiliation group.
+
+    `affiliations` maps affiliation_type -> group_id -> tuple of member house ids.
+    Within each group all members are mutually connected; the resulting per-type
+    adjacency is stored as its own layer in edges_by_type alongside "geographic".
+    """
+    geo = build_grid_neighborhood(
+        rows, cols, bus_max_kw=bus_max_kw, bus_loss_factor=bus_loss_factor
+    )
+    all_ids = list(geo.comm_graph)
+    edges_by_type: dict[str, dict[str, list[str]]] = {"geographic": geo.comm_graph}
+    for atype, groups in affiliations.items():
+        layer: dict[str, set[str]] = {hid: set() for hid in all_ids}
+        for members in groups.values():
+            for a in members:
+                for b in members:
+                    if a != b:
+                        layer[a].add(b)
+        edges_by_type[atype] = {hid: sorted(neighbors) for hid, neighbors in layer.items()}
+    return Neighborhood(
+        comm_graph=geo.comm_graph,
+        bus_max_kw=bus_max_kw,
+        bus_loss_factor=bus_loss_factor,
+        edges_by_type=edges_by_type,
+    )
+
+
 def settle_transfers(
     n: Neighborhood,
     requested: list[Transfer],

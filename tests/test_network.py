@@ -182,3 +182,25 @@ def test_union_neighbors_falls_back_to_geographic_only() -> None:
 
     n = build_grid_neighborhood(rows=5, cols=6, bus_max_kw=50.0)
     assert n.union_neighbors("r0c0") == ["r0c1", "r1c0"]
+
+
+def test_overlay_builds_affiliation_cliques() -> None:
+    from sim.network import build_overlay_neighborhood
+
+    affiliations = {
+        "owner": {"owner_acme": ("r0c0", "r0c1", "r4c5")},
+        "hoa": {"hoa_north": ("r0c0", "r0c1")},
+    }
+    n = build_overlay_neighborhood(rows=5, cols=6, affiliations=affiliations, bus_max_kw=50.0)
+    assert sorted(n.edges_by_type["owner"]["r0c0"]) == ["r0c1", "r4c5"]
+    assert sorted(n.edges_by_type["owner"]["r4c5"]) == ["r0c0", "r0c1"]
+    assert sorted(n.edges_by_type["geographic"]["r0c0"]) == ["r0c1", "r1c0"]
+    assert n.union_neighbors("r0c0") == ["r0c1", "r1c0", "r4c5"]
+
+
+def test_overlay_no_affiliations_equals_geographic() -> None:
+    from sim.network import build_overlay_neighborhood
+
+    n = build_overlay_neighborhood(rows=2, cols=2, affiliations={}, bus_max_kw=50.0)
+    assert set(n.edges_by_type) == {"geographic"}
+    assert n.union_neighbors("r0c0") == ["r0c1", "r1c0"]
