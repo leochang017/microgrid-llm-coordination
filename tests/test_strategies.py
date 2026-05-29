@@ -55,3 +55,44 @@ def test_round_robin_moves_from_high_soc_to_low_soc_neighbor() -> None:
     )
     # At least one transfer should originate at r0c0 and go to r0c1.
     assert any(t.from_id == "r0c0" and t.to_id == "r0c1" for t in transfers)
+
+
+def test_overlay_shares_across_owner_edge_that_geographic_lacks() -> None:
+    from sim.network import Neighborhood
+    from sim.strategies import round_robin_overlay
+
+    def _h(hid: str, batt: float) -> Household:
+        return Household(
+            id=hid,
+            pv_kw_peak=5.0,
+            battery_kwh=batt,
+            battery_max_rate_kw=5.0,
+            rt_efficiency=1.0,
+            dod_floor_frac=0.0,
+            grid_max_kw=10.0,
+            profile=HouseholdProfile(description=hid),
+        )
+
+    n = Neighborhood(
+        comm_graph={"a": [], "b": []},
+        edges_by_type={"geographic": {"a": [], "b": []}, "owner": {"a": ["b"], "b": ["a"]}},
+        bus_max_kw=50.0,
+        bus_loss_factor=0.0,
+    )
+    households = {"a": _h("a", 10.0), "b": _h("b", 10.0)}
+    states = {
+        "a": HouseholdState(soc_kwh=10.0, last_solar_kw=0, last_load_kw=0, grid_connected=False),
+        "b": HouseholdState(soc_kwh=2.0, last_solar_kw=0, last_load_kw=0, grid_connected=False),
+    }
+    grid = {"a": False, "b": False}
+    transfers = round_robin_overlay.decide_transfers(
+        datetime(2018, 1, 1),
+        states,
+        households,
+        {"a": 0.0, "b": 0.0},
+        {"a": 0.0, "b": 0.0},
+        grid,
+        n,
+        0.25,
+    )
+    assert any(t.from_id == "a" and t.to_id == "b" for t in transfers)
