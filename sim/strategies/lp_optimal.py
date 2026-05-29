@@ -54,13 +54,26 @@ def prepare(
     return decide_transfers
 
 
-def _solve(
+def _solve_lp(
     scenario: Scenario,
     households: dict[str, Household],
     solar_profile: SolarProfile,
     load_profiles: dict[str, LoadProfile],
     neighborhood: Neighborhood,
-) -> dict[datetime, list[Transfer]]:
+) -> tuple[
+    np.ndarray,
+    dict[tuple[str, str, int], int],
+    list[str],
+    list[datetime],
+    dict[tuple[str, int], bool],
+    dict[tuple[str, int], float],
+]:
+    """Build and solve the full-horizon LP; return raw solution + index maps.
+
+    Returns (x, col, ids, ticks, grid_at, load_at). Callers derive either the
+    per-tick transfer schedule (_solve) or the optimal served fraction
+    (optimal_served_fraction) from this.
+    """
     ids = sorted(households)
     ticks = list(scenario.timesteps())
     nT = len(ticks)
@@ -206,7 +219,44 @@ def _solve(
     if not res.success:
         raise RuntimeError(f"LP failed: {res.message}")
 
-    return _schedule_from_solution(res.x, col, ids, ticks, grid_at, loss)
+    return res.x, col, ids, ticks, grid_at, load_at
+
+
+def _solve(
+    scenario: Scenario,
+    households: dict[str, Household],
+    solar_profile: SolarProfile,
+    load_profiles: dict[str, LoadProfile],
+    neighborhood: Neighborhood,
+) -> dict[datetime, list[Transfer]]:
+    x, col, ids, ticks, grid_at, _load_at = _solve_lp(
+        scenario, households, solar_profile, load_profiles, neighborhood
+    )
+    return _schedule_from_solution(x, col, ids, ticks, grid_at, neighborhood.bus_loss_factor)
+
+
+def optimal_served_fraction(
+    scenario: Scenario,
+    households: dict[str, Household],
+    solar_profile: SolarProfile,
+    load_profiles: dict[str, LoadProfile],
+    neighborhood: Neighborhood,
+) -> float:
+    """The LP's optimal served-load fraction — the theoretical ceiling.
+
+    This is the LP objective expressed the same way as the engine's
+    summary.json `served_load_fraction` (served energy / total load energy), so
+    it is directly comparable to the heuristic strategies' realized numbers.
+    Reported as the upper bound in the "% of gap closed" framing; the LP is NOT
+    run through the engine for this figure, because the engine's greedy per-tick
+    dispatch would not faithfully execute the LP's planned battery schedule.
+    """
+    x, col, ids, ticks, _grid_at, load_at = _solve_lp(
+        scenario, households, solar_profile, load_profiles, neighborhood
+    )
+    total_served = sum(float(x[col[("served", hid, k)]]) for hid in ids for k in range(len(ticks)))
+    total_load = sum(load_at.values())
+    return total_served / total_load if total_load > 0 else 1.0
 
 
 def _schedule_from_solution(
