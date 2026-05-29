@@ -244,3 +244,40 @@ def test_sample_households_assigns_affiliations() -> None:
     assert hh["r0c0"].affiliations == {"owner": "owner_a"}
     assert hh["r1c1"].affiliations == {"owner": "owner_a"}
     assert hh["r0c1"].affiliations == {}
+
+
+def test_bimodal_sampling_produces_two_clusters() -> None:
+    sc = _scenario(
+        rows=4,
+        cols=5,
+        household_sampling={
+            "mode": "bimodal",
+            "have": {"pv_kw_peak": [10.0, 12.0], "battery_kwh": [14.0, 16.0]},
+            "havenot": {"pv_kw_peak": [0.0, 1.0], "battery_kwh": [1.0, 2.0]},
+            "have_fraction": 0.5,
+            "rt_efficiency": 0.9,
+            "dod_floor_frac": 0.1,
+        },
+    )
+    hh = sample_households(sc, np.random.default_rng(sc.seed))
+    batts = sorted(h.battery_kwh for h in hh.values())
+    haves = [b for b in batts if b >= 14.0]
+    havenots = [b for b in batts if b <= 2.0]
+    assert haves and havenots
+    assert len(haves) + len(havenots) == len(batts)
+
+
+def test_bimodal_sampling_deterministic() -> None:
+    sc = _scenario(
+        household_sampling={
+            "mode": "bimodal",
+            "have": {"pv_kw_peak": [10.0, 12.0], "battery_kwh": [14.0, 16.0]},
+            "havenot": {"pv_kw_peak": [0.0, 1.0], "battery_kwh": [1.0, 2.0]},
+            "have_fraction": 0.5,
+            "rt_efficiency": 0.9,
+            "dod_floor_frac": 0.1,
+        },
+    )
+    a = sample_households(sc, np.random.default_rng(sc.seed))
+    b = sample_households(sc, np.random.default_rng(sc.seed))
+    assert {k: v.battery_kwh for k, v in a.items()} == {k: v.battery_kwh for k, v in b.items()}

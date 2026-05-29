@@ -43,11 +43,26 @@ def sample_households(scenario: Scenario, rng: np.random.Generator) -> dict[str,
     `scenario.household_sampling`.
     """
     sampling = scenario.household_sampling
-    pv_lo, pv_hi = sampling["pv_kw_peak"]
-    bat_lo, bat_hi = sampling["battery_kwh"]
     rt_eff = float(sampling["rt_efficiency"])
     dod = float(sampling["dod_floor_frac"])
     grid_max = float(sampling.get("grid_max_kw", 10.0))
+    mode = str(sampling.get("mode", "uniform"))
+
+    def _draw_pv_batt() -> tuple[float, float]:
+        if mode == "bimodal":
+            cluster = (
+                sampling["have"]
+                if rng.random() < float(sampling["have_fraction"])
+                else sampling["havenot"]
+            )
+            return (
+                float(rng.uniform(*cluster["pv_kw_peak"])),
+                float(rng.uniform(*cluster["battery_kwh"])),
+            )
+        return (
+            float(rng.uniform(*sampling["pv_kw_peak"])),
+            float(rng.uniform(*sampling["battery_kwh"])),
+        )
 
     # Invert scenario.affiliations (type -> group -> houses) to per-house (type -> group).
     house_affil: dict[str, dict[str, str]] = {}
@@ -60,8 +75,7 @@ def sample_households(scenario: Scenario, rng: np.random.Generator) -> dict[str,
     for r in range(scenario.rows):
         for c in range(scenario.cols):
             hid = f"r{r}c{c}"
-            pv = float(rng.uniform(pv_lo, pv_hi))
-            batt = float(rng.uniform(bat_lo, bat_hi))
+            pv, batt = _draw_pv_batt()
             rate = batt / 5.0  # standard residential ratio: full charge in ~5 h
             households[hid] = Household(
                 id=hid,
