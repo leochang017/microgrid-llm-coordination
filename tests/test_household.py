@@ -216,3 +216,32 @@ def test_grid_disconnected_leaves_deficit_unmet() -> None:
     )
     assert s1.unmet_kwh == pytest.approx(5.0, abs=1e-9)
     assert s1.grid_import_kwh == 0.0
+
+
+def test_household_affiliations_default_empty() -> None:
+    h = Household(
+        id="r0c0",
+        pv_kw_peak=5.0,
+        battery_kwh=10.0,
+        battery_max_rate_kw=2.0,
+        rt_efficiency=0.9,
+        dod_floor_frac=0.1,
+        grid_max_kw=10.0,
+        profile=HouseholdProfile(description="x"),
+    )
+    assert h.affiliations == {}
+
+
+def test_household_affiliations_settable() -> None:
+    h = Household(
+        id="r0c0",
+        pv_kw_peak=5.0,
+        battery_kwh=10.0,
+        battery_max_rate_kw=2.0,
+        rt_efficiency=0.9,
+        dod_floor_frac=0.1,
+        grid_max_kw=10.0,
+        profile=HouseholdProfile(description="x"),
+        affiliations={"owner": "owner_acme", "hoa": "hoa_north"},
+    )
+    assert h.affiliations["owner"] == "owner_acme"

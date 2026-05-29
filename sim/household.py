@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 
 from sim.types import HouseholdProfile
 
@@ -20,6 +20,7 @@ class Household:
     dod_floor_frac: float
     grid_max_kw: float
     profile: HouseholdProfile
+    affiliations: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
