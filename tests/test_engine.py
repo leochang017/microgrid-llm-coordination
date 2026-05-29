@@ -281,3 +281,23 @@ def test_bimodal_sampling_deterministic() -> None:
     a = sample_households(sc, np.random.default_rng(sc.seed))
     b = sample_households(sc, np.random.default_rng(sc.seed))
     assert {k: v.battery_kwh for k, v in a.items()} == {k: v.battery_kwh for k, v in b.items()}
+
+
+def test_prepare_hook_called_once_and_supplies_decider(tmp_path) -> None:
+    from sim.engine import run
+    from sim.logging import JsonlLogger
+
+    calls = {"prepare": 0}
+
+    def prepare(scenario, households, solar_profile, load_profiles, neighborhood):
+        calls["prepare"] += 1
+
+        def decide(t, states, hh, solar, load, grid, nbhd, dt):
+            return []
+
+        return decide
+
+    sc = _scenario(strategy="synthetic_noop")
+    logger = JsonlLogger(run_dir=str(tmp_path), scenario_id=sc.scenario_id)
+    run(sc, decide_transfers=None, logger=logger, prepare=prepare)
+    assert calls["prepare"] == 1

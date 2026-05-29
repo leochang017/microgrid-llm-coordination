@@ -34,6 +34,11 @@ DecideFn = Callable[
     list[Transfer],
 ]
 
+PrepareFn = Callable[
+    [Scenario, dict[str, Household], SolarProfile, dict[str, LoadProfile], Neighborhood],
+    DecideFn,
+]
+
 
 def sample_households(scenario: Scenario, rng: np.random.Generator) -> dict[str, Household]:
     """Build the rows by cols Household objects from the scenario's sampling config.
@@ -93,10 +98,11 @@ def sample_households(scenario: Scenario, rng: np.random.Generator) -> dict[str,
 
 def run(
     scenario: Scenario,
-    decide_transfers: DecideFn,
+    decide_transfers: DecideFn | None,
     logger: JsonlLogger,
     *,
     strict: bool = True,
+    prepare: PrepareFn | None = None,
 ) -> dict[str, Any]:
     """Drive the simulation: per-tick lookup -> decide -> settle -> step -> log.
 
@@ -124,6 +130,11 @@ def run(
     )
 
     solar_profile, load_profiles = _build_data(scenario, households)
+
+    if prepare is not None:
+        decide_transfers = prepare(scenario, households, solar_profile, load_profiles, neighborhood)
+    if decide_transfers is None:
+        raise ValueError("run() requires either decide_transfers or a prepare hook")
 
     # Initialize states: every battery starts at 50% capacity, every house
     # presumed grid-connected at t=0 unless the outage schedule says otherwise.
