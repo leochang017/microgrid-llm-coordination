@@ -8,7 +8,7 @@ ceiling) directly from lp_optimal, and prints a markdown comparison table.
 gap_closed(strategy) = (served(strategy) - served(round_robin))
                        / (served(lp_optimal) - served(round_robin))
 
-The LP ceiling is the LP *objective* (lp_optimal.optimal_served_fraction), not an
+The LP ceiling is the LP *objective* (lp_optimal.optimal_metrics), not an
 engine-realized run — see sim/strategies/lp_optimal.py for why.
 """
 

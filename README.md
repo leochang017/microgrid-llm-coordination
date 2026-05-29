@@ -4,9 +4,9 @@ A research project asking: can a population of LLM agents — one per household 
 
 The contribution is on the CS/ML axis (natural-language coordination, robustness, explainability), not power systems. Classical optimization handles fairness under strong assumptions, struggles with robustness, and doesn't attempt explainability. That gap is what this project explores.
 
-**Status:** Phase 1 (physics-only simulator) — ✅ **complete.** 61 tests pass. CLI works end-to-end.
+**Status:** Phase 1 simulator + Phase 1.6 hardening — ✅ **complete.** 96 tests pass. CLI works end-to-end.
 
-📐 [Phase 1 design spec](docs/superpowers/specs/2026-05-14-phase1-simulator-design.md) · 📋 [Phase 1 implementation plan](docs/superpowers/plans/2026-05-14-phase1-simulator.md) · 🧠 [Project context (CLAUDE.md)](CLAUDE.md)
+📐 [Phase 1 spec](docs/superpowers/specs/2026-05-14-phase1-simulator-design.md) · [Phase 1.6 spec](docs/superpowers/specs/2026-05-29-phase1.6-hardening-design.md) · 📋 [Phase 1 plan](docs/superpowers/plans/2026-05-14-phase1-simulator.md) · [Phase 1.6 plan](docs/superpowers/plans/2026-05-29-phase1.6-hardening.md) · 🧠 [Project context (CLAUDE.md)](CLAUDE.md)
 
 ## Install
 
@@ -101,7 +101,61 @@ The **coordination strategy is an injected callback** — `decide_transfers(t, s
 - [x] Integration test (round_robin beats no_coordination on Gini) + physics smoke test + determinism check
 - [x] Real data adapters (Pecan Street + NREL NSRDB), engine dispatches on `data_source`
 
-**Phase 1 complete.** Next: Phase 2 — LLM agent layer (separate spec + plan, separate brainstorm).
+**Phase 1 complete.**
+
+## Phase 1.6 — pre-Phase-2 hardening
+
+Advisor-gated work establishing that the Phase 2 LLM layer has real room to add value:
+
+- **Communication-graph overlays.** Beyond the geographic 4-neighbor graph, scenarios
+  declare ownership/management *trust circles* (single-owner portfolios, HOAs,
+  demand-response aggregators, …). Each affiliation group becomes a clique layer; a house
+  can sit in several overlapping circles. Declared in the scenario YAML:
+
+  ```yaml
+  affiliations:
+    owner:
+      owner_a: [r0c0, r2c3, r4c5]   # one owner, three scattered properties
+    hoa:
+      hoa_top: [r0c0, r0c1, r0c2]
+    dr_aggregator:
+      agg_gridflex: [r0c0, r1c1, r2c2, r3c3, r4c4]
+  ```
+
+- **Four strategies.** `no_coordination` (hoard) · `round_robin` (share with geographic
+  neighbors) · `round_robin_overlay` (share across the overlay union) · `lp_optimal`
+  (centralized full-horizon LP, the served-load **ceiling**).
+
+- **Stress scenarios** where simple sharing visibly breaks: `haves_havenots.yaml`
+  (bimodal capacity, 12 h outage) and `long_outage_72h.yaml`. The `winter_morning_lowsolar`
+  and `heatwave_ac` scenarios need real cold/hot-climate ResStock data — fetch with:
+
+  ```bash
+  python -m scripts.fetch_data resstock --state VT -n 30 --out-dir data/resstock_vt/
+  python -m scripts.fetch_data nrel --lat 44.26 --lon -72.58 --year 2018 --out data/nrel_solar/vermont_2018.csv
+  python -m scripts.fetch_data resstock --state AZ -n 30 --out-dir data/resstock_az/
+  python -m scripts.fetch_data nrel --lat 33.45 --lon -112.07 --year 2018 --out data/nrel_solar/phoenix_2018.csv
+  ```
+
+- **Gap-closed comparison.** `python -m scripts.compare --scenario <yaml>` runs the
+  heuristics through the engine, takes the LP objective as the ceiling, and tabulates
+  `gap_closed = (served − round_robin) / (lp_optimal − round_robin)`. On `haves_havenots`:
+
+  | strategy | served | unmet_kwh | gini | gap_closed |
+  |---|---|---|---|---|
+  | no_coordination | 0.4560 | 195.8 | 0.4851 | 0.00% |
+  | round_robin | 0.5250 | 171.0 | 0.2416 | 0.00% |
+  | round_robin_overlay | 0.5249 | 171.0 | 0.2401 | 0.00% |
+  | lp_optimal | 0.5294 | 169.4 | 0.3653 | 100.00% |
+
+  Note the served-maximizing LP optimum is *less* equitable (gini 0.365) than round_robin
+  (0.242) — the fairness tension Phase 3's needs-weighted welfare model will address.
+
+> The LP ceiling is the LP **objective** (`lp_optimal.optimal_metrics`), not an
+> engine-realized run: the engine's greedy per-tick dispatch wouldn't faithfully execute
+> the LP's planned battery schedule, so a realized LP run can fall below round_robin.
+
+**Next:** Phase 2 — LLM agent layer (separate spec + plan, separate brainstorm).
 
 ## License
 
