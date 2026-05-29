@@ -212,3 +212,35 @@ def test_run_smoke_deterministic_byte_identical(tmp_path) -> None:
     lg_b.close()
 
     assert (out_a / "state.jsonl").read_bytes() == (out_b / "state.jsonl").read_bytes()
+
+
+def _scenario(**kw: object) -> Scenario:
+    base: dict[str, object] = dict(
+        scenario_id="t",
+        start=datetime(2018, 1, 1),
+        end=datetime(2018, 1, 1, 6),
+        dt_hours=0.25,
+        seed=1,
+        rows=2,
+        cols=2,
+        bus_max_kw=50.0,
+        bus_loss_factor=0.05,
+        strategy="round_robin",
+        data_source="synthetic",
+        household_sampling={
+            "pv_kw_peak": [4.0, 8.0],
+            "battery_kwh": [5.0, 10.0],
+            "rt_efficiency": 0.9,
+            "dod_floor_frac": 0.1,
+        },
+    )
+    base.update(kw)
+    return Scenario(**base)  # type: ignore[arg-type]
+
+
+def test_sample_households_assigns_affiliations() -> None:
+    sc = _scenario(affiliations={"owner": {"owner_a": ("r0c0", "r1c1")}})
+    hh = sample_households(sc, np.random.default_rng(sc.seed))
+    assert hh["r0c0"].affiliations == {"owner": "owner_a"}
+    assert hh["r1c1"].affiliations == {"owner": "owner_a"}
+    assert hh["r0c1"].affiliations == {}

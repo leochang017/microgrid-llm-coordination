@@ -42,6 +42,7 @@ Update this after every committed task. Newest entries on top.
 
 | Date | Task | Commit | Tests | Note |
 |------|------|--------|-------|------|
+| 2026-05-29 | **P1.6 Task 6 — engine overlay wiring** ✅ | _(this commit)_ | 83 ✓ | `sample_households` assigns each house its per-type affiliation group (inverted from `scenario.affiliations`); `run()` now builds the neighborhood via `build_overlay_neighborhood`. Existing scenarios (empty affiliations) get geographic-only graphs — behavior unchanged. |
 | 2026-05-29 | **P1.6 Task 5 — scenario affiliations** ✅ | _(this commit)_ | 82 ✓ | `load_scenario` parses the `affiliations:` YAML block into `Scenario.affiliations` (type→group→house tuples) and validates every referenced house id exists in the grid (raises on unknown). Default empty. |
 | 2026-05-29 | **P1.6 Task 4 — default_affiliations** ✅ | _(this commit)_ | 79 ✓ | Seeded generator for a plausible default trust-circle structure (2 multi-property owners, 1 top-row HOA, 1 DR aggregator). Deterministic per seed. |
 | 2026-05-29 | **P1.6 Task 3 — build_overlay_neighborhood** ✅ | _(this commit)_ | 77 ✓ | New builder layers affiliation cliques (type→group→members, each group a clique) atop the geographic graph. Empty affiliations ⇒ geographic-only. Foundation for ownership/management trust circles. |

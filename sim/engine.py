@@ -16,7 +16,7 @@ import numpy as np
 from sim.data import LoadProfile, SolarProfile, SyntheticLoad, SyntheticSolar
 from sim.household import Household, HouseholdState, step
 from sim.logging import JsonlLogger
-from sim.network import Neighborhood, build_grid_neighborhood, settle_transfers
+from sim.network import Neighborhood, build_overlay_neighborhood, settle_transfers
 from sim.scenario import Scenario
 from sim.types import Event, EventKind, HouseholdProfile, Transfer
 
@@ -49,6 +49,13 @@ def sample_households(scenario: Scenario, rng: np.random.Generator) -> dict[str,
     dod = float(sampling["dod_floor_frac"])
     grid_max = float(sampling.get("grid_max_kw", 10.0))
 
+    # Invert scenario.affiliations (type -> group -> houses) to per-house (type -> group).
+    house_affil: dict[str, dict[str, str]] = {}
+    for atype, groups in scenario.affiliations.items():
+        for gid, members in groups.items():
+            for member in members:
+                house_affil.setdefault(member, {})[atype] = gid
+
     households: dict[str, Household] = {}
     for r in range(scenario.rows):
         for c in range(scenario.cols):
@@ -65,6 +72,7 @@ def sample_households(scenario: Scenario, rng: np.random.Generator) -> dict[str,
                 dod_floor_frac=dod,
                 grid_max_kw=grid_max,
                 profile=HouseholdProfile(description=f"household {hid}"),
+                affiliations=house_affil.get(hid, {}),
             )
     return households
 
@@ -93,9 +101,10 @@ def run(
     """
     rng = np.random.default_rng(scenario.seed)
     households = sample_households(scenario, rng)
-    neighborhood = build_grid_neighborhood(
+    neighborhood = build_overlay_neighborhood(
         rows=scenario.rows,
         cols=scenario.cols,
+        affiliations=scenario.affiliations,
         bus_max_kw=scenario.bus_max_kw,
         bus_loss_factor=scenario.bus_loss_factor,
     )
