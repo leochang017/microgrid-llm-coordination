@@ -855,7 +855,7 @@ git commit -m "feat: add Message speech-act schema with deterministic correlatio
 - Create: `sim/agents/cache.py`
 - Test: `tests/test_cache.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/test_cache.py
@@ -945,12 +945,12 @@ def test_cache_files_are_well_formed_json(tmp_path: Path) -> None:
     assert blob["model"] == "claude-haiku-4-5-20251001"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_cache.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'sim.agents.cache'`.
 
-- [ ] **Step 3: Implement `sim/agents/cache.py`**
+- [x] **Step 3: Implement `sim/agents/cache.py`**
 
 ```python
 # sim/agents/cache.py
@@ -1042,17 +1042,17 @@ class PromptCache:
             raise
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `.venv/bin/pytest tests/test_cache.py -v`
 Expected: 6 tests PASS.
 
-- [ ] **Step 5: Run linters**
+- [x] **Step 5: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Add progress log row:
 
