@@ -91,7 +91,7 @@ academic/microgrid/
 - Create: `sim/agents/__init__.py`
 - Test: `tests/test_agents_package.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/test_agents_package.py
@@ -107,12 +107,12 @@ def test_anthropic_dep_installed() -> None:
     assert hasattr(anthropic, "Anthropic")
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_agents_package.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'sim.agents'` AND `ModuleNotFoundError: No module named 'anthropic'`.
 
-- [ ] **Step 3: Add `anthropic` to `pyproject.toml`**
+- [x] **Step 3: Add `anthropic` to `pyproject.toml`**
 
 In `pyproject.toml` under `[project] dependencies`, append `"anthropic>=0.40"`:
 
@@ -136,7 +136,7 @@ module = ["anthropic.*"]
 ignore_missing_imports = true
 ```
 
-- [ ] **Step 4: Create the package**
+- [x] **Step 4: Create the package**
 
 ```python
 # sim/agents/__init__.py
@@ -156,17 +156,17 @@ Strategies plug in via ``sim.strategies.llm_agent``.
 """
 ```
 
-- [ ] **Step 5: Install the new dep in `.venv`**
+- [x] **Step 5: Install the new dep in `.venv`**
 
 Run: `.venv/bin/pip install -e .`
 Expected: anthropic + transitive deps install cleanly.
 
-- [ ] **Step 6: Run test to verify it passes**
+- [x] **Step 6: Run test to verify it passes**
 
 Run: `.venv/bin/pytest tests/test_agents_package.py -v`
 Expected: PASS — both tests green.
 
-- [ ] **Step 7: Clean-install dry-run (per workflow rule)**
+- [x] **Step 7: Clean-install dry-run (per workflow rule)**
 
 Run:
 ```bash
@@ -177,12 +177,12 @@ rm -rf /tmp/microgrid_ci_check && python3 -m venv /tmp/microgrid_ci_check
 ```
 Expected: both tests PASS in the fresh venv. If failure, **stop and diagnose** before committing.
 
-- [ ] **Step 8: Run the full existing suite to make sure nothing regressed**
+- [x] **Step 8: Run the full existing suite to make sure nothing regressed**
 
 Run: `.venv/bin/pytest -q`
 Expected: 96 tests pass (Phase 1.6 baseline) + the 2 new agents-package tests = 98.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 Add the new progress-log row to `CLAUDE.md` (newest on top) under the existing Phase 1.6 entries:
 
