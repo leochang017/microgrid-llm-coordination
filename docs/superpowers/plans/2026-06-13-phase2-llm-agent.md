@@ -3343,7 +3343,7 @@ git commit -m "feat: add LLMAgent.plan (combined reflect+plan LLM call)"
 - Modify: `sim/agents/agent.py` — append `react_to_pending()` + trigger logic
 - Test: `tests/test_agent.py` — append
 
-- [ ] **Step 1: Write the failing test (append)**
+- [x] **Step 1: Write the failing test (append)**
 
 Append to `tests/test_agent.py`:
 
@@ -3447,12 +3447,12 @@ def test_no_replan_when_idle_and_inside_ttl(tmp_path) -> None:
     assert a.should_replan(grid_islanded=True, t=datetime(2026, 1, 1)) is False
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_agent.py -v -k "react or trigger or replan"`
 Expected: FAIL — no `react_to_pending` / `should_replan` / `last_grid_islanded` attributes.
 
-- [ ] **Step 3: Append react + trigger logic to `LLMAgent`**
+- [x] **Step 3: Append react + trigger logic to `LLMAgent`**
 
 Update the dataclass to add three fields (near the existing fields):
 
@@ -3555,17 +3555,17 @@ Append methods inside `LLMAgent`:
         )
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `.venv/bin/pytest tests/test_agent.py -v`
 Expected: 16 tests PASS (11 + 5 new).
 
-- [ ] **Step 5: Run linters**
+- [x] **Step 5: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Add progress log row:
 

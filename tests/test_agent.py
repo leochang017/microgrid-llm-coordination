@@ -365,3 +365,129 @@ def test_plan_prompt_contains_trust_circles_and_state(tmp_path) -> None:
     a.plan(t=t0)
     assert "owner_acme" in captured["user"]
     assert "household r0c0" in captured["user"]
+
+
+# --- LLMAgent.react_to_pending + trigger tests (Task 16) ---
+
+
+def test_react_produces_accept_or_reject_per_message(tmp_path) -> None:
+    mock = MockLLMClient(
+        cache=PromptCache(local_dir=tmp_path),
+        canned={
+            "You are reacting to a REQUEST": LLMResponse(
+                text="ACCEPT\nrationale: I have surplus from owner group",
+                tokens_in=120,
+                tokens_out=20,
+            )
+        },
+    )
+    a = _bare_agent(tmp_path)
+    a.llm_client = mock
+    t0 = datetime(2026, 1, 1, 8, 0)
+    inbox = [
+        Message(
+            t_sent=t0,
+            sender="r0c1",
+            recipient="r0c0",
+            performative="REQUEST",
+            payload={"kwh": 0.5},
+            rationale_nl="my SoC is low",
+            correlation_id="abc",
+        )
+    ]
+    a.observe(
+        t=t0,
+        own_state={
+            "soc_kwh": 8.0,
+            "soc_capacity": 10.0,
+            "grid_islanded": True,
+            "load_kw": 1.0,
+            "solar_kw": 0.0,
+        },
+        peer_states={},
+        inbox=inbox,
+        t_idx=0,
+    )
+    out = a.react_to_pending(t=t0)
+    assert len(out) == 1
+    assert out[0].performative == "ACCEPT"
+    assert out[0].rationale_nl != ""
+    assert out[0].correlation_id == "abc"
+
+
+def test_react_caps_at_max_per_tick(tmp_path) -> None:
+    mock = MockLLMClient(
+        cache=PromptCache(local_dir=tmp_path),
+        canned={
+            "You are reacting to a REQUEST": LLMResponse(
+                text="REJECT\nrationale: not enough headroom",
+                tokens_in=100,
+                tokens_out=20,
+            )
+        },
+    )
+    a = _bare_agent(tmp_path)
+    a.llm_client = mock
+    a.react_max_per_tick = 2
+    t0 = datetime(2026, 1, 1, 8, 0)
+    inbox = [
+        Message(
+            t_sent=t0,
+            sender=f"r0c{i}",
+            recipient="r0c0",
+            performative="REQUEST",
+            payload={"kwh": 0.5},
+            rationale_nl="x",
+            correlation_id=f"id{i}",
+        )
+        for i in range(5)
+    ]
+    a.observe(
+        t=t0,
+        own_state={
+            "soc_kwh": 8.0,
+            "soc_capacity": 10.0,
+            "grid_islanded": True,
+            "load_kw": 1.0,
+            "solar_kw": 0.0,
+        },
+        peer_states={},
+        inbox=inbox,
+        t_idx=0,
+    )
+    out = a.react_to_pending(t=t0)
+    assert len(out) == 2
+    assert len(a.pending_react) == 3
+
+
+def test_trigger_outage_onset(tmp_path) -> None:
+    a = _bare_agent(tmp_path)
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.last_grid_islanded = False
+    assert a.should_replan(grid_islanded=True, t=t0) is True
+
+
+def test_trigger_soc_hysteresis_crossing(tmp_path) -> None:
+    a = _bare_agent(tmp_path)
+    t0 = datetime(2026, 1, 1, 8, 0)
+    # set up previous-above + current-below
+    a._prev_soc_frac = 0.65
+    a.last_soc_frac = 0.35
+    a.policy_age_ticks = 0
+    a.last_grid_islanded = True  # already islanded so onset doesn't fire
+    assert a.should_replan(grid_islanded=True, t=t0) is True
+
+
+def test_trigger_ttl_expiry(tmp_path) -> None:
+    a = _bare_agent(tmp_path)
+    a.policy_age_ticks = a.policy.ttl_ticks
+    assert a.should_replan(grid_islanded=True, t=datetime(2026, 1, 1)) is True
+
+
+def test_no_replan_when_idle_and_inside_ttl(tmp_path) -> None:
+    a = _bare_agent(tmp_path)
+    a.policy_age_ticks = 0
+    a.last_soc_frac = 0.6
+    a._prev_soc_frac = 0.6
+    a.last_grid_islanded = True
+    assert a.should_replan(grid_islanded=True, t=datetime(2026, 1, 1)) is False

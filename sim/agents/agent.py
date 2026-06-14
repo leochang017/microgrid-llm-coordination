@@ -318,3 +318,90 @@ def _agent_plan(self: LLMAgent, t: datetime) -> None:
 
 
 LLMAgent.plan = _agent_plan  # type: ignore[attr-defined]
+
+
+def _agent_should_replan(self: LLMAgent, grid_islanded: bool, t: datetime) -> bool:
+    """True if a plan() call is warranted this tick.
+
+    Triggers: outage onset, SoC hysteresis crossing, TTL expiry.
+    """
+    # outage onset
+    if grid_islanded and not self.last_grid_islanded:
+        return True
+    # SoC hysteresis crossing (need both prev and current)
+    threshold = self.policy.share_min_soc_frac
+    if self._prev_soc_frac is not None and self.last_soc_frac is not None:
+        above = threshold + 0.10
+        below = max(0.0, threshold - 0.10)
+        crossed_down = self._prev_soc_frac >= above and self.last_soc_frac <= below
+        crossed_up = self._prev_soc_frac <= below and self.last_soc_frac >= above
+        if crossed_down or crossed_up:
+            return True
+    # TTL expiry
+    return self.policy_age_ticks >= self.policy.ttl_ticks
+
+
+def _agent_react_to_pending(self: LLMAgent, t: datetime) -> list[Message]:
+    """Handle up to react_max_per_tick pending REQUEST/OFFER messages this tick.
+
+    Excess remains queued for next tick.
+    """
+    out: list[Message] = []
+    n = min(len(self.pending_react), self.react_max_per_tick)
+    handled = self.pending_react[:n]
+    self.pending_react = self.pending_react[n:]
+    for incoming in handled:
+        resp = _react_to_message(self, t, incoming)
+        if resp is not None:
+            out.append(resp)
+    return out
+
+
+def _react_to_message(self: LLMAgent, t: datetime, m: Message) -> Message | None:
+    """Issue a short LLM call asking for ACCEPT/REJECT/COUNTER."""
+    from sim.agents.llm import LLMRequest
+
+    prompt = (
+        f"You are reacting to a {m.performative} from {m.sender}. "
+        f"Payload: {m.payload}. Their rationale: {m.rationale_nl}.\n"
+        f"Your current policy: sharing_intent={self.policy.sharing_intent}, "
+        f"share_min_soc_frac={self.policy.share_min_soc_frac}, "
+        f"distrusted_peers={list(self.policy.distrusted_peers)}.\n"
+        f"Your latest belief: {self.policy.belief_note or '(none)'}.\n"
+        f"Reply with one of ACCEPT / REJECT / COUNTER on the first line, "
+        f"followed by `rationale: <one sentence>`."
+    )
+    resp = self.llm_client.call(
+        LLMRequest(
+            model=self.model,
+            system=(
+                "You are the reactive subroutine of a household energy-coordination "
+                "agent. Be brief and decisive."
+            ),
+            user=prompt,
+            max_tokens=200,
+        )
+    )
+    text = resp.text.strip()
+    first_line = text.split("\n", 1)[0].strip().upper()
+    if first_line not in ("ACCEPT", "REJECT", "COUNTER"):
+        return None
+    rationale = ""
+    for line in text.splitlines()[1:]:
+        low = line.strip().lower()
+        if low.startswith("rationale:"):
+            rationale = line.split(":", 1)[1].strip()
+            break
+    return Message(
+        t_sent=t,
+        sender=self.house_id,
+        recipient=m.sender,
+        performative=first_line,  # type: ignore[arg-type]
+        payload=dict(m.payload),
+        rationale_nl=rationale or "(no rationale)",
+        correlation_id=m.correlation_id,
+    )
+
+
+LLMAgent.should_replan = _agent_should_replan  # type: ignore[attr-defined]
+LLMAgent.react_to_pending = _agent_react_to_pending  # type: ignore[attr-defined]
