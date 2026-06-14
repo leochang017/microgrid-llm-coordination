@@ -472,7 +472,7 @@ git commit -m "feat: add Policy dataclass + validator + YAML round-trip"
 - Create: `sim/agents/memory.py`
 - Test: `tests/test_memory.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/test_memory.py
@@ -549,12 +549,12 @@ def test_memory_stream_jsonl_round_trip(tmp_path) -> None:
     assert loaded.entries[1].importance == 8.0
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_memory.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'sim.agents.memory'`.
 
-- [ ] **Step 3: Implement `sim/agents/memory.py`**
+- [x] **Step 3: Implement `sim/agents/memory.py`**
 
 ```python
 # sim/agents/memory.py
@@ -667,17 +667,17 @@ def _cosine_or_one(query: str | None, text: str) -> float:
     return 1.0
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `.venv/bin/pytest tests/test_memory.py -v`
 Expected: 5 tests PASS.
 
-- [ ] **Step 5: Run linters**
+- [x] **Step 5: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Add progress log row to `CLAUDE.md` (newest on top):
 
