@@ -5034,17 +5034,17 @@ git commit -m "docs: update README + CLAUDE.md for Phase 2 completion"
 **Files:**
 - (no code change)
 
-- [ ] **Step 1: Run the full test suite**
+- [x] **Step 1: Run the full test suite**
 
 Run: `.venv/bin/pytest -q`
 Expected: ~186 tests pass (96 from Phase 1.6 + ~90 new in Phase 2). Zero failures.
 
-- [ ] **Step 2: Lint + typecheck**
+- [x] **Step 2: Lint + typecheck**
 
 Run: `.venv/bin/ruff check sim scripts tests && .venv/bin/mypy`
 Expected: zero errors.
 
-- [ ] **Step 3: Clean-install dry-run in `/tmp/microgrid_ci_check`**
+- [x] **Step 3: Clean-install dry-run in `/tmp/microgrid_ci_check`**
 
 Run:
 ```bash
@@ -5055,12 +5055,12 @@ rm -rf /tmp/microgrid_ci_check && python3 -m venv /tmp/microgrid_ci_check
 ```
 Expected: clean install succeeds; all tests pass in the fresh venv. If FAIL, **stop** and diagnose before tagging.
 
-- [ ] **Step 4: Glance at CI on GitHub**
+- [x] **Step 4: Glance at CI on GitHub**
 
 Run: `gh run list --limit 1`
 Expected: latest run is green (or, if the Phase 2 commits haven't been pushed yet, push them now and wait).
 
-- [ ] **Step 5: Confirm reference-run replay is byte-identical**
+- [x] **Step 5: Confirm reference-run replay is byte-identical**
 
 For each of the three reference runs, redo the run into `/tmp/replay/...` and diff:
 
@@ -5078,14 +5078,14 @@ Expected: empty diffs. (Note: `--out-dir` may need to be implemented in `scripts
 
 If diff is NON-empty: cache lookup is broken OR something downstream of the cache (RNG, sort order) leaked nondeterminism. Diagnose before tagging.
 
-- [ ] **Step 6: Tag**
+- [x] **Step 6: Tag**
 
 ```bash
 git tag -a phase2-complete -m "Phase 2: LLM agent layer + 3 failure-mode axes + 3 reference runs"
 git push --tags
 ```
 
-- [ ] **Step 7: Final progress log entry**
+- [x] **Step 7: Final progress log entry**
 
 Add progress log row:
 
