@@ -1297,7 +1297,7 @@ git commit -m "feat: add LLMClient abstract base + MockLLMClient for tests"
 - Modify: `sim/agents/llm.py` — append `AnthropicLLMClient`
 - Test: `tests/test_llm_client.py` — append HTTP-mock tests
 
-- [ ] **Step 1: Write the failing test (append to existing file)**
+- [x] **Step 1: Write the failing test (append to existing file)**
 
 Append to `tests/test_llm_client.py`:
 
@@ -1389,12 +1389,12 @@ def test_anthropic_client_cache_hit_skips_api(tmp_path) -> None:
     fake_client.messages.create.assert_not_called()
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_llm_client.py -v -k anthropic`
 Expected: FAIL — `ImportError: cannot import name 'AnthropicLLMClient'`.
 
-- [ ] **Step 3: Append `AnthropicLLMClient` to `sim/agents/llm.py`**
+- [x] **Step 3: Append `AnthropicLLMClient` to `sim/agents/llm.py`**
 
 Add to the imports near the top:
 
@@ -1453,17 +1453,17 @@ class AnthropicLLMClient(LLMClient):
         raise last_exc
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `.venv/bin/pytest tests/test_llm_client.py -v`
 Expected: 7 tests PASS (4 from Task 6 + 3 new).
 
-- [ ] **Step 5: Run linters**
+- [x] **Step 5: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Add progress log row:
 

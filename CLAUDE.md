@@ -42,6 +42,7 @@ Update this after every committed task. Newest entries on top.
 
 | Date | Task | Commit | Tests | Note |
 |------|------|--------|-------|------|
+| 2026-06-13 | **P2 Task 7 — AnthropicLLMClient + retries** ✅ | _(this commit)_ | 127 ✓ | `AnthropicLLMClient` calls `messages.create` with temperature=0; exponential backoff on RateLimit/APIConnection/InternalServerError. Cache hit bypasses the API entirely. HTTP-level tests use `unittest.mock`. |
 | 2026-06-13 | **P2 Task 6 — LLMClient abstract + MockLLMClient** ✅ | _(this commit)_ | 124 ✓ | `sim/agents/llm.py`: `LLMRequest`/`LLMResponse` data shapes, `LLMClient` base class (handles cache get/put), `MockLLMClient` (substring-keyed canned responses for tests). Real `AnthropicLLMClient` lands in Task 7. |
 | 2026-06-13 | **P2 Task 5 — PromptCache (two-tier sha256)** ✅ | _(this commit)_ | 120 ✓ | `sim/agents/cache.py`: content-addressed prompt cache (sha256 over canonical-json of model+system+user+temp+max_tokens+tools_schema). Two-tier lookup: local then reference_runs/ cache. Atomic writes via tmp+os.replace. |
 | 2026-06-13 | **P2 Task 4 — Message speech-act schema** ✅ | _(this commit)_ | 114 ✓ | Frozen `Message` dataclass with REQUEST/OFFER/ACCEPT/REJECT/COUNTER/INFORM vocabulary in `sim/agents/protocol.py`. `new_correlation_id(rng)` is deterministic when seeded RNG passed in. MessageBus lands in Task 8. |
