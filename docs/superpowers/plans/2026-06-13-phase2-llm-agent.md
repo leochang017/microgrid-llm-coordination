@@ -4567,7 +4567,7 @@ git commit -m "test: end-to-end mock-LLM integration on haves_havenots"
 **Files:**
 - Test: `tests/test_llm_agent_replay.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/test_llm_agent_replay.py
@@ -4635,17 +4635,17 @@ def test_two_runs_with_same_mock_are_byte_identical(tmp_path: Path) -> None:
     assert (a / "messages.jsonl").read_bytes() == (b / "messages.jsonl").read_bytes()
 ```
 
-- [ ] **Step 2: Run test to verify it fails OR passes**
+- [x] **Step 2: Run test to verify it fails OR passes**
 
 Run: `.venv/bin/pytest tests/test_llm_agent_replay.py -v`
 Expected: PASS — all RNGs are deterministic; MockLLMClient is deterministic given same canned dict. If it FAILS, the cause is somewhere in the agent or bus where an undocumented dict-iteration order or unseeded RNG leaked in; investigate before continuing.
 
-- [ ] **Step 3: Run linters**
+- [x] **Step 3: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 Add progress log row:
 
@@ -4668,7 +4668,7 @@ git commit -m "test: lock in replay determinism for LLM strategy"
 **Files:**
 - Test: `tests/test_llm_agent_failure_axes.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/test_llm_agent_failure_axes.py
@@ -4757,17 +4757,17 @@ def test_comm_constraint_reduces_message_delivery(tmp_path: Path) -> None:
     assert cons_ratio < clean_ratio, f"clean ratio={clean_ratio:.3f} constrained ratio={cons_ratio:.3f}"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_llm_agent_failure_axes.py -v`
 Expected: All three may PASS already (if Tasks 11-18 are correct). If any FAIL, the cause is in the relevant injection point — investigate before continuing.
 
-- [ ] **Step 3: Run linters**
+- [x] **Step 3: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 Add progress log row:
 
