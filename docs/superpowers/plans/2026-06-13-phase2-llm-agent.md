@@ -1487,7 +1487,7 @@ git commit -m "feat: add AnthropicLLMClient with retries + temperature=0"
 - Modify: `sim/agents/protocol.py` — append `MessageBus`
 - Test: `tests/test_protocol.py` — append bus tests
 
-- [ ] **Step 1: Write the failing test (append)**
+- [x] **Step 1: Write the failing test (append)**
 
 Append to `tests/test_protocol.py`:
 
@@ -1564,12 +1564,12 @@ def test_bus_log_jsonl_round_trip(tmp_path) -> None:
     assert rows[0]["performative"] == "REQUEST"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_protocol.py -v -k bus`
 Expected: FAIL — `ImportError: cannot import name 'MessageBus'`.
 
-- [ ] **Step 3: Append `MessageBus` to `sim/agents/protocol.py`**
+- [x] **Step 3: Append `MessageBus` to `sim/agents/protocol.py`**
 
 Add to imports near the top:
 
@@ -1732,17 +1732,17 @@ class MessageBus:
         return "geographic"
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `.venv/bin/pytest tests/test_protocol.py -v`
 Expected: 8 tests PASS (4 Message + 4 bus).
 
-- [ ] **Step 5: Run linters**
+- [x] **Step 5: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Add progress log row:
 
@@ -1766,7 +1766,7 @@ git commit -m "feat: add MessageBus with one-tick latency + overlay-aware routin
 - Modify: nothing (MessageBus already has the hooks from Task 8) — but tests are needed to lock in behavior
 - Test: `tests/test_protocol.py` — append failure-behavior tests
 
-- [ ] **Step 1: Write the failing tests (append)**
+- [x] **Step 1: Write the failing tests (append)**
 
 Append to `tests/test_protocol.py`:
 
@@ -1839,7 +1839,7 @@ def test_bus_dropout_is_deterministic_given_seed() -> None:
     assert a != c  # if this is ever flaky in CI, the bus RNG is broken
 ```
 
-- [ ] **Step 2: Run test to verify it fails… or that it already passes**
+- [x] **Step 2: Run test to verify it fails… or that it already passes**
 
 Run: `.venv/bin/pytest tests/test_protocol.py -v -k "dropout or budget"`
 
@@ -1847,12 +1847,12 @@ Expected: the four new tests PASS without modification — Task 8 already instal
 
 If any test fails, fix `MessageBus` in `sim/agents/protocol.py` and re-run.
 
-- [ ] **Step 3: Run linters**
+- [x] **Step 3: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 Add progress log row:
 
