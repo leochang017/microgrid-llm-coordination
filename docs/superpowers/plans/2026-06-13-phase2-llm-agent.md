@@ -701,7 +701,7 @@ git commit -m "feat: add MemoryStream with append-only invariant + top-K retriev
 - Create: `sim/agents/protocol.py` (Message portion only; MessageBus lands in Task 7)
 - Test: `tests/test_protocol.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/test_protocol.py
@@ -758,12 +758,12 @@ def test_new_correlation_id_deterministic_with_seeded_rng() -> None:
     assert a == b
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_protocol.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'sim.agents.protocol'`.
 
-- [ ] **Step 3: Implement the Message portion of `sim/agents/protocol.py`**
+- [x] **Step 3: Implement the Message portion of `sim/agents/protocol.py`**
 
 ```python
 # sim/agents/protocol.py
@@ -821,17 +821,17 @@ def new_correlation_id(rng: random.Random | None = None) -> str:
     return "%012x" % rng.getrandbits(48)
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `.venv/bin/pytest tests/test_protocol.py -v`
 Expected: 4 tests PASS.
 
-- [ ] **Step 5: Run linters**
+- [x] **Step 5: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Add progress log row:
 

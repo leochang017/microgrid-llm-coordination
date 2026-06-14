@@ -42,6 +42,7 @@ Update this after every committed task. Newest entries on top.
 
 | Date | Task | Commit | Tests | Note |
 |------|------|--------|-------|------|
+| 2026-06-13 | **P2 Task 4 — Message speech-act schema** ✅ | _(this commit)_ | 114 ✓ | Frozen `Message` dataclass with REQUEST/OFFER/ACCEPT/REJECT/COUNTER/INFORM vocabulary in `sim/agents/protocol.py`. `new_correlation_id(rng)` is deterministic when seeded RNG passed in. MessageBus lands in Task 8. |
 | 2026-06-13 | **P2 Task 3 — MemoryStream + top-K retrieval** ✅ | _(this commit)_ | 110 ✓ | Park-adapted append-only `MemoryStream` in `sim/agents/memory.py`. Retrieval is α·recency + β·importance + γ·similarity, γ defaulting to 1.0 (no embedder in v0; Phase 3 hook). JSONL round-trip for run-output persistence. Recency uses 4 h half-life. |
 | 2026-06-13 | **P2 Task 2 — Policy dataclass + validator** ✅ | _(this commit)_ | 105 ✓ | `sim/agents/policy.py` defines `Policy` (frozen dataclass) with hand-rolled validator + YAML round-trip + a `default_round_robin_fallback()` static method used when LLM output is unparseable. No Pydantic dep. mypy --strict clean. |
 | 2026-06-13 | **P2 Task 1 — anthropic dep + sim/agents/ scaffold** ✅ | _(this commit)_ | 98 ✓ | Added `anthropic>=0.40` to core deps (+ mypy override). New `sim/agents/__init__.py` documents the planned module list (policy/memory/protocol/cache/llm/reflection/failure_modes/agent). Clean-install dry-run in fresh `/tmp/microgrid_ci_check` venv passed (`pip install -e '.[dev]' && pytest`). No behavior change yet; substrate is in place for Tasks 2-26. |
