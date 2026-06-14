@@ -1,0 +1,25 @@
+{
+  "scenario_id": "haves_havenots__llm",
+  "served_load_fraction": 0.4600066818339239,
+  "unmet_kwh_total": 194.3975945397874,
+  "wasted_kwh_total": 8.972016877558758,
+  "gini_welfare": 0.4799828175515486,
+  "transfer_count": 206,
+  "message_counts": {
+    "sent": 5534,
+    "delivered": 5534,
+    "dropped_invalid_recipient": 0,
+    "dropped_comm": 0,
+    "dropped_budget": 0
+  },
+  "llm_call_counts": {
+    "reflect_plan": 0,
+    "react_msg": 0,
+    "cache_hits": 0,
+    "cache_misses": 0
+  },
+  "llm_cost_usd_estimated": 0.0,
+  "failure_modes_active": {},
+  "policy_parse_failures": 0,
+  "policy_fallbacks_to_round_robin": 0
+}
