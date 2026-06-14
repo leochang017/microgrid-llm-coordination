@@ -11,6 +11,8 @@ build/
 # Data + outputs
 data/
 runs/
+# reference_runs/ is EXPLICITLY TRACKED (the in-repo reproducibility artifact
+# for Phase 2 LLM-agent runs — see docs/superpowers/specs/2026-06-13-phase2-llm-agent-design.md §6).
 
 # Env
 .env

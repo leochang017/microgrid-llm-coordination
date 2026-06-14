@@ -51,17 +51,54 @@ def main() -> None:
         default=True,
         help="Disable strict-mode SoC/wasted/unmet assertions (use only while hacking)",
     )
+    parser.add_argument(
+        "--reference-cell",
+        type=str,
+        default=None,
+        help=(
+            "If set, write outputs under reference_runs/<scenario>/<strategy>/<cell>/ "
+            "(in-repo, git-tracked) instead of runs/<scenario>/<strategy>/<ts>/."
+        ),
+    )
     args = parser.parse_args()
 
     scenario = load_scenario(args.scenario)
     if args.strategy is not None:
         scenario = dataclasses.replace(scenario, strategy=args.strategy)
     decide, prepare = _resolve_strategy(scenario.strategy)
-    ts = datetime.now().strftime("%Y%m%dT%H%M%S")
-    run_dir = args.out_dir / scenario.scenario_id / scenario.strategy / ts
+    if args.reference_cell is not None:
+        run_dir = (
+            Path("reference_runs") / scenario.scenario_id / scenario.strategy / args.reference_cell
+        )
+    else:
+        ts = datetime.now().strftime("%Y%m%dT%H%M%S")
+        run_dir = args.out_dir / scenario.scenario_id / scenario.strategy / ts
     logger = JsonlLogger(run_dir, scenario_id=scenario.scenario_id)
+
+    # For llm_agent strategy: wire a MessageBus into the engine so messages.jsonl gets written.
+    message_bus = None
+    if scenario.strategy == "llm_agent":
+        from sim.agents.protocol import MessageBus
+        from sim.network import build_overlay_neighborhood
+
+        nb = build_overlay_neighborhood(
+            rows=scenario.rows,
+            cols=scenario.cols,
+            affiliations=scenario.affiliations,
+            bus_max_kw=scenario.bus_max_kw,
+            bus_loss_factor=scenario.bus_loss_factor,
+        )
+        message_bus = MessageBus(neighborhood=nb, seed=scenario.seed)
+
     try:
-        summary = run(scenario, decide, logger, strict=args.strict, prepare=prepare)
+        summary = run(
+            scenario,
+            decide,
+            logger,
+            strict=args.strict,
+            prepare=prepare,
+            message_bus=message_bus,
+        )
     finally:
         logger.close()
 
