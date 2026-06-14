@@ -206,7 +206,7 @@ git commit -m "feat: add anthropic dep + sim/agents package scaffold"
 - Create: `sim/agents/policy.py`
 - Test: `tests/test_policy.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/test_policy.py
@@ -287,12 +287,12 @@ def test_policy_is_frozen() -> None:
         p.share_min_soc_frac = 0.9  # type: ignore[misc]
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_policy.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'sim.agents.policy'`.
 
-- [ ] **Step 3: Implement `sim/agents/policy.py`**
+- [x] **Step 3: Implement `sim/agents/policy.py`**
 
 ```python
 # sim/agents/policy.py
@@ -438,17 +438,17 @@ def _validate(d: dict) -> None:
             raise PolicyValidationError(f"{k} must be >= 0, got {v}")
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `.venv/bin/pytest tests/test_policy.py -v`
 Expected: 7 tests PASS.
 
-- [ ] **Step 5: Run linters**
+- [x] **Step 5: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Add progress log row to `CLAUDE.md` (newest on top):
 
