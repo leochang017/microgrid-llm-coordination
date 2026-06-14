@@ -13,6 +13,7 @@ from typing import Any
 
 import numpy as np
 
+from sim.agents.protocol import MessageBus
 from sim.data import LoadProfile, SolarProfile, SyntheticLoad, SyntheticSolar
 from sim.household import Household, HouseholdState, step
 from sim.logging import JsonlLogger
@@ -34,10 +35,7 @@ DecideFn = Callable[
     list[Transfer],
 ]
 
-PrepareFn = Callable[
-    [Scenario, dict[str, Household], SolarProfile, dict[str, LoadProfile], Neighborhood],
-    DecideFn,
-]
+PrepareFn = Callable[..., DecideFn]
 
 
 def sample_households(scenario: Scenario, rng: np.random.Generator) -> dict[str, Household]:
@@ -103,6 +101,7 @@ def run(
     *,
     strict: bool = True,
     prepare: PrepareFn | None = None,
+    message_bus: MessageBus | None = None,
 ) -> dict[str, Any]:
     """Drive the simulation: per-tick lookup -> decide -> settle -> step -> log.
 
@@ -132,7 +131,15 @@ def run(
     solar_profile, load_profiles = _build_data(scenario, households)
 
     if prepare is not None:
-        decide_transfers = prepare(scenario, households, solar_profile, load_profiles, neighborhood)
+        decide_transfers = prepare(
+            scenario,
+            households,
+            solar_profile,
+            load_profiles,
+            neighborhood,
+            message_bus=message_bus,
+            run_dir=logger.run_dir,
+        )
     if decide_transfers is None:
         raise ValueError("run() requires either decide_transfers or a prepare hook")
 
@@ -247,6 +254,9 @@ def run(
 
         logger.write_state(t, states, solar_kw, load_kw, grid)
         logger.write_events(outage_events + settlement.events, t=t)
+
+    if message_bus is not None:
+        message_bus.write_jsonl(logger.run_dir / "messages.jsonl")
 
     return logger.finalize(dt_hours=scenario.dt_hours)
 

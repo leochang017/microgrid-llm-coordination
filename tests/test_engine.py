@@ -289,7 +289,7 @@ def test_prepare_hook_called_once_and_supplies_decider(tmp_path) -> None:
 
     calls = {"prepare": 0}
 
-    def prepare(scenario, households, solar_profile, load_profiles, neighborhood):
+    def prepare(scenario, households, solar_profile, load_profiles, neighborhood, **_):
         calls["prepare"] += 1
 
         def decide(t, states, hh, solar, load, grid, nbhd, dt):

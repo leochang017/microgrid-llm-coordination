@@ -43,6 +43,7 @@ def prepare(
     solar_profile: SolarProfile,
     load_profiles: dict[str, LoadProfile],
     neighborhood: Neighborhood,
+    **_: object,
 ) -> DecideFn:
     schedule = _solve(scenario, households, solar_profile, load_profiles, neighborhood)
 

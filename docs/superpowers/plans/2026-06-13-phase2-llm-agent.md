@@ -3948,7 +3948,7 @@ git commit -m "feat: add sim/strategies/llm_agent.py thin facade"
 - Modify: `sim/logging.py` — add `messages.jsonl` writer
 - Test: `tests/test_engine_message_bus.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/test_engine_message_bus.py
@@ -4018,12 +4018,12 @@ def test_engine_writes_messages_jsonl_when_bus_supplied(tmp_path: Path) -> None:
     assert (out / "messages.jsonl").read_text() == ""
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_engine_message_bus.py -v`
 Expected: FAIL — `run()` does not accept `message_bus`, and no `messages.jsonl` is written.
 
-- [ ] **Step 3: Modify `sim/engine.py`**
+- [x] **Step 3: Modify `sim/engine.py`**
 
 Read `sim/engine.py` first to find the current `run(...)` signature. Add the optional parameter and message-bus integration:
 
@@ -4071,7 +4071,7 @@ At the end of `run(...)`, after writing `events.jsonl` / `state.jsonl` / `summar
         message_bus.write_jsonl(out_dir / "messages.jsonl")
 ```
 
-- [ ] **Step 4: Update `sim/strategies/lp_optimal.py` `prepare` signature for forward-compat**
+- [x] **Step 4: Update `sim/strategies/lp_optimal.py` `prepare` signature for forward-compat**
 
 In `sim/strategies/lp_optimal.py`, change the `prepare(...)` signature to:
 
@@ -4080,7 +4080,7 @@ def prepare(scenario, households, solar, loads, neighborhood, **_):
     ...
 ```
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 Run: `.venv/bin/pytest tests/test_engine_message_bus.py -v`
 Expected: both tests PASS.
@@ -4090,12 +4090,12 @@ Also re-run the full suite to confirm no regression:
 Run: `.venv/bin/pytest -q`
 Expected: all green (96 existing + new Phase 2 tests).
 
-- [ ] **Step 6: Run linters**
+- [x] **Step 6: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 Add progress log row:
 
