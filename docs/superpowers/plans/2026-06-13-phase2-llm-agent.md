@@ -1076,7 +1076,7 @@ git commit -m "feat: add two-tier sha256 prompt cache with atomic writes"
 - Create: `sim/agents/llm.py` (Mock + abstract base only; AnthropicLLMClient lands in Task 7)
 - Test: `tests/test_llm_client.py` (Mock half only)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/test_llm_client.py
@@ -1158,12 +1158,12 @@ def test_mock_substring_match_is_supported(tmp_path) -> None:
     assert resp.text == "hi"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_llm_client.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'sim.agents.llm'`.
 
-- [ ] **Step 3: Implement the Mock + abstract base in `sim/agents/llm.py`**
+- [x] **Step 3: Implement the Mock + abstract base in `sim/agents/llm.py`**
 
 ```python
 # sim/agents/llm.py
@@ -1263,17 +1263,17 @@ class MockLLMClient(LLMClient):
         )
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `.venv/bin/pytest tests/test_llm_client.py -v`
 Expected: 4 tests PASS.
 
-- [ ] **Step 5: Run linters**
+- [x] **Step 5: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Add progress log row:
 
