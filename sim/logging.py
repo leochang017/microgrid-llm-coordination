@@ -114,9 +114,54 @@ class JsonlLogger:
             "gini_welfare": _gini(per_house_served),
             "transfer_count": transfer_count,
         }
+        # Phase 2 additive fields (zero defaults; Phase 1.x parsers ignore extra keys).
+        summary["message_counts"] = phase2_message_counts(self.run_dir / "messages.jsonl")
+        summary["llm_call_counts"] = {
+            "reflect_plan": 0,
+            "react_msg": 0,
+            "cache_hits": 0,
+            "cache_misses": 0,
+        }
+        summary["llm_cost_usd_estimated"] = 0.0
+        summary["failure_modes_active"] = {}
+        summary["policy_parse_failures"] = 0
+        summary["policy_fallbacks_to_round_robin"] = 0
         with (self.run_dir / "summary.json").open("w") as f:
             json.dump(summary, f, indent=2)
         return summary
+
+
+def phase2_message_counts(messages_jsonl: Path) -> dict[str, int]:
+    """Tally per-outcome counts from a messages.jsonl produced by MessageBus.
+
+    Empty / missing file yields zeros.
+    """
+    counts = {
+        "sent": 0,
+        "delivered": 0,
+        "dropped_invalid_recipient": 0,
+        "dropped_comm": 0,
+        "dropped_budget": 0,
+    }
+    p = Path(messages_jsonl)
+    if not p.exists():
+        return counts
+    for line in p.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        counts["sent"] += 1
+        if row["outcome"] == "delivered":
+            counts["delivered"] += 1
+        elif row["outcome"] == "dropped":
+            reason = row.get("reason") or ""
+            if reason == "invalid_recipient":
+                counts["dropped_invalid_recipient"] += 1
+            elif reason == "comm_drop":
+                counts["dropped_comm"] += 1
+            elif reason == "budget_overflow":
+                counts["dropped_budget"] += 1
+    return counts
 
 
 def _gini(values: list[float]) -> float:

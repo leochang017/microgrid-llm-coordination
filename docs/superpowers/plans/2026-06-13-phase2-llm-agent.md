@@ -4119,7 +4119,7 @@ git commit -m "feat: thread optional MessageBus through engine.run + messages.js
 - Modify: `sim/logging.py` — extend `JsonlLogger.finalize()` to read `messages.jsonl` and emit Phase 2 fields
 - Test: `tests/test_logging_phase2.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/test_logging_phase2.py
@@ -4198,12 +4198,12 @@ def test_summary_counts_dropped_messages(tmp_path: Path) -> None:
     assert counts["delivered"] == 0
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_logging_phase2.py -v`
 Expected: FAIL — `summary.json` does not have Phase 2 keys; `phase2_message_counts` does not exist.
 
-- [ ] **Step 3: Extend `sim/logging.py`**
+- [x] **Step 3: Extend `sim/logging.py`**
 
 Add to `sim/logging.py`:
 
@@ -4250,17 +4250,17 @@ Modify `JsonlLogger.finalize(...)` (Phase 1 entry point) — at the end of the e
 
 (LLM call counts will be populated by the strategy facade in a later refinement — for now, zero defaults are fine; the integration test in Task 21 wires real counts.)
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `.venv/bin/pytest tests/test_logging_phase2.py -v`
 Expected: 2 tests PASS.
 
-- [ ] **Step 5: Run linters**
+- [x] **Step 5: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Add progress log row:
 
