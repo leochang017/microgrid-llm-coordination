@@ -1877,7 +1877,7 @@ git commit -m "test: lock in MessageBus dropout + budget behavior"
 - Test: `tests/test_failure_modes.py`
 - Test: extend `tests/test_scenario.py` for YAML parsing
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/test_failure_modes.py`:
 
@@ -1990,12 +1990,12 @@ data_source: synthetic
     assert s.llm == {}
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `.venv/bin/pytest tests/test_failure_modes.py tests/test_scenario.py -v -k "failure_mode or defector or llm"`
 Expected: FAIL — `ModuleNotFoundError: No module named 'sim.agents.failure_modes'` for the failure_modes tests; AttributeError on `s.failure_modes` for scenario tests.
 
-- [ ] **Step 3: Implement `sim/agents/failure_modes.py` (FailureModeConfig + assignment)**
+- [x] **Step 3: Implement `sim/agents/failure_modes.py` (FailureModeConfig + assignment)**
 
 ```python
 # sim/agents/failure_modes.py
@@ -2082,7 +2082,7 @@ def assign_defectors(
     return set(rng.sample(house_ids, k=n))
 ```
 
-- [ ] **Step 4: Wire YAML parsing into `sim/scenario.py`**
+- [x] **Step 4: Wire YAML parsing into `sim/scenario.py`**
 
 In `sim/scenario.py`, add the imports and dataclass fields. Read the existing file first to find where Scenario is defined; then update:
 
@@ -2108,17 +2108,17 @@ In `load_scenario(path)`, after the existing parsing logic (where Scenario is co
 
 (The exact integration depends on the existing `load_scenario` shape — read `sim/scenario.py` first, then surgically insert the two new fields without disturbing the working parsing logic for affiliations / household_sampling that Phase 1.6 added.)
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `.venv/bin/pytest tests/test_failure_modes.py tests/test_scenario.py -v`
 Expected: 4 failure_modes tests + 2 new scenario tests PASS. Existing scenario tests still PASS.
 
-- [ ] **Step 6: Run linters**
+- [x] **Step 6: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 Add progress log row:
 
@@ -2143,7 +2143,7 @@ git commit -m "feat: add FailureModeConfig dataclass + scenario YAML parsing"
 - Modify: `sim/agents/failure_modes.py` — append `NoiseSource` + `DefectorWrapper`
 - Test: `tests/test_failure_modes.py` — append
 
-- [ ] **Step 1: Write the failing tests (append)**
+- [x] **Step 1: Write the failing tests (append)**
 
 Append to `tests/test_failure_modes.py`:
 
@@ -2226,12 +2226,12 @@ def test_defector_wrapper_deterministic_given_seed() -> None:
     assert out_a == out_b
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `.venv/bin/pytest tests/test_failure_modes.py -v -k "noise or defector_wrapper"`
 Expected: FAIL — `ImportError: cannot import name 'NoiseSource'`.
 
-- [ ] **Step 3: Append `NoiseSource` + `DefectorWrapper` to `sim/agents/failure_modes.py`**
+- [x] **Step 3: Append `NoiseSource` + `DefectorWrapper` to `sim/agents/failure_modes.py`**
 
 Add to the imports:
 
@@ -2300,17 +2300,17 @@ class DefectorWrapper:
         return replace(m, payload=new_payload)
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `.venv/bin/pytest tests/test_failure_modes.py -v`
 Expected: all tests PASS (4 from Task 10 + 6 new).
 
-- [ ] **Step 5: Run linters**
+- [x] **Step 5: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Add progress log row:
 

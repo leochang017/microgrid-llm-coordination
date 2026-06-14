@@ -195,3 +195,40 @@ affiliations:
     )
     with pytest.raises(ValueError, match="r9c9"):
         load_scenario(p)
+
+
+# --- Phase 2 failure_modes + llm YAML parsing tests ---
+
+
+def test_scenario_parses_failure_modes_block(tmp_path: Path) -> None:
+    body = (
+        _AFFIL_BASE
+        + """
+failure_modes:
+  defector_fraction: 0.2
+  obs_noise:
+    soc_std_frac: 0.05
+  comm:
+    per_tick_budget: 5
+    drop_prob_by_circle:
+      geographic: 0.1
+llm:
+  model: claude-haiku-4-5-20251001
+  policy_refresh_every_ticks: 4
+  react_max_per_tick: 3
+  require_rationale: true
+"""
+    )
+    s = load_scenario(_write_affil(tmp_path, body))
+    assert s.failure_modes.defector_fraction == 0.2
+    assert s.failure_modes.obs_noise.soc_std_frac == 0.05
+    assert s.failure_modes.comm.per_tick_budget == 5
+    assert s.failure_modes.comm.drop_prob_by_circle["geographic"] == 0.1
+    assert s.llm["model"] == "claude-haiku-4-5-20251001"
+    assert s.llm["policy_refresh_every_ticks"] == 4
+
+
+def test_scenario_omitting_failure_modes_block_uses_defaults(tmp_path: Path) -> None:
+    s = load_scenario(_write_affil(tmp_path, _AFFIL_BASE))
+    assert s.failure_modes.defector_fraction == 0.0
+    assert s.llm == {}

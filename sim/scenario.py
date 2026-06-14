@@ -10,6 +10,8 @@ from typing import Any
 
 import yaml
 
+from sim.agents.failure_modes import FailureModeConfig
+
 
 @dataclass(frozen=True, slots=True)
 class OutageWindow:
@@ -47,6 +49,9 @@ class Scenario:
     # under data_paths["load_dir"]. Strings, not ints, because ResStock IDs are zero-padded.
     house_building_files: tuple[str, ...] = field(default_factory=tuple)
     affiliations: dict[str, dict[str, tuple[str, ...]]] = field(default_factory=dict)
+    # Phase 2 additions (purely additive — defaults preserve Phase 1.x behavior):
+    failure_modes: FailureModeConfig = field(default_factory=FailureModeConfig)
+    llm: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.dt_hours <= 0:
@@ -127,4 +132,6 @@ def load_scenario(path: Path | str) -> Scenario:
         house_dataids=tuple(int(x) for x in (raw.get("house_dataids", []) or [])),
         house_building_files=tuple(str(x) for x in (raw.get("house_building_files", []) or [])),
         affiliations=affiliations,
+        failure_modes=FailureModeConfig.from_dict(raw.get("failure_modes")),
+        llm=dict(raw.get("llm", {}) or {}),
     )
