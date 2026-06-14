@@ -108,3 +108,120 @@ class LLMAgent:
         self._prev_soc_frac = self.last_soc_frac
         self.last_soc_frac = visible_soc / max(1e-9, capacity)
         self.last_grid_islanded = bool(own_state["grid_islanded"])
+
+
+_SHARE_FRACTION = 0.20  # of headroom per tick (module-level for ease of testing)
+
+
+def _agent_act(
+    self: LLMAgent,
+    t: datetime,
+    own_state: dict[str, Any],
+    neighborhood: Any,  # sim.network.Neighborhood — late-bound to avoid cycle
+    dt_hours: float,
+) -> tuple[list[Any], list[Message]]:
+    """Pure-Python tick executor — see LLMAgent.act bound below."""
+    from sim.agents.protocol import new_correlation_id
+    from sim.types import Transfer
+
+    if not bool(own_state.get("grid_islanded", False)):
+        return [], []
+
+    soc = float(own_state["soc_kwh"])
+    capacity = float(own_state["soc_capacity"])
+    dod_floor = float(own_state.get("dod_floor_frac", 0.1)) * capacity
+    headroom_kwh = max(0.0, soc - dod_floor)
+    soc_frac = soc / max(1e-9, capacity)
+
+    if soc_frac < self.policy.share_min_soc_frac:
+        return [], _emit_requests(self, t, neighborhood, soc_frac)
+
+    candidates = _candidate_recipients(self, neighborhood)
+    if not candidates:
+        return [], []
+
+    share_kwh = min(
+        _SHARE_FRACTION * headroom_kwh,
+        self.policy.max_share_kw_per_tick * dt_hours,
+    )
+    share_kw = share_kwh / dt_hours
+    if share_kw <= 0:
+        return [], []
+
+    total_weight = sum(w for _, _, w in candidates)
+    if total_weight <= 0:
+        return [], []
+
+    transfers: list[Any] = []
+    outbox: list[Message] = []
+    for target, circle, weight in candidates:
+        kw = share_kw * (weight / total_weight)
+        if kw <= 0:
+            continue
+        transfers.append(Transfer(from_id=self.house_id, to_id=target, kw=kw))
+        outbox.append(
+            Message(
+                t_sent=t,
+                sender=self.house_id,
+                recipient=target,
+                performative="OFFER",
+                payload={"kwh": kw * dt_hours},
+                rationale_nl=(
+                    f"SoC {soc:.2f}/{capacity:.0f} kWh "
+                    f"({soc_frac:.2f} frac) above {self.policy.share_min_soc_frac:.2f} threshold; "
+                    f"sharing {kw:.2f} kW via {circle} circle."
+                ),
+                correlation_id=new_correlation_id(rng=self.rng),
+            )
+        )
+    return transfers, outbox
+
+
+def _candidate_recipients(self: LLMAgent, neighborhood: Any) -> list[tuple[str, str, float]]:
+    """Return [(target_hid, circle, weight)] for each (peer, circle) the policy ranks."""
+    distrusted = set(self.policy.distrusted_peers)
+    weight_by_circle = {rp.circle: rp.weight for rp in self.policy.recipient_priority}
+    candidates: list[tuple[str, str, float]] = []
+    for circle, edges in neighborhood.edges_by_type.items():
+        weight = weight_by_circle.get(circle, 0.0)
+        if weight <= 0:
+            continue
+        for nb in edges.get(self.house_id, []):
+            if nb == self.house_id or nb in distrusted:
+                continue
+            candidates.append((nb, circle, weight))
+    return candidates
+
+
+def _emit_requests(
+    self: LLMAgent, t: datetime, neighborhood: Any, soc_frac: float
+) -> list[Message]:
+    """Below-threshold houses send REQUEST messages to highest-priority circles."""
+    from sim.agents.protocol import new_correlation_id
+
+    candidates = _candidate_recipients(self, neighborhood)
+    candidates.sort(key=lambda x: x[2], reverse=True)
+    top = candidates[:3]
+    out: list[Message] = []
+    urgency = self.policy.request_urgency
+    for target, circle, _w in top:
+        out.append(
+            Message(
+                t_sent=t,
+                sender=self.house_id,
+                recipient=target,
+                performative="REQUEST",
+                payload={"kwh": 0.5, "urgency": urgency},
+                rationale_nl=(
+                    f"SoC frac {soc_frac:.2f} below share threshold; "
+                    f"requesting energy via {circle} circle."
+                ),
+                correlation_id=new_correlation_id(rng=self.rng),
+            )
+        )
+    return out
+
+
+# Bind methods onto LLMAgent (this avoids the class body getting too long
+# while still landing the methods on the class for normal dot-call use):
+LLMAgent.act = _agent_act  # type: ignore[attr-defined]

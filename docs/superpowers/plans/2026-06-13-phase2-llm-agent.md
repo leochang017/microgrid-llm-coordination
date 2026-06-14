@@ -2808,7 +2808,7 @@ git commit -m "feat: add LLMAgent observe+remember (no LLM yet)"
 - Modify: `sim/agents/agent.py` — append `act()`
 - Test: `tests/test_agent.py` — append `act` tests
 
-- [ ] **Step 1: Write the failing tests (append)**
+- [x] **Step 1: Write the failing tests (append)**
 
 Append to `tests/test_agent.py`:
 
@@ -2944,12 +2944,12 @@ def test_act_respects_headroom_cap(tmp_path) -> None:
     assert total_kw <= headroom_kw + 1e-9
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_agent.py -v -k "act"`
 Expected: FAIL — `LLMAgent` has no `act` method.
 
-- [ ] **Step 3: Append `act()` to `LLMAgent`**
+- [x] **Step 3: Append `act()` to `LLMAgent`**
 
 Add to imports at top of `sim/agents/agent.py`:
 
@@ -3071,17 +3071,17 @@ Append inside the `LLMAgent` class (or as methods below `observe`):
         return out
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `.venv/bin/pytest tests/test_agent.py -v`
 Expected: 8 tests PASS (4 from Task 13 + 4 new).
 
-- [ ] **Step 5: Run linters**
+- [x] **Step 5: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Add progress log row:
 
