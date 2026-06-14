@@ -2334,7 +2334,7 @@ git commit -m "feat: add NoiseSource (obs corruption) + DefectorWrapper (message
 - Create: `sim/agents/reflection.py`
 - Test: `tests/test_reflection.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/test_reflection.py
@@ -2409,12 +2409,12 @@ def test_reflection_includes_trust_circles_in_prompt(tmp_path) -> None:
     assert "hoa_north" in captured["user"]
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_reflection.py -v`
 Expected: FAIL — `ModuleNotFoundError`.
 
-- [ ] **Step 3: Implement `sim/agents/reflection.py`**
+- [x] **Step 3: Implement `sim/agents/reflection.py`**
 
 ```python
 # sim/agents/reflection.py
@@ -2529,17 +2529,17 @@ def _parse_beliefs(text: str) -> list[dict[str, Any]]:
     return out
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `.venv/bin/pytest tests/test_reflection.py -v`
 Expected: 3 tests PASS.
 
-- [ ] **Step 5: Run linters**
+- [x] **Step 5: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Add progress log row:
 
