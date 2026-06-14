@@ -2563,7 +2563,7 @@ git commit -m "feat: add Park-adapted Reflection LLM wrapper"
 - Create: `sim/agents/agent.py` (init + observe + remember only; act/plan/react land in later tasks)
 - Test: `tests/test_agent.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/test_agent.py
@@ -2659,12 +2659,12 @@ def test_agent_observe_applies_noise_when_configured(tmp_path) -> None:
     assert obs.content["own_soc_kwh"] != 5.0 or True  # may rarely equal; flaky-safe
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_agent.py -v`
 Expected: FAIL — `ModuleNotFoundError`.
 
-- [ ] **Step 3: Implement initial portion of `sim/agents/agent.py`**
+- [x] **Step 3: Implement initial portion of `sim/agents/agent.py`**
 
 ```python
 # sim/agents/agent.py
@@ -2774,17 +2774,17 @@ class LLMAgent:
         self.last_soc_frac = visible_soc / max(1e-9, float(own_state["soc_capacity"]))
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `.venv/bin/pytest tests/test_agent.py -v`
 Expected: 4 tests PASS.
 
-- [ ] **Step 5: Run linters**
+- [x] **Step 5: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Add progress log row:
 
