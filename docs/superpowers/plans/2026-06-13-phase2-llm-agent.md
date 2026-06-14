@@ -3105,7 +3105,7 @@ git commit -m "feat: add LLMAgent.act (pure-Python policy executor)"
 - Modify: `sim/agents/agent.py` — append `plan()` + helpers
 - Test: `tests/test_agent.py` — append plan tests
 
-- [ ] **Step 1: Write the failing test (append)**
+- [x] **Step 1: Write the failing test (append)**
 
 Append to `tests/test_agent.py`:
 
@@ -3202,12 +3202,12 @@ def test_plan_prompt_contains_trust_circles_and_state(tmp_path) -> None:
     assert "household r0c0" in captured["user"]
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_agent.py -v -k "plan"`
 Expected: FAIL — `LLMAgent` has no `plan` method.
 
-- [ ] **Step 3: Append `plan()` to `LLMAgent`**
+- [x] **Step 3: Append `plan()` to `LLMAgent`**
 
 Add to top-of-file imports:
 
@@ -3309,17 +3309,17 @@ Append inside `LLMAgent`:
         return match.group(1).strip()[:280]
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `.venv/bin/pytest tests/test_agent.py -v`
 Expected: 11 tests PASS (8 + 3 new).
 
-- [ ] **Step 5: Run linters**
+- [x] **Step 5: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Add progress log row:
 

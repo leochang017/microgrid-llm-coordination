@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from datetime import datetime
 
+import yaml
+
 from sim.agents.agent import LLMAgent
 from sim.agents.cache import PromptCache
 from sim.agents.failure_modes import FailureModeConfig, NoiseSource
-from sim.agents.llm import MockLLMClient
+from sim.agents.llm import LLMResponse, MockLLMClient
 from sim.agents.memory import MemoryStream
 from sim.agents.policy import Policy, RecipientPriority
 from sim.agents.protocol import Message
@@ -250,3 +252,116 @@ def test_act_respects_headroom_cap(tmp_path) -> None:
     headroom_kwh = 5.5 - 0.5 * 10.0
     headroom_kw = headroom_kwh / 0.25
     assert total_kw <= headroom_kw + 1e-9
+
+
+# --- LLMAgent.plan tests (Task 15) ---
+
+
+def test_plan_calls_llm_and_updates_policy(tmp_path) -> None:
+    new_policy_yaml = yaml.safe_dump(
+        {
+            "sharing_intent": "conservative",
+            "share_min_soc_frac": 0.7,
+            "max_share_kw_per_tick": 0.5,
+            "recipient_priority": [{"circle": "owner", "weight": 1.0}],
+            "distrusted_peers": ["r2c3"],
+            "request_urgency": "low",
+            "belief_note": "owner-group reliable; r2c3 untrustworthy",
+            "ttl_ticks": 6,
+        }
+    )
+    mock_text = f"""
+Reflection: peer r2c3 refused 4 of 4 requests.
+
+Policy:
+```yaml
+{new_policy_yaml}
+```
+"""
+    mock = MockLLMClient(
+        cache=PromptCache(local_dir=tmp_path),
+        canned={
+            "You are household": LLMResponse(text=mock_text, tokens_in=300, tokens_out=120),
+        },
+    )
+    a = _bare_agent(tmp_path)
+    a.llm_client = mock
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.observe(
+        t=t0,
+        own_state={
+            "soc_kwh": 5.0,
+            "soc_capacity": 10.0,
+            "grid_islanded": True,
+            "load_kw": 1.0,
+            "solar_kw": 0.0,
+        },
+        peer_states={},
+        inbox=[],
+        t_idx=0,
+    )
+    a.plan(t=t0)
+    assert a.policy.sharing_intent == "conservative"
+    assert a.policy.share_min_soc_frac == 0.7
+    assert "r2c3" in a.policy.distrusted_peers
+
+
+def test_plan_falls_back_on_unparseable_response(tmp_path) -> None:
+    """3 consecutive parse failures → fallback to default round_robin policy."""
+    mock = MockLLMClient(
+        cache=PromptCache(local_dir=tmp_path),
+        canned={"You are household": LLMResponse(text="i am a teapot", tokens_in=10, tokens_out=5)},
+    )
+    a = _bare_agent(tmp_path)
+    a.llm_client = mock
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.observe(
+        t=t0,
+        own_state={
+            "soc_kwh": 5.0,
+            "soc_capacity": 10.0,
+            "grid_islanded": True,
+            "load_kw": 1.0,
+            "solar_kw": 0.0,
+        },
+        peer_states={},
+        inbox=[],
+        t_idx=0,
+    )
+    a.plan(t=t0)
+    a.plan(t=t0)
+    a.plan(t=t0)
+    assert a.policy.belief_note == "(fallback to geographic round-robin)"
+
+
+def test_plan_prompt_contains_trust_circles_and_state(tmp_path) -> None:
+    captured: dict[str, str] = {}
+
+    class _Capture(MockLLMClient):
+        def _call_provider(self, req):  # type: ignore[no-untyped-def]
+            captured["user"] = req.user
+            captured["system"] = req.system
+            return LLMResponse(text="(no policy)", tokens_in=0, tokens_out=0)
+
+    a = _bare_agent(tmp_path)
+    a.llm_client = _Capture(
+        cache=PromptCache(local_dir=tmp_path),
+        canned={"": LLMResponse(text="", tokens_in=0, tokens_out=0)},
+    )
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.observe(
+        t=t0,
+        own_state={
+            "soc_kwh": 5.0,
+            "soc_capacity": 10.0,
+            "grid_islanded": True,
+            "load_kw": 1.0,
+            "solar_kw": 0.0,
+        },
+        peer_states={},
+        inbox=[],
+        t_idx=0,
+    )
+    a.plan(t=t0)
+    assert "owner_acme" in captured["user"]
+    assert "household r0c0" in captured["user"]

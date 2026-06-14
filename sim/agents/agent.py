@@ -225,3 +225,96 @@ def _emit_requests(
 # Bind methods onto LLMAgent (this avoids the class body getting too long
 # while still landing the methods on the class for normal dot-call use):
 LLMAgent.act = _agent_act  # type: ignore[attr-defined]
+
+
+_PLAN_SYSTEM_PROMPT = (
+    "You are the planning subroutine of a household energy-coordination agent. "
+    "Given recent state, beliefs, and trust circles, output (1) a one-paragraph "
+    "REFLECTION on what you've observed (just text), and (2) a POLICY in a YAML "
+    "code-fence — sharing_intent (conservative|balanced|generous), "
+    "share_min_soc_frac (0..1), max_share_kw_per_tick (kW), recipient_priority "
+    "(list of {circle, weight}), distrusted_peers (list of house ids), "
+    "request_urgency (low|normal|urgent), belief_note (string), ttl_ticks (int >= 1)."
+)
+
+
+def _agent_plan(self: LLMAgent, t: datetime) -> None:
+    """One combined LLM call that updates beliefs AND refreshes the policy.
+
+    On 3 consecutive parse failures, fall back to the default round_robin policy.
+    """
+    import re
+
+    from sim.agents.llm import LLMRequest
+    from sim.agents.policy import PolicyValidationError, policy_from_yaml
+
+    recents = self.memory.top_k(now=t, k=20)
+    recents_str = (
+        "\n".join(f"  - [{e.t.isoformat()} {e.kind}] {e.nl}" for e in recents)
+        or "  (no recent memories)"
+    )
+    circles_str = ", ".join(f"{k}={v}" for k, v in sorted(self.trust_circles.items()))
+    latest_obs = next((e for e in reversed(recents) if e.kind == "obs"), None)
+    state_summary = latest_obs.nl if latest_obs else "(no state observed yet)"
+
+    prompt = (
+        f"You are household {self.house_id}.\n"
+        f"Trust circles: {circles_str or '(none)'}.\n"
+        f"Current state: {state_summary}.\n"
+        f"Current policy belief: {self.policy.belief_note or '(none)'}.\n"
+        f"Recent memories (top-20):\n{recents_str}\n\n"
+        f"Output reflection text, then a POLICY in a ```yaml ... ``` code fence."
+    )
+    resp = self.llm_client.call(
+        LLMRequest(
+            model=self.model,
+            system=_PLAN_SYSTEM_PROMPT,
+            user=prompt,
+            max_tokens=800,
+        )
+    )
+
+    new_policy = None
+    match = re.search(r"```(?:yaml)?\s*\n(.*?)\n```", resp.text, flags=re.DOTALL)
+    if match:
+        try:
+            new_policy = policy_from_yaml(match.group(1))
+        except (PolicyValidationError, Exception):
+            new_policy = None
+
+    if new_policy is None:
+        self.plan_consecutive_failures += 1
+        self.memory.append(
+            MemoryEntry(
+                t=t,
+                kind="reflection",
+                content={"parse_failure": True},
+                nl="(policy parse failed; keeping previous policy)",
+                importance=8.0,
+            )
+        )
+        if self.plan_consecutive_failures >= 3:
+            from sim.agents.policy import Policy as _P
+
+            self.policy = _P.default_round_robin_fallback()
+    else:
+        self.policy = new_policy
+        self.plan_consecutive_failures = 0
+        # Extract reflection text (everything before the first ``` fence)
+        rmatch = re.search(r"^(.*?)```", resp.text, flags=re.DOTALL)
+        reflection_text = rmatch.group(1).strip()[:280] if rmatch else resp.text.strip()[:280]
+        if reflection_text:
+            self.memory.append(
+                MemoryEntry(
+                    t=t,
+                    kind="reflection",
+                    content={"reflection": reflection_text},
+                    nl=reflection_text,
+                    importance=7.0,
+                )
+            )
+    self.policy_age_ticks = 0
+    self.last_plan_t = t
+
+
+LLMAgent.plan = _agent_plan  # type: ignore[attr-defined]
