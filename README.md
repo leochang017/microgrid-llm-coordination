@@ -175,7 +175,7 @@ hitting the API:
 
 | Scenario | Failure cell | Notes |
 |---|---|---|
-| `haves_havenots__llm.yaml` | clean | live Haiku 4.5 run, 1596 cached prompts, served 0.460 |
+| `haves_havenots__llm.yaml` | clean | live Haiku 4.5 run, ~3000 cached prompts; v0.5 architecture served 0.458 (v0 was 0.460) |
 
 ### Quickstart
 
@@ -192,15 +192,18 @@ To run live, set `ANTHROPIC_API_KEY` and use `--out-dir runs` (instead of
 
 ### Phase 2 known limitations
 
-- **Defector `prompt` realization is deferred.** Defector assignment is
-  deterministic and the `wrapper` realization (per-message payload mutation) is
-  fully implemented, but the `prompt` realization (replacing the agent's system
-  prompt with a selfish template) is not yet wired through plan/react calls.
-  The `wrapper` realization is the Phase 2 default for the strategic-agent axis.
-- **Live Haiku v0 prompts underperformed round_robin** on `haves_havenots__llm`
-  (0.460 vs 0.525). Mock-LLM with a hand-tuned canned policy stayed within ~1% of
-  round_robin (0.520). The prompt-engineering and scenario-aware-reasoning work
-  needed to actually beat round_robin is Phase 3.
+- **Live Haiku underperforms round_robin** on `haves_havenots__llm`
+  (0.458 vs 0.525). Phase 2.5 instrumentation surfaced the bottleneck:
+  **41% of Haiku's policy YAML output fails to parse**, and 3-strikes-out
+  triggers fallback to a hard-coded round-robin-style policy. So a lot of the
+  run executes the fallback, not the LLM's reasoning. Phase 3 fix candidate:
+  Anthropic tool-use for schema-validated structured output (target: ~100%
+  parse rate). Second suspect: `_SHARE_FRACTION = 0.20` in `act()` vs
+  `round_robin`'s `0.05` (LLM over-shares, wasting energy on round-trip losses).
+- **`defector_realization: prompt`** is now wired in Phase 2.5 (selfish system
+  prompt for plan + react calls when an agent is a defector). The `wrapper`
+  realization (per-message payload mutation at the bus) remains the safer
+  default for unbiased measurement.
 - **Peer state observed by an agent is the engine's ground-truth state**, not
   the peer's voluntarily-INFORM'd self-view. Migrating to message-only peer
   state is a v1 follow-up.

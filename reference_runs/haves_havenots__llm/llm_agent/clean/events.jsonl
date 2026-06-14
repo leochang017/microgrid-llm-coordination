@@ -1,236 +1,44 @@
-{"t": "2018-01-01T00:00:00", "kind": "sender_dod_floor", "house_ids": ["r0c0"], "kw": 0.2708746138362327, "details": "requested 0.722 kW, cap 0.451 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "sender_dod_floor", "house_ids": ["r0c3"], "kw": 0.3237954731322287, "details": "requested 0.863 kW, cap 0.540 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "sender_dod_floor", "house_ids": ["r1c0"], "kw": 0.24437216538689932, "details": "requested 0.652 kW, cap 0.407 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "sender_dod_floor", "house_ids": ["r1c1"], "kw": 0.2594635947655247, "details": "requested 1.000 kW, cap 0.741 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "sender_dod_floor", "house_ids": ["r1c2"], "kw": 0.26866868080406436, "details": "requested 1.000 kW, cap 0.731 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "sender_dod_floor", "house_ids": ["r1c4"], "kw": 0.3461178210526017, "details": "requested 1.000 kW, cap 0.654 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "sender_dod_floor", "house_ids": ["r1c5"], "kw": 0.29600660390210676, "details": "requested 0.789 kW, cap 0.493 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "sender_dod_floor", "house_ids": ["r2c1"], "kw": 0.2700757087727464, "details": "requested 0.720 kW, cap 0.450 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "sender_dod_floor", "house_ids": ["r2c2"], "kw": 0.269265498051405, "details": "requested 1.000 kW, cap 0.731 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "sender_dod_floor", "house_ids": ["r2c3"], "kw": 0.33198306810654477, "details": "requested 0.885 kW, cap 0.553 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "sender_dod_floor", "house_ids": ["r3c0"], "kw": 0.3625240559804177, "details": "requested 1.000 kW, cap 0.637 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "sender_dod_floor", "house_ids": ["r3c2"], "kw": 0.36436207778446494, "details": "requested 0.972 kW, cap 0.607 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "sender_dod_floor", "house_ids": ["r3c3"], "kw": 0.2670296197213482, "details": "requested 0.712 kW, cap 0.445 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "sender_dod_floor", "house_ids": ["r4c0"], "kw": 0.301535944495789, "details": "requested 1.000 kW, cap 0.698 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "sender_dod_floor", "house_ids": ["r4c1"], "kw": 0.3148661125358565, "details": "requested 1.000 kW, cap 0.685 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "sender_dod_floor", "house_ids": ["r4c3"], "kw": 0.33107156138726257, "details": "requested 1.000 kW, cap 0.669 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "sender_dod_floor", "house_ids": ["r4c4"], "kw": 0.2781494010132268, "details": "requested 0.742 kW, cap 0.464 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "sender_dod_floor", "house_ids": ["r4c5"], "kw": 0.33298843632590747, "details": "requested 1.000 kW, cap 0.667 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 0.33117421144628556, "details": "wanted 0.871 kW net, cap 0.540 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "receiver_full", "house_ids": ["r1c0"], "kw": 0.29969952321870663, "details": "wanted 0.707 kW net, cap 0.407 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "receiver_full", "house_ids": ["r1c2"], "kw": 0.17226218792671022, "details": "wanted 0.904 kW net, cap 0.731 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 0.2940101953342691, "details": "wanted 0.948 kW net, cap 0.654 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 0.4536193443298293, "details": "wanted 0.947 kW net, cap 0.493 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "receiver_full", "house_ids": ["r2c1"], "kw": 0.4534673258347351, "details": "wanted 0.904 kW net, cap 0.450 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "receiver_full", "house_ids": ["r2c3"], "kw": 0.2009435551749169, "details": "wanted 0.754 kW net, cap 0.553 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "receiver_full", "house_ids": ["r3c0"], "kw": 0.24846114901158467, "details": "wanted 0.886 kW net, cap 0.637 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "receiver_full", "house_ids": ["r3c2"], "kw": 0.2261452057117167, "details": "wanted 0.833 kW net, cap 0.607 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "receiver_full", "house_ids": ["r3c3"], "kw": 0.2799145929403112, "details": "wanted 0.725 kW net, cap 0.445 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "receiver_full", "house_ids": ["r4c1"], "kw": 0.20080320556702336, "details": "wanted 0.886 kW net, cap 0.685 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "receiver_full", "house_ids": ["r4c4"], "kw": 0.30257549661718286, "details": "wanted 0.766 kW net, cap 0.464 kW"}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r0c0", "r1c0"], "kw": 0.1300398458788385, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r0c0", "r0c1"], "kw": 0.22572884486352723, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r1c1"], "kw": 0.3333333333333333, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r0c0"], "kw": 0.3333333333333333, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r0c2"], "kw": 0.3333333333333333, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.2697862528637637, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c1"], "kw": 0.3333333333333333, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.20656808493284123, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r0c3", "r1c3"], "kw": 0.17988637396234924, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r0c3", "r0c2"], "kw": 0.17988637396234924, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r0c3", "r0c4"], "kw": 0.17988637396234924, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.229942483165322, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.20656808493284123, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c5"], "kw": 0.3333333333333333, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.26048746540422324, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r0c4"], "kw": 0.5, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c0", "r0c0"], "kw": 0.1357623141038329, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c0", "r2c0"], "kw": 0.1357623141038329, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c0", "r1c1"], "kw": 0.1357623141038329, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c1", "r0c1"], "kw": 0.18513410130861882, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c1", "r2c1"], "kw": 0.09222477296630995, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c1", "r1c0"], "kw": 0.10665367120292218, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c1", "r1c2"], "kw": 0.14983990640805805, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c2", "r0c2"], "kw": 0.1828328297989839, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c2", "r2c2"], "kw": 0.1828328297989839, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c2", "r1c1"], "kw": 0.1828328297989839, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c2", "r1c3"], "kw": 0.1828328297989839, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r0c3"], "kw": 0.15492606369963094, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r2c3"], "kw": 0.18339611870809344, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r1c2"], "kw": 0.20233968964782278, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r1c4"], "kw": 0.17245686237399152, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c4", "r0c4"], "kw": 0.16347054473684958, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c4", "r2c4"], "kw": 0.16347054473684958, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c4", "r1c3"], "kw": 0.16347054473684958, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c4", "r1c5"], "kw": 0.08516405573349926, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c5", "r0c5"], "kw": 0.16444811327894812, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c5", "r2c5"], "kw": 0.16444811327894812, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r1c5", "r1c4"], "kw": 0.1134408225576405, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c0", "r1c0"], "kw": 0.19202958008823803, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c0", "r3c0"], "kw": 0.23984996565933983, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c0", "r2c1"], "kw": 0.16605039682842493, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c1", "r1c1"], "kw": 0.11253154532197766, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c1", "r3c1"], "kw": 0.11253154532197766, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c1", "r2c0"], "kw": 0.11253154532197766, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c1", "r2c2"], "kw": 0.11253154532197766, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c2", "r1c2"], "kw": 0.14785659233923507, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c2", "r3c2"], "kw": 0.13311287209024827, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c2", "r2c1"], "kw": 0.09100406551858925, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c2", "r2c3"], "kw": 0.13401387146346408, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c3", "r1c3"], "kw": 0.13832627837772699, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c3", "r3c3"], "kw": 0.08491735588336648, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c3", "r2c2"], "kw": 0.13832627837772699, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c3", "r2c4"], "kw": 0.13832627837772699, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r1c4"], "kw": 0.17245686237399152, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r3c4"], "kw": 0.25, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r2c3"], "kw": 0.18339611870809344, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r2c5"], "kw": 0.25, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.17365831026948214, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r3c5"], "kw": 0.3333333333333333, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r2c4"], "kw": 0.3333333333333333, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c0", "r2c0"], "kw": 0.21249198133986075, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c0", "r4c0"], "kw": 0.21249198133986075, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c0", "r3c1"], "kw": 0.21249198133986075, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r2c1"], "kw": 0.12453779762131871, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r4c1"], "kw": 0.19333593007151603, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c0"], "kw": 0.17988747424450488, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c2"], "kw": 0.1821631136004748, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c2", "r2c2"], "kw": 0.15181753241019372, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c2", "r4c2"], "kw": 0.15181753241019372, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c2", "r3c1"], "kw": 0.15181753241019372, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c2", "r3c3"], "kw": 0.09319952492184434, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c3", "r2c3"], "kw": 0.081620326394989, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c3", "r4c3"], "kw": 0.11126234155056171, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c3", "r3c2"], "kw": 0.0810715782533192, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c3", "r3c4"], "kw": 0.11126234155056171, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c4", "r2c4"], "kw": 0.25, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c4", "r4c4"], "kw": 0.15126854933734424, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c4", "r3c3"], "kw": 0.15347292806411486, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c4", "r3c5"], "kw": 0.25, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c5", "r2c5"], "kw": 0.3333333333333333, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c5", "r4c5"], "kw": 0.3333333333333333, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r3c5", "r3c4"], "kw": 0.3333333333333333, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r4c0", "r3c0"], "kw": 0.25128986959045235, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r4c0", "r4c1"], "kw": 0.27007639558485924, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r4c1", "r3c1"], "kw": 0.22837796248804781, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r4c1", "r4c0"], "kw": 0.22837796248804781, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r4c1", "r4c2"], "kw": 0.22837796248804781, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.24288415146729972, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c1"], "kw": 0.2577812400953547, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.3333333333333333, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r4c3", "r3c3"], "kw": 0.1368832081856711, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r4c3", "r4c2"], "kw": 0.2229761462042458, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r4c3", "r4c4"], "kw": 0.13491711269259135, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r4c4", "r3c4"], "kw": 0.1545274450073482, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r4c4", "r4c3"], "kw": 0.1545274450073482, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r4c4", "r4c5"], "kw": 0.1545274450073482, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r4c5", "r3c5"], "kw": 0.33350578183704627, "details": ""}
-{"t": "2018-01-01T00:00:00", "kind": "transfer_executed", "house_ids": ["r4c5", "r4c4"], "kw": 0.20179574325642718, "details": ""}
-{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r2c1"], "kw": 0.0375, "details": ""}
-{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r4c1"], "kw": 0.0375, "details": ""}
-{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c0"], "kw": 0.0375, "details": ""}
-{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c2"], "kw": 0.0375, "details": ""}
-{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r2c1"], "kw": 0.0375, "details": ""}
-{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r4c1"], "kw": 0.0375, "details": ""}
-{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c0"], "kw": 0.0375, "details": ""}
-{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c2"], "kw": 0.0375, "details": ""}
-{"t": "2018-01-01T01:30:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r2c1"], "kw": 0.0375, "details": ""}
-{"t": "2018-01-01T01:30:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r4c1"], "kw": 0.0375, "details": ""}
-{"t": "2018-01-01T01:30:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c0"], "kw": 0.0375, "details": ""}
-{"t": "2018-01-01T01:30:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c2"], "kw": 0.0375, "details": ""}
-{"t": "2018-01-01T01:45:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r2c1"], "kw": 0.0375, "details": ""}
-{"t": "2018-01-01T01:45:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r4c1"], "kw": 0.0375, "details": ""}
-{"t": "2018-01-01T01:45:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c0"], "kw": 0.0375, "details": ""}
-{"t": "2018-01-01T01:45:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c2"], "kw": 0.0375, "details": ""}
-{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r2c1"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r4c1"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c0"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c2"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c1"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r2c1"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r4c1"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c0"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c2"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c1"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r2c1"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r4c1"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c0"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c2"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c1"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T02:45:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r2c1"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T02:45:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r4c1"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T02:45:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c0"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T02:45:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c2"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T02:45:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T02:45:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c1"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T02:45:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T03:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r2c1"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T03:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r4c1"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T03:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c0"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T03:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c2"], "kw": 0.0125, "details": ""}
-{"t": "2018-01-01T03:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T03:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c1"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T03:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T03:15:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T03:15:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c1"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T03:15:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T03:30:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T03:30:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c1"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T03:30:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T03:45:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T03:45:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c1"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T03:45:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T04:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T04:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c1"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T04:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T04:15:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T04:15:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c1"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T04:15:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T04:30:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T04:30:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c1"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T04:30:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T04:45:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T04:45:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c1"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T04:45:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T05:00:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.049999999999999996, "details": ""}
-{"t": "2018-01-01T05:00:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c1"], "kw": 0.049999999999999996, "details": ""}
-{"t": "2018-01-01T05:00:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.049999999999999996, "details": ""}
-{"t": "2018-01-01T05:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T05:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c1"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T05:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T05:15:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.049999999999999996, "details": ""}
-{"t": "2018-01-01T05:15:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c1"], "kw": 0.049999999999999996, "details": ""}
-{"t": "2018-01-01T05:15:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.049999999999999996, "details": ""}
-{"t": "2018-01-01T05:15:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T05:15:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c1"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T05:15:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T05:30:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T05:30:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c1"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T05:30:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T05:45:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T05:45:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c1"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T05:45:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T06:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T06:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c1"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T06:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.08333333333333333, "details": ""}
-{"t": "2018-01-01T10:45:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.003333333333333333, "details": ""}
-{"t": "2018-01-01T10:45:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c1"], "kw": 0.003333333333333333, "details": ""}
-{"t": "2018-01-01T10:45:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.003333333333333333, "details": ""}
-{"t": "2018-01-01T11:00:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.003333333333333333, "details": ""}
-{"t": "2018-01-01T11:00:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c1"], "kw": 0.003333333333333333, "details": ""}
-{"t": "2018-01-01T11:00:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.003333333333333333, "details": ""}
-{"t": "2018-01-01T11:15:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.003333333333333333, "details": ""}
-{"t": "2018-01-01T11:15:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c1"], "kw": 0.003333333333333333, "details": ""}
-{"t": "2018-01-01T11:15:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.003333333333333333, "details": ""}
-{"t": "2018-01-01T11:30:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.003333333333333333, "details": ""}
-{"t": "2018-01-01T11:30:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c1"], "kw": 0.003333333333333333, "details": ""}
-{"t": "2018-01-01T11:30:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.003333333333333333, "details": ""}
-{"t": "2018-01-01T11:45:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.003333333333333333, "details": ""}
-{"t": "2018-01-01T11:45:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c1"], "kw": 0.003333333333333333, "details": ""}
-{"t": "2018-01-01T11:45:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.003333333333333333, "details": ""}
+{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r2c0", "r3c0"], "kw": 0.25, "details": ""}
+{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r2c0", "r3c0"], "kw": 0.25, "details": ""}
+{"t": "2018-01-01T01:30:00", "kind": "transfer_executed", "house_ids": ["r2c0", "r3c0"], "kw": 0.25, "details": ""}
+{"t": "2018-01-01T01:45:00", "kind": "transfer_executed", "house_ids": ["r2c0", "r3c0"], "kw": 0.25, "details": ""}
+{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r2c0", "r3c0"], "kw": 0.25, "details": ""}
+{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r3c4", "r4c4"], "kw": 0.075, "details": ""}
+{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r3c4", "r3c3"], "kw": 0.075, "details": ""}
+{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r3c4", "r4c4"], "kw": 0.075, "details": ""}
+{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r3c4", "r3c3"], "kw": 0.075, "details": ""}
+{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r3c4", "r4c4"], "kw": 0.075, "details": ""}
+{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r3c4", "r3c3"], "kw": 0.075, "details": ""}
+{"t": "2018-01-01T02:45:00", "kind": "transfer_executed", "house_ids": ["r3c4", "r4c4"], "kw": 0.075, "details": ""}
+{"t": "2018-01-01T02:45:00", "kind": "transfer_executed", "house_ids": ["r3c4", "r3c3"], "kw": 0.075, "details": ""}
+{"t": "2018-01-01T03:00:00", "kind": "transfer_executed", "house_ids": ["r3c4", "r3c3"], "kw": 0.1, "details": ""}
+{"t": "2018-01-01T03:15:00", "kind": "transfer_executed", "house_ids": ["r3c4", "r3c3"], "kw": 0.1, "details": ""}
+{"t": "2018-01-01T03:30:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.15, "details": ""}
+{"t": "2018-01-01T04:30:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.25, "details": ""}
+{"t": "2018-01-01T04:45:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.25, "details": ""}
+{"t": "2018-01-01T05:00:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.25, "details": ""}
+{"t": "2018-01-01T05:15:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.25, "details": ""}
+{"t": "2018-01-01T09:00:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.015, "details": ""}
+{"t": "2018-01-01T09:00:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.015, "details": ""}
+{"t": "2018-01-01T09:15:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.015, "details": ""}
+{"t": "2018-01-01T09:15:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.015, "details": ""}
+{"t": "2018-01-01T09:30:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.015, "details": ""}
+{"t": "2018-01-01T09:30:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.015, "details": ""}
+{"t": "2018-01-01T09:45:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.015, "details": ""}
+{"t": "2018-01-01T09:45:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.015, "details": ""}
+{"t": "2018-01-01T10:00:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.015, "details": ""}
+{"t": "2018-01-01T10:00:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.015, "details": ""}
+{"t": "2018-01-01T10:15:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.015, "details": ""}
+{"t": "2018-01-01T10:15:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.015, "details": ""}
+{"t": "2018-01-01T10:30:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.015, "details": ""}
+{"t": "2018-01-01T10:30:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.015, "details": ""}
+{"t": "2018-01-01T10:45:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.015, "details": ""}
+{"t": "2018-01-01T10:45:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.015, "details": ""}
+{"t": "2018-01-01T11:00:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.005, "details": ""}
+{"t": "2018-01-01T11:00:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.005, "details": ""}
+{"t": "2018-01-01T11:15:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.005, "details": ""}
+{"t": "2018-01-01T11:15:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.005, "details": ""}
+{"t": "2018-01-01T11:30:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.005, "details": ""}
+{"t": "2018-01-01T11:30:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.005, "details": ""}
+{"t": "2018-01-01T11:45:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.005, "details": ""}
+{"t": "2018-01-01T11:45:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.005, "details": ""}
