@@ -102,6 +102,15 @@ def main() -> None:
     finally:
         logger.close()
 
+    # Fill in LLM call counters from the strategy facade (llm_agent only).
+    if scenario.strategy == "llm_agent":
+        import json as _json
+
+        from sim.strategies import llm_agent as _llm_strat
+
+        _llm_strat.update_summary_with_counts(run_dir)
+        summary = _json.loads((run_dir / "summary.json").read_text())
+
     print(
         f"scenario={scenario.scenario_id} "
         f"served={summary['served_load_fraction']:.3f} "

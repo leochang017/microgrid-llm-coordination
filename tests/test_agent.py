@@ -177,12 +177,16 @@ def test_act_emits_offers_to_neighbors_when_soc_above_threshold(tmp_path) -> Non
     a.policy = _generous_policy()
     nb = _three_house_neighborhood()
     t0 = datetime(2026, 1, 1, 8, 0)
+    # Asymmetric peers + a third "have" peer the agent sees but doesn't share
+    # with directly — raises the mean so both connected peers (r0c1, r1c0)
+    # fall below it under the Phase-2.5 filter and receive OFFERs.
     a.observe(
         t=t0,
         own_state=_own_state(8.0),
         peer_states={
-            "r0c1": {"soc_kwh": 2.0, "soc_capacity": 10.0},
-            "r1c0": {"soc_kwh": 2.5, "soc_capacity": 10.0},
+            "r0c1": {"soc_kwh": 2.0, "soc_capacity": 10.0},  # geo neighbor, below mean
+            "r1c0": {"soc_kwh": 3.0, "soc_capacity": 10.0},  # owner neighbor, below mean
+            "r2c2": {"soc_kwh": 8.0, "soc_capacity": 10.0},  # visible but not a neighbor
         },
         inbox=[],
         t_idx=0,
@@ -196,9 +200,35 @@ def test_act_emits_offers_to_neighbors_when_soc_above_threshold(tmp_path) -> Non
     assert len(transfers) >= 1
     by_target = {tr.to_id: tr.kw for tr in transfers}
     assert "r1c0" in by_target and "r0c1" in by_target
+    # Owner-edge target (r1c0) is weighted higher than geographic-edge (r0c1).
     assert by_target["r1c0"] > by_target["r0c1"]
     assert all(m.performative == "OFFER" for m in outbox)
     assert all(m.rationale_nl for m in outbox)
+
+
+def test_act_filters_recipients_by_below_mean_soc(tmp_path) -> None:
+    """Below-mean-SoC filter (Phase 2.5): peers above the visible peers'
+    mean SoC fraction are not sent OFFERs. Round-robin's secret sauce."""
+    a = _bare_agent(tmp_path)
+    a.policy = _generous_policy()
+    nb = _three_house_neighborhood()
+    t0 = datetime(2026, 1, 1, 8, 0)
+    # Asymmetric peers: r0c1 well below mean (have-not), r1c0 well above mean
+    # (another have). Only r0c1 should receive an OFFER.
+    a.observe(
+        t=t0,
+        own_state=_own_state(8.0),
+        peer_states={
+            "r0c1": {"soc_kwh": 1.0, "soc_capacity": 10.0},
+            "r1c0": {"soc_kwh": 9.0, "soc_capacity": 10.0},
+        },
+        inbox=[],
+        t_idx=0,
+    )
+    transfers, _ = a.act(t=t0, own_state=_own_state(8.0), neighborhood=nb, dt_hours=0.25)
+    by_target = {tr.to_id: tr.kw for tr in transfers}
+    assert "r0c1" in by_target
+    assert "r1c0" not in by_target
 
 
 def test_act_skips_when_soc_below_threshold(tmp_path) -> None:

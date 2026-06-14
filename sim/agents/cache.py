@@ -44,6 +44,8 @@ def cache_key(req: dict[str, Any]) -> str:
 class PromptCache:
     local_dir: Path
     reference_dir: Path | None = None
+    n_hits: int = 0
+    n_misses: int = 0
 
     def get(self, req: dict[str, Any]) -> dict[str, Any] | None:
         key = cache_key(req)
@@ -54,7 +56,9 @@ class PromptCache:
             path = Path(root) / model / f"{key}.json"
             if path.exists():
                 blob = json.loads(path.read_text(encoding="utf-8"))
+                self.n_hits += 1
                 return blob["response"]  # type: ignore[no-any-return]
+        self.n_misses += 1
         return None
 
     def put(self, req: dict[str, Any], response: dict[str, Any]) -> None:

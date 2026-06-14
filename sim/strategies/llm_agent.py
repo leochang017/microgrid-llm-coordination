@@ -19,7 +19,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from sim.agents.agent import LLMAgent
+from sim.agents.agent import (
+    _PLAN_SYSTEM_PROMPT_COOPERATIVE,
+    _PLAN_SYSTEM_PROMPT_SELFISH,
+    _REACT_SYSTEM_PROMPT_COOPERATIVE,
+    _REACT_SYSTEM_PROMPT_SELFISH,
+    LLMAgent,
+)
 from sim.agents.cache import PromptCache
 from sim.agents.failure_modes import (
     DefectorWrapper,
@@ -80,6 +86,9 @@ def _reference_cache_dir(run_dir: Path) -> Path | None:
     return candidate if candidate.exists() else None
 
 
+LLMClientFactory = Callable[[str, Path], LLMClient]
+
+
 def prepare(
     scenario: Scenario,
     households: dict[str, Household],
@@ -89,9 +98,14 @@ def prepare(
     *,
     message_bus: MessageBus | None = None,
     run_dir: Path | None = None,
+    llm_client_factory: LLMClientFactory | None = None,
     **_: Any,
 ) -> DecideFn:
-    """Engine hook. Returns a ``decide_transfers`` callable bound to a fresh registry."""
+    """Engine hook. Returns a ``decide_transfers`` callable bound to a fresh registry.
+
+    Pass ``llm_client_factory`` to inject a test client (e.g., MockLLMClient).
+    Defaults to ``_make_llm_client`` which builds an ``AnthropicLLMClient``.
+    """
     global _REGISTRY
     del solar, loads
 
@@ -107,22 +121,39 @@ def prepare(
     wrapper = DefectorWrapper(defectors=defectors, scenario_seed=scenario.seed)
 
     model = scenario.llm.get("model", "claude-haiku-4-5-20251001")
-    client = _make_llm_client(
-        model=model,
-        run_dir=run_dir or Path("runs/_inline"),
-    )
+    factory = llm_client_factory or _make_llm_client
+    client = factory(model, run_dir or Path("runs/_inline"))
+
+    # Resolve per-agent system prompts based on defector realization.
+    # `wrapper` (default Phase 2) leaves prompts cooperative and corrupts msgs at the bus.
+    # `prompt` / `both` set the selfish system prompts for defectors so the LLM
+    # itself is briefed to prioritize own household survival.
+    use_selfish_prompt = fm.defector_realization in ("prompt", "both")
 
     agents: dict[str, LLMAgent] = {}
     for hid, hh in households.items():
+        is_defector = hid in defectors
+        plan_prompt = (
+            _PLAN_SYSTEM_PROMPT_SELFISH
+            if is_defector and use_selfish_prompt
+            else _PLAN_SYSTEM_PROMPT_COOPERATIVE
+        )
+        react_prompt = (
+            _REACT_SYSTEM_PROMPT_SELFISH
+            if is_defector and use_selfish_prompt
+            else _REACT_SYSTEM_PROMPT_COOPERATIVE
+        )
         agents[hid] = LLMAgent(
             house_id=hid,
             scenario_seed=scenario.seed,
             trust_circles=dict(hh.affiliations or {}),
-            policy=_initial_policy(is_defector_prompt=hid in defectors),
+            policy=Policy.default_round_robin_fallback(),
             memory=MemoryStream(),
             llm_client=client,
             model=model,
             noise=noise,
+            system_prompt_plan=plan_prompt,
+            system_prompt_react=react_prompt,
         )
 
     _REGISTRY = _AgentRegistry(
@@ -131,15 +162,6 @@ def prepare(
         defector_wrapper=wrapper,
     )
     return decide_transfers
-
-
-def _initial_policy(is_defector_prompt: bool) -> Policy:
-    # All agents start with the same balanced default. The `is_defector_prompt`
-    # flag is computed for parity with the spec but its *effect* (selfish system-
-    # prompt override on plan/react calls) is deferred — see Phase 2 known
-    # limitations. The `wrapper` realization (Task 11) is the default ablation.
-    del is_defector_prompt
-    return Policy.default_round_robin_fallback()
 
 
 def decide_transfers(
@@ -185,12 +207,12 @@ def decide_transfers(
 
     # 3. Replan where needed
     for hid, agent in reg.agents.items():
-        if agent.should_replan(grid_islanded=not grid[hid], t=t):  # type: ignore[attr-defined]
-            agent.plan(t=t)  # type: ignore[attr-defined]
+        if agent.should_replan(grid_islanded=not grid[hid], t=t):
+            agent.plan(t=t)
 
     # 4. React to pending messages
     for agent in reg.agents.values():
-        replies = agent.react_to_pending(t=t)  # type: ignore[attr-defined]
+        replies = agent.react_to_pending(t=t)
         for m in replies:
             reg.bus.send(reg.defector_wrapper.maybe_corrupt(m))
 
@@ -206,7 +228,7 @@ def decide_transfers(
             "solar_kw": solar_kw.get(hid, 0.0),
             "dod_floor_frac": households[hid].dod_floor_frac,
         }
-        transfers, outbox = agent.act(  # type: ignore[attr-defined]
+        transfers, outbox = agent.act(
             t=t,
             own_state=own_state,
             neighborhood=neighborhood,
@@ -221,3 +243,64 @@ def decide_transfers(
         agent.policy_age_ticks += 1
 
     return all_transfers
+
+
+def current_call_counts() -> dict[str, int]:
+    """Aggregate LLM call counters across all agents in the current run.
+
+    Returns zeros if no run has been prepared. Callable from ``scripts/run.py``
+    after the engine returns to fill summary.json's `llm_call_counts` field.
+    """
+    if _REGISTRY is None:
+        return {
+            "reflect_plan": 0,
+            "react_msg": 0,
+            "react_skipped": 0,
+            "plan_parse_failures": 0,
+            "plan_fallbacks": 0,
+            "react_refusals": 0,
+            "cache_hits": 0,
+            "cache_misses": 0,
+        }
+    plan = sum(a.n_plan_calls for a in _REGISTRY.agents.values())
+    react = sum(a.n_react_calls for a in _REGISTRY.agents.values())
+    react_skipped = sum(a.n_react_skipped for a in _REGISTRY.agents.values())
+    parse_fails = sum(a.n_plan_parse_failures for a in _REGISTRY.agents.values())
+    fallbacks = sum(a.n_plan_fallbacks for a in _REGISTRY.agents.values())
+    refusals = sum(a.n_react_refusals for a in _REGISTRY.agents.values())
+    # Cache hits/misses come from the shared LLM client (all agents share one).
+    # The client lives on each agent; pick any.
+    any_agent = next(iter(_REGISTRY.agents.values()))
+    cache = any_agent.llm_client.cache
+    return {
+        "reflect_plan": plan,
+        "react_msg": react,
+        "react_skipped": react_skipped,
+        "plan_parse_failures": parse_fails,
+        "plan_fallbacks": fallbacks,
+        "react_refusals": refusals,
+        "cache_hits": getattr(cache, "n_hits", 0),
+        "cache_misses": getattr(cache, "n_misses", 0),
+    }
+
+
+def update_summary_with_counts(run_dir: Path) -> None:
+    """Read run_dir/summary.json, fill in llm_call_counts + policy_* fields, write back."""
+    import json
+
+    summary_path = run_dir / "summary.json"
+    if not summary_path.exists():
+        return
+    summary = json.loads(summary_path.read_text())
+    counts = current_call_counts()
+    summary["llm_call_counts"] = {
+        "reflect_plan": counts["reflect_plan"],
+        "react_msg": counts["react_msg"],
+        "cache_hits": counts["cache_hits"],
+        "cache_misses": counts["cache_misses"],
+    }
+    summary["policy_parse_failures"] = counts["plan_parse_failures"]
+    summary["policy_fallbacks_to_round_robin"] = counts["plan_fallbacks"]
+    # Also extend with finer-grained Phase-2.5 fields.
+    summary["llm_call_counts_detailed"] = counts
+    summary_path.write_text(json.dumps(summary, indent=2))
