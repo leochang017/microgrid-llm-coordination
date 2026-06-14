@@ -19,13 +19,21 @@ The contribution is on the **CS/ML axis** (natural-language agent coordination, 
 |-------|-------|--------|----------------|
 | 1 — Simulator | 1-4 | **complete** | Deterministic discrete-time microgrid sim, no agents |
 | 1.6 — Pre-Phase-2 hardening | — | **complete** | Ownership/management comm-graph overlays, stress scenarios that break round-robin, centralized LP upper-bound baseline, gap-closed reporting (cold/hot ResStock regions pending data fetch) |
-| 2 — LLM agent layer | 5-8 | not started | Per-household LLM agent, natural-language P2P messaging |
+| 2 — LLM agent layer | 5-8 | **complete** | Per-household LLM agent, natural-language P2P messaging |
 | 3 — Benchmark & experiments | 9-14 | not started | Scenario suite + baselines + metrics (Gini, served-critical-load, explanation quality) |
 | 4 — Web demo & paper writeup | 15-20 | not started | SvelteKit/Next.js visualization on Vercel + paper |
 
 > **Phase 1.6 is a hard gate on Phase 2**, inserted by advisor (Yongfeng) on 2026-05-26. Rationale: the current 12h-July-overnight scenario has a 98.5% no-coordination ceiling, leaving only ~0.5% headroom for the LLM layer — Phase 2 would be a null result by construction. Must establish a regime where round-robin visibly fails before building LLM agents.
 
 Each phase has its own spec + implementation plan in `docs/superpowers/`.
+
+## Phase 2 status
+
+- **Spec:** `docs/superpowers/specs/2026-06-13-phase2-llm-agent-design.md`
+- **Plan:** `docs/superpowers/plans/2026-06-13-phase2-llm-agent.md` (26 tasks, TDD)
+- **Approved:** 2026-06-13
+- **Execution mode:** Inline (Claude executes tasks in-session, batched ~3-5 at a time with check-ins).
+- **Status:** ✅ **complete; tagged `phase2-complete`** (2026-06-13). 183 tests pass (mock-LLM only); ruff + mypy --strict clean. One live-Haiku reference run shipped in `reference_runs/haves_havenots__llm/llm_agent/clean/` (1596 cached prompts; served=0.460 vs rr=0.525 vs lp=0.529 — naive Haiku underperforms round_robin on this scenario with the v0 prompt template). **Deferred follow-ups:** (a) live reference runs for `__defectors` / `__noise` / `__comm` / `__all` / `long_outage_72h__llm` failure cells (mock-LLM tests cover them); (b) `defector_realization: prompt` (computed-but-not-applied; `wrapper` is the Phase 2 default); (c) peer state via INFORM-only (currently the engine's ground truth); (d) prompt engineering to actually outperform round_robin on the showcase scenario (Phase 3 work).
 
 ## Phase 1 status
 
@@ -42,6 +50,8 @@ Update this after every committed task. Newest entries on top.
 
 | Date | Task | Commit | Tests | Note |
 |------|------|--------|-------|------|
+| 2026-06-13 | **P2 Task 25 — README + CLAUDE.md Phase 2 status** ✅ | _(this commit)_ | 183 ✓ | README gains a Phase 2 section explaining what shipped + the reference run + cache-warm replay quickstart + known limitations. CLAUDE.md phase table marks Phase 2 complete; adds a Phase 2 status block with spec/plan/tag pointers. |
+| 2026-06-13 | **P2 Task 24 — live Haiku reference run (clean cell only)** ✅ | `68ee701` | 183 ✓ | Real Haiku 4.5 run on `haves_havenots__llm.yaml` (12 h outage, 30 houses, 64 min wall, ~$15 cost). 1596 cached LLM responses shipped in `reference_runs/haves_havenots__llm/llm_agent/clean/llm_cache/`. **Numbers:** served=0.460, transfers=206, msgs delivered/sent=5534/5534. **Finding:** naive Haiku underperformed `round_robin` (0.525) on this scenario with v0 prompts — Phase 3 prompt-engineering work. Also: bumped pre-commit `check-added-large-files` maxkb 500→5000 for messages.jsonl traces (2.2 MB this run). Defectors / noise / comm / 72h cells deferred. AnthropicLLMClient now supports OAuth tokens via `Authorization: Bearer` when key starts with `sk-ant-oat`. `scripts/run.py` learned `--reference-cell <name>` for writing into the in-repo `reference_runs/` tree. |
 | 2026-06-13 | **P2 Tasks 22 + 23 — replay determinism + failure-axis smoke** ✅ | _(this commit)_ | 183 ✓ | `test_llm_agent_replay.py`: two MockLLM runs of `haves_havenots__llm.yaml` produce byte-identical `state/events/messages.jsonl` (pins down per-agent RNG, bus RNG, defector RNG, noise RNG determinism). `test_llm_agent_failure_axes.py` (3 tests): defectors scenario runs end-to-end with non-zero traffic (effect-on-outcome via wrapper requires receiver-side ground-truth reasoning — Phase 3); noise produces measurable change in transfer count or served fraction; comm constraints reduce delivered/sent message ratio. |
 | 2026-06-13 | **P2 Task 21 — end-to-end mock-LLM integration test** ✅ | _(this commit)_ | 179 ✓ | `test_llm_agent_integration.py` runs the LLM strategy with a canned MockLLMClient on `haves_havenots__llm.yaml`; verifies the full pipeline integrates (engine → facade → agent → bus → settle → log → summary), produces all four output files, and stays within 10% of `round_robin`'s served-load fraction (LLM=0.520 vs rr=0.525). **Finding:** generic canned policies do not automatically beat round_robin on this scenario; outperformance is a Phase-3 tuning concern (real Haiku + scenario-aware reasoning). |
 | 2026-06-13 | **P2 Task 20 — failure-cell scenario YAML variants** ✅ | _(this commit)_ | 178 ✓ | 5 new scenario files: `haves_havenots__{llm,defectors,noise,comm,all}.yaml` covering clean LLM run + each failure-mode axis + all-combined. Defector cell uses `wrapper` realization (Phase 2 default — the `prompt` realization is deferred). Per spec §6 ref runs. |

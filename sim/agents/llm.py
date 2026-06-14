@@ -115,7 +115,14 @@ class AnthropicLLMClient(LLMClient):
 
     def __post_init__(self) -> None:
         if self._sdk_client is None:
-            self._sdk_client = anthropic.Anthropic(api_key=self.api_key or None)
+            # OAuth access tokens (sk-ant-oat01-…) authenticate via the
+            # Authorization: Bearer header; regular API keys (sk-ant-api…) use
+            # x-api-key. The Anthropic SDK exposes both via separate kwargs.
+            key = self.api_key or None
+            if key and key.startswith("sk-ant-oat"):
+                self._sdk_client = anthropic.Anthropic(auth_token=key, api_key="")
+            else:
+                self._sdk_client = anthropic.Anthropic(api_key=key)
 
     def _call_provider(self, req: LLMRequest) -> LLMResponse:
         last_exc: Exception | None = None

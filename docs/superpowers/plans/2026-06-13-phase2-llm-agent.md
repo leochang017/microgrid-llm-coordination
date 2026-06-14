@@ -4795,7 +4795,7 @@ git commit -m "test: lock in failure-axis measurable effects"
 - Create: `reference_runs/long_outage_72h/llm_agent/clean/`
 - Modify: `scripts/run.py` — add `--reference-cell` flag that writes outputs into `reference_runs/...`
 
-- [ ] **Step 1: Update `.gitignore`**
+- [x] **Step 1: Update `.gitignore`**
 
 Ensure `.gitignore` contains:
 
@@ -4806,7 +4806,7 @@ runs/
 
 (`runs/` stays ignored; `reference_runs/` is NEW and explicitly tracked.)
 
-- [ ] **Step 2: Create the reference_runs/ skeleton**
+- [x] **Step 2: Create the reference_runs/ skeleton**
 
 ```bash
 mkdir -p reference_runs/haves_havenots/llm_agent/clean
@@ -4815,7 +4815,7 @@ mkdir -p reference_runs/long_outage_72h/llm_agent/clean
 touch reference_runs/.gitkeep
 ```
 
-- [ ] **Step 3: Add `--reference-cell` flag to `scripts/run.py`**
+- [x] **Step 3: Add `--reference-cell` flag to `scripts/run.py`**
 
 Read `scripts/run.py` first to find the argument parser. Add:
 
@@ -4834,7 +4834,7 @@ In the output-dir resolution logic, if `args.reference_cell` is set, use:
 out_dir = Path("reference_runs") / scenario_id / strategy / args.reference_cell
 ```
 
-- [ ] **Step 4: Run the three live-Haiku reference runs**
+- [x] **Step 4: Run the three live-Haiku reference runs**
 
 **Live API calls required. Set `ANTHROPIC_API_KEY` first.** Each run takes ~5–20 minutes depending on the scenario length and cache state. Cost: ~$1–3 per run on Haiku.
 
@@ -4861,7 +4861,7 @@ reference_runs/<scenario>/llm_agent/<cell>/
         └── <sha256>.json   # many files
 ```
 
-- [ ] **Step 5: Trim messages.jsonl in-repo to a manageable size if needed**
+- [x] **Step 5: Trim messages.jsonl in-repo to a manageable size if needed**
 
 If a full `messages.jsonl` is >50 MB (likely for the 72h run), keep only the first 5000 lines in the in-repo file as `messages.jsonl.head` and document this in `reference_runs/README.md`:
 
@@ -4872,7 +4872,7 @@ mv /tmp/m.head reference_runs/long_outage_72h/llm_agent/clean/messages.jsonl
 
 (The `summary.json` already carries the totals.)
 
-- [ ] **Step 6: Add a `reference_runs/README.md`**
+- [x] **Step 6: Add a `reference_runs/README.md`**
 
 ```markdown
 # Reference Runs (Phase 2)
@@ -4905,12 +4905,12 @@ to the files in this directory.
   repo small; `summary.json` carries the full counts.
 ```
 
-- [ ] **Step 7: Run the suite to confirm nothing regressed**
+- [x] **Step 7: Run the suite to confirm nothing regressed**
 
 Run: `.venv/bin/pytest -q`
 Expected: all green.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 Add progress log row:
 
@@ -4935,7 +4935,7 @@ git commit -m "feat: add reference_runs/ + 3 live-Haiku cached runs for replay"
 - Modify: `README.md` — add Phase 2 section
 - Modify: `CLAUDE.md` — update phase table
 
-- [ ] **Step 1: Update `README.md`**
+- [x] **Step 1: Update `README.md`**
 
 Add (or replace) a "Phase 2 status" section in `README.md`:
 
@@ -4991,7 +4991,7 @@ Claude Haiku 4.5; configure via the `llm.model` block of the scenario YAML.
   reserved ablation.
 ```
 
-- [ ] **Step 2: Update the phase table in `CLAUDE.md`**
+- [x] **Step 2: Update the phase table in `CLAUDE.md`**
 
 In `CLAUDE.md`, change the Phase 2 row of the phase table:
 
@@ -5011,7 +5011,7 @@ Update the "Current position" line under "Phase 1 status" (or add a "Phase 2 sta
 - **Status:** complete; three reference runs shipped; tagged `phase2-complete`.
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 Add progress log row:
 

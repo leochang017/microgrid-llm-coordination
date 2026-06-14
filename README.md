@@ -4,9 +4,9 @@ A research project asking: can a population of LLM agents — one per household 
 
 The contribution is on the CS/ML axis (natural-language coordination, robustness, explainability), not power systems. Classical optimization handles fairness under strong assumptions, struggles with robustness, and doesn't attempt explainability. That gap is what this project explores.
 
-**Status:** Phase 1 simulator + Phase 1.6 hardening — ✅ **complete.** 96 tests pass. CLI works end-to-end.
+**Status:** Phase 1 + Phase 1.6 + **Phase 2 LLM agent layer** — ✅ **complete.** 183 tests pass (mock-LLM only), ruff + mypy --strict clean, 1 live-Haiku reference run shipped.
 
-📐 [Phase 1 spec](docs/superpowers/specs/2026-05-14-phase1-simulator-design.md) · [Phase 1.6 spec](docs/superpowers/specs/2026-05-29-phase1.6-hardening-design.md) · 📋 [Phase 1 plan](docs/superpowers/plans/2026-05-14-phase1-simulator.md) · [Phase 1.6 plan](docs/superpowers/plans/2026-05-29-phase1.6-hardening.md) · 🧠 [Project context (CLAUDE.md)](CLAUDE.md)
+📐 [Phase 1 spec](docs/superpowers/specs/2026-05-14-phase1-simulator-design.md) · [Phase 1.6 spec](docs/superpowers/specs/2026-05-29-phase1.6-hardening-design.md) · [Phase 2 spec](docs/superpowers/specs/2026-06-13-phase2-llm-agent-design.md) · 📋 [Phase 1 plan](docs/superpowers/plans/2026-05-14-phase1-simulator.md) · [Phase 1.6 plan](docs/superpowers/plans/2026-05-29-phase1.6-hardening.md) · [Phase 2 plan](docs/superpowers/plans/2026-06-13-phase2-llm-agent.md) · 🧠 [Project context (CLAUDE.md)](CLAUDE.md)
 
 ## Install
 
@@ -155,7 +155,61 @@ Advisor-gated work establishing that the Phase 2 LLM layer has real room to add 
 > engine-realized run: the engine's greedy per-tick dispatch wouldn't faithfully execute
 > the LP's planned battery schedule, so a realized LP run can fall below round_robin.
 
-**Next:** Phase 2 — LLM agent layer (separate spec + plan, separate brainstorm).
+## Phase 2 — LLM Agent Layer (2026-06-13)
+
+Per-household LLM agents that negotiate transfers in natural language across
+overlapping trust circles (geographic + ownership/management overlays from Phase 1.6).
+Each agent maintains a Park-adapted memory stream + periodic reflection, emits a
+structured `Policy` YAML that a pure-Python tick executor consumes, and exchanges
+speech-act messages (`REQUEST` / `OFFER` / `ACCEPT` / `REJECT` / `COUNTER` / `INFORM`)
+with an NL `rationale` field on every message.
+
+Three orthogonal failure-mode injection axes are independently configurable per
+scenario YAML: strategic agents (`defector_fraction`), noisy observations
+(`obs_noise.{soc,load,solar}_std_frac`), and communication constraints
+(`comm.{drop_prob_by_circle, per_tick_budget}`).
+
+Determinism is preserved via a content-addressed prompt cache. The in-repo
+`reference_runs/` directory ships one cache-warmed run you can replay without
+hitting the API:
+
+| Scenario | Failure cell | Notes |
+|---|---|---|
+| `haves_havenots__llm.yaml` | clean | live Haiku 4.5 run, 1596 cached prompts, served 0.460 |
+
+### Quickstart
+
+```bash
+# Replay the reference run (cache-warm, no API calls):
+python -m scripts.run \
+    --scenario configs/scenarios/haves_havenots__llm.yaml \
+    --reference-cell clean
+```
+
+To run live, set `ANTHROPIC_API_KEY` and use `--out-dir runs` (instead of
+`--reference-cell`). Default model is Claude Haiku 4.5; configure via the
+`llm.model` block of the scenario YAML.
+
+### Phase 2 known limitations
+
+- **Defector `prompt` realization is deferred.** Defector assignment is
+  deterministic and the `wrapper` realization (per-message payload mutation) is
+  fully implemented, but the `prompt` realization (replacing the agent's system
+  prompt with a selfish template) is not yet wired through plan/react calls.
+  The `wrapper` realization is the Phase 2 default for the strategic-agent axis.
+- **Live Haiku v0 prompts underperformed round_robin** on `haves_havenots__llm`
+  (0.460 vs 0.525). Mock-LLM with a hand-tuned canned policy stayed within ~1% of
+  round_robin (0.520). The prompt-engineering and scenario-aware-reasoning work
+  needed to actually beat round_robin is Phase 3.
+- **Peer state observed by an agent is the engine's ground-truth state**, not
+  the peer's voluntarily-INFORM'd self-view. Migrating to message-only peer
+  state is a v1 follow-up.
+- **No synchronous multi-round negotiation in v0** — agents reply reactively to
+  REQUEST/OFFER across consecutive ticks.
+- **Defectors and noise + comm failure-cell reference runs are deferred follow-ups.**
+  Mock-LLM tests cover them in `tests/test_llm_agent_failure_axes.py`; live
+  reference runs ship in a future phase.
+- **Not deployment-ready.** Research artifact only.
 
 ## License
 
