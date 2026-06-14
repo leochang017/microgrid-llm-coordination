@@ -4435,7 +4435,7 @@ git commit -m "feat: add failure-cell scenario variants of haves_havenots"
 **Files:**
 - Test: `tests/test_llm_agent_integration.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/test_llm_agent_integration.py
@@ -4525,12 +4525,12 @@ def test_llm_agent_beats_round_robin_on_haves_havenots(tmp_path: Path) -> None:
     assert len(msgs) > 0
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_llm_agent_integration.py -v`
 Expected: FAIL — likely either the mock isn't covering all distinct prompts, or `decide_transfers` raises, or LLM doesn't beat round_robin without more careful canning. Use the failure to iterate on the canned response dict + the policy fields.
 
-- [ ] **Step 3: Iterate on canned responses until the test passes**
+- [x] **Step 3: Iterate on canned responses until the test passes**
 
 If the LLM strategy fails to beat round_robin, possible fixes:
 - Lower `share_min_soc_frac` further in the canned policy (e.g., 0.30).
@@ -4539,12 +4539,12 @@ If the LLM strategy fails to beat round_robin, possible fixes:
 
 The goal is a passing smoke test, not a maximally-optimal LLM. The integration test asserts only that LLM beats round_robin; it does not claim a specific gap-closed number.
 
-- [ ] **Step 4: Run linters**
+- [x] **Step 4: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Add progress log row:
 
