@@ -3589,7 +3589,7 @@ git commit -m "feat: add LLMAgent react_to_pending + replan triggers"
 - Create: `sim/strategies/llm_agent.py`
 - Test: `tests/test_strategy_llm_agent.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/test_strategy_llm_agent.py
@@ -3673,12 +3673,12 @@ llm:
     assert callable(decide)
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_strategy_llm_agent.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'sim.strategies.llm_agent'`.
 
-- [ ] **Step 3: Implement `sim/strategies/llm_agent.py`**
+- [x] **Step 3: Implement `sim/strategies/llm_agent.py`**
 
 ```python
 # sim/strategies/llm_agent.py
@@ -3895,7 +3895,7 @@ def decide_transfers(
     return all_transfers
 ```
 
-- [ ] **Step 4: Add a strategy loader if not present**
+- [x] **Step 4: Add a strategy loader if not present**
 
 Check `sim/strategies/__init__.py`. If it's empty, add:
 
@@ -3912,17 +3912,17 @@ def load(name: str) -> ModuleType:
     return importlib.import_module(f"sim.strategies.{name}")
 ```
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 Run: `.venv/bin/pytest tests/test_strategy_llm_agent.py -v`
 Expected: 2 tests PASS.
 
-- [ ] **Step 6: Run linters**
+- [x] **Step 6: Run linters**
 
 Run: `.venv/bin/ruff check sim tests && .venv/bin/mypy`
 Expected: no errors.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 Add progress log row:
 
