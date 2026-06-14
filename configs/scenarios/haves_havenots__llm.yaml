@@ -1,0 +1,42 @@
+# Showcase scenario for Phase 2: LLM-agent strategy on the haves/have-nots stress regime.
+# Clean cell (no failure modes). Compare against haves_havenots.yaml (round_robin).
+
+scenario_id: haves_havenots__llm
+start: "2018-01-01T00:00:00"
+end:   "2018-01-01T12:00:00"
+dt_hours: 0.25
+seed: 23
+rows: 5
+cols: 6
+bus_max_kw: 50.0
+bus_loss_factor: 0.05
+strategy: llm_agent
+data_source: synthetic
+household_sampling:
+  mode: bimodal
+  have:    {pv_kw_peak: [0.0, 0.0], battery_kwh: [35.0, 40.0]}
+  havenot: {pv_kw_peak: [0.0, 0.0], battery_kwh: [2.0, 4.0]}
+  have_fraction: 0.4
+  rt_efficiency: 0.9
+  dod_floor_frac: 0.1
+  synthetic_load_kw: 1.0
+affiliations:
+  owner:
+    owner_a: [r0c0, r2c3, r4c5]
+    owner_b: [r0c5, r3c1]
+  dr_aggregator:
+    agg_gridflex: [r0c0, r1c1, r2c2, r3c3, r4c4]
+outages:
+  - start: "2018-01-01T00:00:00"
+    end:   "2018-01-01T12:00:00"
+    affected_houses: [r0c0, r0c1, r0c2, r0c3, r0c4, r0c5,
+                      r1c0, r1c1, r1c2, r1c3, r1c4, r1c5,
+                      r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
+                      r3c0, r3c1, r3c2, r3c3, r3c4, r3c5,
+                      r4c0, r4c1, r4c2, r4c3, r4c4, r4c5]
+llm:
+  model: claude-haiku-4-5-20251001
+  policy_refresh_every_ticks: 4
+  react_max_per_tick: 3
+  require_rationale: true
+failure_modes: {}

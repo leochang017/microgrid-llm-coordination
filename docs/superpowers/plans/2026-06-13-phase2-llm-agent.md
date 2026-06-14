@@ -4289,7 +4289,7 @@ git commit -m "feat: extend summary.json with Phase 2 additive fields"
 - Create: `configs/scenarios/haves_havenots__all.yaml` — all three combined
 - Test: `tests/test_failure_cell_scenarios.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/test_failure_cell_scenarios.py
@@ -4335,12 +4335,12 @@ def test_haves_havenots_all_loads() -> None:
     assert s.failure_modes.comm.per_tick_budget is not None
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `.venv/bin/pytest tests/test_failure_cell_scenarios.py -v`
 Expected: FAIL — none of the 5 scenario files exist yet.
 
-- [ ] **Step 3: Create the 5 scenario variants**
+- [x] **Step 3: Create the 5 scenario variants**
 
 For each, read `configs/scenarios/haves_havenots.yaml` first to get the base content; then create the variant by appending an `llm:` block and a `failure_modes:` block. Example for `haves_havenots__llm.yaml`:
 
@@ -4401,12 +4401,12 @@ For `haves_havenots__all.yaml`, combine all of the above.
 
 Also update the base `haves_havenots.yaml` to include `failure_modes: {}` and `llm: {}` blocks (additive, no behavior change for round_robin runs).
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `.venv/bin/pytest tests/test_failure_cell_scenarios.py -v`
 Expected: 5 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Add progress log row:
 
