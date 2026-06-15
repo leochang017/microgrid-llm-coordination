@@ -193,13 +193,13 @@ To run live, set `ANTHROPIC_API_KEY` and use `--out-dir runs` (instead of
 ### Phase 2 known limitations
 
 - **Live Haiku underperforms round_robin** on `haves_havenots__llm`
-  (0.458 vs 0.525). Phase 2.5 instrumentation surfaced the bottleneck:
-  **41% of Haiku's policy YAML output fails to parse**, and 3-strikes-out
-  triggers fallback to a hard-coded round-robin-style policy. So a lot of the
-  run executes the fallback, not the LLM's reasoning. Phase 3 fix candidate:
-  Anthropic tool-use for schema-validated structured output (target: ~100%
-  parse rate). Second suspect: `_SHARE_FRACTION = 0.20` in `act()` vs
-  `round_robin`'s `0.05` (LLM over-shares, wasting energy on round-trip losses).
+  (0.458 vs 0.525). Phase 2.6 landed Anthropic tool-use for schema-validated
+  policy output: parse failures dropped from **41% to 0.18%** (200x), but
+  served-load stayed at 0.458. This falsifies the "parse failures explain
+  the gap" hypothesis — the fallback policy coordinates roughly the same way
+  as Haiku's actual reasoning. The remaining gap is a coordination-quality
+  question (likely needs scenario-aware prompt engineering or a smarter
+  act() executor), not an output-reliability question.
 - **`defector_realization: prompt`** is now wired in Phase 2.5 (selfish system
   prompt for plan + react calls when an agent is a defector). The `wrapper`
   realization (per-message payload mutation at the bus) remains the safer
