@@ -170,3 +170,110 @@ def test_anthropic_client_cache_hit_skips_api(tmp_path) -> None:
 
     assert resp.text == "cached"
     fake_client.messages.create.assert_not_called()
+
+
+# --- Tool-use tests (Phase 2.6) ---
+
+
+def test_anthropic_client_passes_tools_and_forces_tool_choice(tmp_path) -> None:
+    """When LLMRequest.tools_schema is non-empty, the SDK call includes tools +
+    tool_choice forcing the named tool."""
+    fake_msg = MagicMock()
+    fake_msg.content = []
+    fake_msg.usage = MagicMock(input_tokens=1, output_tokens=1)
+    fake_client = MagicMock()
+    fake_client.messages.create.return_value = fake_msg
+
+    schema = {
+        "name": "submit_policy",
+        "description": "x",
+        "input_schema": {"type": "object", "properties": {}, "required": []},
+    }
+
+    with patch("sim.agents.llm.anthropic.Anthropic", return_value=fake_client):
+        adapter = AnthropicLLMClient(
+            cache=PromptCache(local_dir=tmp_path),
+            api_key="sk-test",
+        )
+        req = LLMRequest(
+            model="claude-haiku-4-5-20251001",
+            system="sys",
+            user="hi",
+            max_tokens=64,
+            tools_schema=[schema],
+        )
+        adapter.call(req)
+
+    kwargs = fake_client.messages.create.call_args.kwargs
+    assert kwargs["tools"] == [schema]
+    assert kwargs["tool_choice"] == {"type": "tool", "name": "submit_policy"}
+
+
+def test_anthropic_client_parses_tool_use_response_into_tool_input(tmp_path) -> None:
+    """A response with a tool_use content block populates LLMResponse.tool_input."""
+    tool_block = MagicMock()
+    tool_block.type = "tool_use"
+    tool_block.text = ""  # tool_use blocks carry no text content
+    tool_block.input = {"sharing_intent": "balanced", "share_min_soc_frac": 0.5}
+
+    fake_msg = MagicMock()
+    fake_msg.content = [tool_block]
+    fake_msg.usage = MagicMock(input_tokens=10, output_tokens=5)
+    fake_client = MagicMock()
+    fake_client.messages.create.return_value = fake_msg
+
+    with patch("sim.agents.llm.anthropic.Anthropic", return_value=fake_client):
+        adapter = AnthropicLLMClient(
+            cache=PromptCache(local_dir=tmp_path),
+            api_key="sk-test",
+        )
+        req = LLMRequest(
+            model="claude-haiku-4-5-20251001",
+            system="sys",
+            user="hi",
+            max_tokens=64,
+            tools_schema=[
+                {
+                    "name": "submit_policy",
+                    "description": "x",
+                    "input_schema": {"type": "object", "properties": {}, "required": []},
+                }
+            ],
+        )
+        resp = adapter.call(req)
+
+    assert resp.tool_input == {"sharing_intent": "balanced", "share_min_soc_frac": 0.5}
+
+
+def test_tool_input_round_trips_through_cache(tmp_path) -> None:
+    """A cached tool_input dict is restored on the next call."""
+    cache = PromptCache(local_dir=tmp_path)
+    schema = {
+        "name": "submit_policy",
+        "description": "x",
+        "input_schema": {"type": "object", "properties": {}, "required": []},
+    }
+    req = LLMRequest(
+        model="claude-haiku-4-5-20251001",
+        system="sys",
+        user="hi",
+        max_tokens=64,
+        tools_schema=[schema],
+    )
+    cache.put(
+        req.to_cache_dict(),
+        {
+            "text": "",
+            "tokens_in": 0,
+            "tokens_out": 0,
+            "tool_input": {"sharing_intent": "conservative"},
+        },
+    )
+
+    fake_client = MagicMock()
+    with patch("sim.agents.llm.anthropic.Anthropic", return_value=fake_client):
+        adapter = AnthropicLLMClient(cache=cache, api_key="sk-test")
+        resp = adapter.call(req)
+
+    assert resp.tool_input == {"sharing_intent": "conservative"}
+    fake_client.messages.create.assert_not_called()

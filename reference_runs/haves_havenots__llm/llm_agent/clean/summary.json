@@ -1,35 +1,35 @@
 {
   "scenario_id": "haves_havenots__llm",
-  "served_load_fraction": 0.45829228407648626,
-  "unmet_kwh_total": 195.01477773246495,
-  "wasted_kwh_total": 8.926824970050934,
-  "gini_welfare": 0.48075305678717584,
-  "transfer_count": 44,
+  "served_load_fraction": 0.45843742296537515,
+  "unmet_kwh_total": 194.96252773246493,
+  "wasted_kwh_total": 8.929800060487347,
+  "gini_welfare": 0.48076243379542016,
+  "transfer_count": 20,
   "message_counts": {
-    "sent": 4914,
-    "delivered": 4914,
+    "sent": 2360,
+    "delivered": 2360,
     "dropped_invalid_recipient": 0,
     "dropped_comm": 0,
     "dropped_budget": 0
   },
   "llm_call_counts": {
-    "reflect_plan": 246,
-    "react_msg": 2356,
-    "cache_hits": 1291,
-    "cache_misses": 1311
+    "reflect_plan": 561,
+    "react_msg": 1159,
+    "cache_hits": 440,
+    "cache_misses": 1280
   },
   "llm_cost_usd_estimated": 0.0,
   "failure_modes_active": {},
-  "policy_parse_failures": 101,
-  "policy_fallbacks_to_round_robin": 44,
+  "policy_parse_failures": 1,
+  "policy_fallbacks_to_round_robin": 0,
   "llm_call_counts_detailed": {
-    "reflect_plan": 246,
-    "react_msg": 2356,
-    "react_skipped": 245,
-    "plan_parse_failures": 101,
-    "plan_fallbacks": 44,
+    "reflect_plan": 561,
+    "react_msg": 1159,
+    "react_skipped": 53,
+    "plan_parse_failures": 1,
+    "plan_fallbacks": 0,
     "react_refusals": 0,
-    "cache_hits": 1291,
-    "cache_misses": 1311
+    "cache_hits": 440,
+    "cache_misses": 1280
   }
 }

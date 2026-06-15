@@ -51,6 +51,9 @@ class LLMResponse:
     text: str
     tokens_in: int
     tokens_out: int
+    # When tool-use is requested (LLMRequest.tools_schema non-empty), this
+    # carries the parsed input dict of the model's tool call. None otherwise.
+    tool_input: dict[str, Any] | None = None
 
 
 @dataclass
@@ -67,11 +70,17 @@ class LLMClient:
                 text=cached["text"],
                 tokens_in=int(cached.get("tokens_in", 0)),
                 tokens_out=int(cached.get("tokens_out", 0)),
+                tool_input=cached.get("tool_input"),
             )
         resp = self._call_provider(req)
         self.cache.put(
             cache_req,
-            {"text": resp.text, "tokens_in": resp.tokens_in, "tokens_out": resp.tokens_out},
+            {
+                "text": resp.text,
+                "tokens_in": resp.tokens_in,
+                "tokens_out": resp.tokens_out,
+                "tool_input": resp.tool_input,
+            },
         )
         return resp
 
@@ -126,6 +135,17 @@ class AnthropicLLMClient(LLMClient):
 
     def _call_provider(self, req: LLMRequest) -> LLMResponse:
         last_exc: Exception | None = None
+        # If a tool schema is provided, force the model to call the (first)
+        # tool. This is how we eliminate the 41% policy-parse failure rate
+        # observed in the Phase 2.5 reference run — structured output via
+        # tool-use is schema-validated by the API itself, so the response is
+        # always parseable.
+        extra_kwargs: dict[str, Any] = {}
+        if req.tools_schema:
+            extra_kwargs["tools"] = req.tools_schema
+            tool_name = req.tools_schema[0]["name"]
+            extra_kwargs["tool_choice"] = {"type": "tool", "name": tool_name}
+
         for attempt in range(self.max_retries):
             try:
                 assert self._sdk_client is not None
@@ -135,12 +155,21 @@ class AnthropicLLMClient(LLMClient):
                     temperature=0.0,
                     system=req.system,
                     messages=[{"role": "user", "content": req.user}],
+                    **extra_kwargs,
                 )
                 text = "".join(getattr(b, "text", "") for b in msg.content)
+                tool_input: dict[str, Any] | None = None
+                for b in msg.content:
+                    if getattr(b, "type", None) == "tool_use":
+                        raw = getattr(b, "input", None)
+                        if isinstance(raw, dict):
+                            tool_input = raw
+                        break
                 return LLMResponse(
                     text=text,
                     tokens_in=int(msg.usage.input_tokens),
                     tokens_out=int(msg.usage.output_tokens),
+                    tool_input=tool_input,
                 )
             except (
                 anthropic.RateLimitError,

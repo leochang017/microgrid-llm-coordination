@@ -64,6 +64,100 @@ _REACT_SYSTEM_PROMPT_SELFISH = (
 _SHARE_FRACTION = 0.20  # of headroom per tick
 
 
+# Policy expressed as an Anthropic tool schema (JSON Schema). The plan() call
+# forces the model to invoke this tool, so the response is schema-validated by
+# the API and our parser never has to read free-form text. This is the fix for
+# the 41% policy-parse-failure rate observed in the Phase 2.5 live run.
+_POLICY_TOOL_SCHEMA: dict[str, Any] = {
+    "name": "submit_policy",
+    "description": (
+        "Submit a coordination policy describing how this household should share "
+        "energy with its neighbors over the next hour, plus a short reflection on "
+        "what you've observed."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "reflection": {
+                "type": "string",
+                "description": (
+                    "One short paragraph (<= 280 chars) summarizing what you've "
+                    "observed and what you believe about your peers. Stored as a "
+                    "high-importance memory the next planning call will retrieve."
+                ),
+            },
+            "sharing_intent": {
+                "type": "string",
+                "enum": ["conservative", "balanced", "generous"],
+            },
+            "share_min_soc_frac": {
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "description": (
+                    "Only share energy if your current state-of-charge fraction "
+                    "is at or above this threshold."
+                ),
+            },
+            "max_share_kw_per_tick": {
+                "type": "number",
+                "minimum": 0.0,
+                "description": ("Cap on total outbound power per 15-min tick (kW)."),
+            },
+            "recipient_priority": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "circle": {
+                            "type": "string",
+                            "description": (
+                                "Trust-circle name: one of 'owner', 'hoa', "
+                                "'dr_aggregator', 'geographic', or any other "
+                                "circle this household belongs to."
+                            ),
+                        },
+                        "weight": {"type": "number", "minimum": 0.0},
+                    },
+                    "required": ["circle", "weight"],
+                },
+            },
+            "distrusted_peers": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": (
+                    "House ids you have stopped trusting (e.g. peers who keep "
+                    "refusing your requests)."
+                ),
+            },
+            "request_urgency": {
+                "type": "string",
+                "enum": ["low", "normal", "urgent"],
+            },
+            "belief_note": {
+                "type": "string",
+                "description": (
+                    "One sentence summarizing your current belief about the " "neighborhood."
+                ),
+            },
+            "ttl_ticks": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Number of 15-min ticks before this policy needs re-planning.",
+            },
+        },
+        "required": [
+            "reflection",
+            "sharing_intent",
+            "share_min_soc_frac",
+            "max_share_kw_per_tick",
+            "recipient_priority",
+        ],
+    },
+}
+
+
 @dataclass
 class LLMAgent:
     """One per household; owns memory, policy, RNG, and references to shared LLM client + noise."""
@@ -201,10 +295,18 @@ class LLMAgent:
         return self.policy_age_ticks >= self.policy.ttl_ticks
 
     def plan(self, t: datetime) -> None:
-        """One combined reflect+plan LLM call.
+        """One combined reflect+plan LLM call via Anthropic tool-use.
 
+        The model is forced to call ``submit_policy``, whose JSON Schema is
+        the Policy contract — so the response is structured and validated
+        by the API itself. Phase 2.5 measured 41% YAML parse failures with a
+        free-text prompt; this path should bring that to ~0%.
+
+        Backward-compat fallback path: if the model returns no ``tool_input``
+        (e.g. when running against a MockLLMClient that only emits text), we
+        try to parse a YAML code-fence out of ``resp.text`` exactly as before.
         On 3 consecutive parse failures, fall back to the geographic
-        round-robin policy and log it.
+        round-robin policy.
         """
         recents = self.memory.top_k(now=t, k=20)
         recents_str = (
@@ -221,7 +323,7 @@ class LLMAgent:
             f"Current state: {state_summary}.\n"
             f"Current policy belief: {self.policy.belief_note or '(none)'}.\n"
             f"Recent memories (top-20):\n{recents_str}\n\n"
-            f"Output reflection text, then a POLICY in a ```yaml ... ``` code fence."
+            f"Call submit_policy with your reflection and your new coordination policy."
         )
         resp = self.llm_client.call(
             LLMRequest(
@@ -229,17 +331,37 @@ class LLMAgent:
                 system=self.system_prompt_plan,
                 user=prompt,
                 max_tokens=800,
+                tools_schema=[_POLICY_TOOL_SCHEMA],
             )
         )
         self.n_plan_calls += 1
 
         new_policy: Policy | None = None
-        match = re.search(r"```(?:yaml)?\s*\n(.*?)\n```", resp.text, flags=re.DOTALL)
-        if match:
+        reflection_text = ""
+
+        if resp.tool_input is not None:
+            # Structured-output path: tool input is already a dict matching the
+            # Policy schema (plus a top-level `reflection` field).
+            payload = dict(resp.tool_input)
+            reflection_text = str(payload.pop("reflection", "")).strip()[:280]
             try:
-                new_policy = policy_from_yaml(match.group(1))
+                new_policy = Policy.from_dict(payload)
             except (PolicyValidationError, Exception):
                 new_policy = None
+        else:
+            # Fallback path: free-form text response (e.g. from MockLLMClient
+            # in existing tests). Try to find a YAML code-fence.
+            match = re.search(r"```(?:yaml)?\s*\n(.*?)\n```", resp.text, flags=re.DOTALL)
+            if match:
+                try:
+                    new_policy = policy_from_yaml(match.group(1))
+                except (PolicyValidationError, Exception):
+                    new_policy = None
+            if new_policy is not None:
+                rmatch = re.search(r"^(.*?)```", resp.text, flags=re.DOTALL)
+                reflection_text = (
+                    rmatch.group(1).strip()[:280] if rmatch else resp.text.strip()[:280]
+                )
 
         if new_policy is None:
             self.plan_consecutive_failures += 1
@@ -259,8 +381,6 @@ class LLMAgent:
         else:
             self.policy = new_policy
             self.plan_consecutive_failures = 0
-            rmatch = re.search(r"^(.*?)```", resp.text, flags=re.DOTALL)
-            reflection_text = rmatch.group(1).strip()[:280] if rmatch else resp.text.strip()[:280]
             if reflection_text:
                 self.memory.append(
                     MemoryEntry(

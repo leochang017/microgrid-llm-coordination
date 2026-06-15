@@ -521,3 +521,58 @@ def test_no_replan_when_idle_and_inside_ttl(tmp_path) -> None:
     a._prev_soc_frac = 0.6
     a.last_grid_islanded = True
     assert a.should_replan(grid_islanded=True, t=datetime(2026, 1, 1)) is False
+
+
+# --- LLMAgent.plan via tool-use (Phase 2.6) ---
+
+
+def test_plan_consumes_tool_input_when_present(tmp_path) -> None:
+    """When the LLM client returns tool_input (structured output), plan() uses it
+    directly and bypasses the free-text YAML parser. Parse failures stay zero."""
+    from sim.agents.llm import LLMRequest, LLMResponse
+
+    structured = {
+        "reflection": "owner group reciprocated; havenot peers visibly low",
+        "sharing_intent": "generous",
+        "share_min_soc_frac": 0.3,
+        "max_share_kw_per_tick": 1.5,
+        "recipient_priority": [
+            {"circle": "owner", "weight": 1.0},
+            {"circle": "geographic", "weight": 0.5},
+        ],
+        "distrusted_peers": ["r2c3"],
+        "request_urgency": "normal",
+        "belief_note": "haves should help havenots",
+        "ttl_ticks": 4,
+    }
+
+    class _ToolReturning(MockLLMClient):
+        def call(self, req: LLMRequest) -> LLMResponse:  # type: ignore[override]
+            return LLMResponse(text="", tokens_in=10, tokens_out=20, tool_input=structured)
+
+    a = _bare_agent(tmp_path)
+    a.llm_client = _ToolReturning(cache=PromptCache(local_dir=tmp_path), canned={})
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.observe(
+        t=t0,
+        own_state={
+            "soc_kwh": 8.0,
+            "soc_capacity": 10.0,
+            "grid_islanded": True,
+            "load_kw": 1.0,
+            "solar_kw": 0.0,
+        },
+        peer_states={},
+        inbox=[],
+        t_idx=0,
+    )
+    a.plan(t=t0)
+    assert a.policy.sharing_intent == "generous"
+    assert a.policy.share_min_soc_frac == 0.3
+    assert "r2c3" in a.policy.distrusted_peers
+    assert a.policy.belief_note == "haves should help havenots"
+    assert a.n_plan_parse_failures == 0
+    # Reflection text becomes a memory
+    assert any(
+        e.kind == "reflection" and "owner group reciprocated" in e.nl for e in a.memory.entries
+    )
