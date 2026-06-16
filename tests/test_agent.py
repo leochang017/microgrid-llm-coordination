@@ -500,9 +500,12 @@ def test_trigger_outage_onset(tmp_path) -> None:
 def test_trigger_soc_hysteresis_crossing(tmp_path) -> None:
     a = _bare_agent(tmp_path)
     t0 = datetime(2026, 1, 1, 8, 0)
-    # set up previous-above + current-below
-    a._prev_soc_frac = 0.65
-    a.last_soc_frac = 0.35
+    # Set up well-above-then-well-below relative to share_min_soc_frac.
+    # The default policy uses share_min_soc_frac=0.30 (Phase 2.7) so the
+    # hysteresis band is [0.20, 0.40]. Use 0.80 → 0.05 to be safely on
+    # opposite sides regardless of the exact threshold.
+    a._prev_soc_frac = 0.80
+    a.last_soc_frac = 0.05
     a.policy_age_ticks = 0
     a.last_grid_islanded = True  # already islanded so onset doesn't fire
     assert a.should_replan(grid_islanded=True, t=t0) is True

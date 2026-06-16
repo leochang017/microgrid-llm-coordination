@@ -176,6 +176,14 @@ class LLMAgent:
     system_prompt_plan: str = _PLAN_SYSTEM_PROMPT_COOPERATIVE
     system_prompt_react: str = _REACT_SYSTEM_PROMPT_COOPERATIVE
 
+    # Phase 2.7: scenario + household physics context surfaced in the plan prompt
+    # so the LLM can write policies calibrated to actual battery sizes, discharge
+    # rates, and outage durations. Populated by the strategy facade at
+    # construction time. Expected keys: battery_kwh, battery_max_rate_kw,
+    # rt_efficiency, dod_floor_frac, outage_start_iso, outage_end_iso,
+    # n_houses_neighborhood.
+    household_context: dict[str, Any] = field(default_factory=dict)
+
     # Trigger / cadence state
     policy_age_ticks: int = 0
     last_plan_t: datetime | None = None
@@ -317,9 +325,17 @@ class LLMAgent:
         latest_obs = next((e for e in reversed(recents) if e.kind == "obs"), None)
         state_summary = latest_obs.nl if latest_obs else "(no state observed yet)"
 
+        # Phase 2.7: surface the household physics + outage horizon so policy
+        # values land in the right magnitude. Without this, Haiku writes
+        # conservative defaults like max_share_kw_per_tick=1.0, which clamps
+        # transfers far below what's needed to actually serve the neighborhood
+        # load during a multi-hour outage.
+        physics_str = self._physics_summary(t)
+
         prompt = (
             f"You are household {self.house_id}.\n"
             f"Trust circles: {circles_str or '(none)'}.\n"
+            f"{physics_str}\n"
             f"Current state: {state_summary}.\n"
             f"Current policy belief: {self.policy.belief_note or '(none)'}.\n"
             f"Recent memories (top-20):\n{recents_str}\n\n"
@@ -393,6 +409,57 @@ class LLMAgent:
                 )
         self.policy_age_ticks = 0
         self.last_plan_t = t
+
+    def _physics_summary(self, t: datetime) -> str:
+        """Compact summary of the household's physics + outage horizon for the
+        plan prompt. Falls back to a generic note when household_context is empty
+        (e.g., older unit tests that bypass the facade)."""
+        ctx = self.household_context
+        if not ctx:
+            return (
+                "Physics: assume a typical residential battery (~10-40 kWh, ~2 kW "
+                "discharge rate, 0.9 round-trip efficiency, 0.1 DoD floor)."
+            )
+        parts: list[str] = []
+        battery_kwh = ctx.get("battery_kwh")
+        max_rate_kw = ctx.get("battery_max_rate_kw")
+        rt_eff = ctx.get("rt_efficiency", 0.9)
+        dod = ctx.get("dod_floor_frac", 0.1)
+        if battery_kwh is not None and max_rate_kw is not None:
+            parts.append(
+                f"Battery: {battery_kwh:.1f} kWh capacity, "
+                f"~{max_rate_kw:.1f} kW max discharge rate, "
+                f"{rt_eff:.0%} round-trip efficiency, "
+                f"{dod:.0%} depth-of-discharge floor (you cannot use the bottom "
+                f"{dod * 100:.0f}% of capacity)."
+            )
+        # Outage horizon: total + elapsed + remaining
+        try:
+            start_iso = ctx.get("outage_start_iso")
+            end_iso = ctx.get("outage_end_iso")
+            if start_iso and end_iso:
+                outage_start = datetime.fromisoformat(start_iso)
+                outage_end = datetime.fromisoformat(end_iso)
+                total_h = (outage_end - outage_start).total_seconds() / 3600
+                elapsed_h = max(0.0, (t - outage_start).total_seconds() / 3600)
+                remaining_h = max(0.0, total_h - elapsed_h)
+                parts.append(
+                    f"Outage: {total_h:.0f} h total, {elapsed_h:.1f} h elapsed, "
+                    f"{remaining_h:.1f} h remaining."
+                )
+        except (ValueError, TypeError):
+            pass
+        n_houses = ctx.get("n_houses_neighborhood")
+        if n_houses:
+            parts.append(f"Neighborhood: {n_houses} households total.")
+        parts.append(
+            "Sharing intensity guidance: a 1-tick share of 0.25 kWh barely moves "
+            "the needle; useful shares are 1-5 kWh per recipient per tick depending "
+            "on your battery size and recipient need. set max_share_kw_per_tick "
+            "in the 3-10 kW range, not the 0-2 kW range, unless you genuinely "
+            "intend to hoard."
+        )
+        return "Physics & scenario:\n  " + "\n  ".join(parts)
 
     # ------------------------------------------------------------------
     # react_to_pending (LLM)

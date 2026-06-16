@@ -57,17 +57,31 @@ class Policy:
 
     @staticmethod
     def default_round_robin_fallback() -> Policy:
-        """Geographic-only round-robin behavior. Used when LLM output is unparseable
-        for 3+ consecutive policy refreshes (see Task 15)."""
+        """Geographic-only round-robin behavior. Used as a fresh agent's initial
+        policy and when LLM output is unparseable for 3+ consecutive refreshes.
+
+        Phase 2.7: bumped ``max_share_kw_per_tick`` from 1.0 -> 4.0. The old
+        value clamped shares to ~0.25 kWh/tick (at dt=15 min), well below
+        round_robin's ~0.7 kWh/tick on a typical 35-kWh have-house. The kW
+        cap was binding well below ``_SHARE_FRACTION * headroom`` and starving
+        the transfer pathway. 4.0 kW * 0.25 h = 1.0 kWh/tick cap, which gives
+        ``_SHARE_FRACTION = 0.20`` room to be the actual binding constraint
+        (~2.8 kWh on a 14-kWh-headroom have-house). Closer to round_robin's
+        sharing intensity.
+
+        Phase 2.7: shortened ``ttl_ticks`` from 4 → 2 so agents recover faster
+        when an LLM-emitted policy turns out to be inappropriate for the
+        scenario.
+        """
         return Policy(
             sharing_intent="balanced",
-            share_min_soc_frac=0.50,
-            max_share_kw_per_tick=1.0,
+            share_min_soc_frac=0.30,
+            max_share_kw_per_tick=4.0,
             recipient_priority=(RecipientPriority(circle="geographic", weight=1.0),),
             distrusted_peers=(),
             request_urgency="normal",
             belief_note="(fallback to geographic round-robin)",
-            ttl_ticks=4,
+            ttl_ticks=2,
         )
 
 

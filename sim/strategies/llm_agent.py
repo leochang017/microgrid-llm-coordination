@@ -130,6 +130,17 @@ def prepare(
     # itself is briefed to prioritize own household survival.
     use_selfish_prompt = fm.defector_realization in ("prompt", "both")
 
+    # Phase 2.7: shared scenario context surfaced in every agent's plan prompt.
+    # The outage horizon comes from the first OutageWindow; multi-window
+    # scenarios just see the first one (good enough for the typical "one big
+    # outage" scenario design).
+    outage_start_iso = ""
+    outage_end_iso = ""
+    if scenario.outages:
+        outage_start_iso = scenario.outages[0].start.isoformat()
+        outage_end_iso = scenario.outages[0].end.isoformat()
+    n_houses = len(households)
+
     agents: dict[str, LLMAgent] = {}
     for hid, hh in households.items():
         is_defector = hid in defectors
@@ -154,6 +165,15 @@ def prepare(
             noise=noise,
             system_prompt_plan=plan_prompt,
             system_prompt_react=react_prompt,
+            household_context={
+                "battery_kwh": float(hh.battery_kwh),
+                "battery_max_rate_kw": float(hh.battery_max_rate_kw),
+                "rt_efficiency": float(hh.rt_efficiency),
+                "dod_floor_frac": float(hh.dod_floor_frac),
+                "outage_start_iso": outage_start_iso,
+                "outage_end_iso": outage_end_iso,
+                "n_houses_neighborhood": n_houses,
+            },
         )
 
     _REGISTRY = _AgentRegistry(
