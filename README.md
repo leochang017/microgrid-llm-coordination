@@ -192,14 +192,14 @@ To run live, set `ANTHROPIC_API_KEY` and use `--out-dir runs` (instead of
 
 ### Phase 2 known limitations
 
-- **Live Haiku underperforms round_robin** on `haves_havenots__llm`
-  (0.458 vs 0.525). Phase 2.6 landed Anthropic tool-use for schema-validated
-  policy output: parse failures dropped from **41% to 0.18%** (200x), but
-  served-load stayed at 0.458. This falsifies the "parse failures explain
-  the gap" hypothesis — the fallback policy coordinates roughly the same way
-  as Haiku's actual reasoning. The remaining gap is a coordination-quality
-  question (likely needs scenario-aware prompt engineering or a smarter
-  act() executor), not an output-reliability question.
+- **Live Haiku now within 1.2 points of round_robin** on `haves_havenots__llm`
+  (0.513 vs 0.525) after the Phase 2.7 architectural fixes. Phase 2v0 was
+  0.460 (6.5-pt gap). The three fixes (bumped fallback `max_share_kw_per_tick`,
+  physics-aware plan prompt, shorter TTL) closed 80% of the gap to round_robin
+  in a single pass. Gini also improved from 0.48 to 0.40 (more equitable
+  distribution). The remaining 1.2-pt gap may close with further prompt
+  refinement, or it may be Haiku reaching the limit of generic NL coordination
+  on this scenario — Phase 3 sweeps will tell.
 - **`defector_realization: prompt`** is now wired in Phase 2.5 (selfish system
   prompt for plan + react calls when an agent is a defector). The `wrapper`
   realization (per-message payload mutation at the bus) remains the safer
