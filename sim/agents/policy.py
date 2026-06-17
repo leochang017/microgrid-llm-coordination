@@ -37,6 +37,11 @@ class Policy:
     request_urgency: RequestUrgency = "normal"
     belief_note: str = ""
     ttl_ticks: int = 4
+    # Phase 2.8: LLM-controlled fraction of headroom to share each tick.
+    # Round-robin uses 0.05; previous LLM hardcoded fallback was 0.20. Letting
+    # the LLM tune this per-policy gives it a knob to be more or less
+    # aggressive based on scenario context.
+    share_fraction_per_tick: float = 0.05
 
     @staticmethod
     def from_dict(d: dict[str, Any]) -> Policy:
@@ -53,6 +58,7 @@ class Policy:
             request_urgency=d.get("request_urgency", "normal"),
             belief_note=str(d.get("belief_note", "")),
             ttl_ticks=int(d.get("ttl_ticks", 4)),
+            share_fraction_per_tick=float(d.get("share_fraction_per_tick", 0.05)),
         )
 
     @staticmethod
@@ -60,18 +66,15 @@ class Policy:
         """Geographic-only round-robin behavior. Used as a fresh agent's initial
         policy and when LLM output is unparseable for 3+ consecutive refreshes.
 
-        Phase 2.7: bumped ``max_share_kw_per_tick`` from 1.0 -> 4.0. The old
-        value clamped shares to ~0.25 kWh/tick (at dt=15 min), well below
-        round_robin's ~0.7 kWh/tick on a typical 35-kWh have-house. The kW
-        cap was binding well below ``_SHARE_FRACTION * headroom`` and starving
-        the transfer pathway. 4.0 kW * 0.25 h = 1.0 kWh/tick cap, which gives
-        ``_SHARE_FRACTION = 0.20`` room to be the actual binding constraint
-        (~2.8 kWh on a 14-kWh-headroom have-house). Closer to round_robin's
-        sharing intensity.
-
-        Phase 2.7: shortened ``ttl_ticks`` from 4 → 2 so agents recover faster
-        when an LLM-emitted policy turns out to be inappropriate for the
-        scenario.
+        Phase 2.7 / 2.8: tuned the cap and intensity to match round_robin's
+        sharing behavior. ``max_share_kw_per_tick`` is set to 4.0 kW so the
+        kW cap is no longer the limiting factor on a typical have-house with
+        ~14 kWh of usable headroom. ``share_min_soc_frac`` is 0.30 so sharing
+        begins when an agent is above the islanded-peers mean rather than
+        only when battery is at half capacity. ``ttl_ticks`` is 2 so agents
+        recover quickly when a policy turns out to be inappropriate for the
+        scenario. ``share_fraction_per_tick`` is 0.05, matching round_robin
+        directly (the LLM can override this in its emitted policy).
         """
         return Policy(
             sharing_intent="balanced",
@@ -82,6 +85,7 @@ class Policy:
             request_urgency="normal",
             belief_note="(fallback to geographic round-robin)",
             ttl_ticks=2,
+            share_fraction_per_tick=0.05,
         )
 
 
@@ -98,6 +102,7 @@ def policy_to_yaml(p: Policy) -> str:
             "request_urgency": p.request_urgency,
             "belief_note": p.belief_note,
             "ttl_ticks": p.ttl_ticks,
+            "share_fraction_per_tick": p.share_fraction_per_tick,
         },
         sort_keys=False,
     )

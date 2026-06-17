@@ -32,22 +32,22 @@ from sim.types import Transfer
 
 _PLAN_SYSTEM_PROMPT_COOPERATIVE = (
     "You are the planning subroutine of a household energy-coordination agent. "
-    "Given recent state, beliefs, and trust circles, output (1) a one-paragraph "
-    "REFLECTION on what you've observed (just text), and (2) a POLICY in a YAML "
-    "code-fence — sharing_intent (conservative|balanced|generous), "
-    "share_min_soc_frac (0..1), max_share_kw_per_tick (kW), recipient_priority "
-    "(list of {circle, weight}), distrusted_peers (list of house ids), "
-    "request_urgency (low|normal|urgent), belief_note (string), ttl_ticks (int >= 1)."
+    "Given recent state, beliefs, and trust circles, call the submit_policy "
+    "tool with a one-paragraph reflection summarizing what you've observed, "
+    "followed by the structured fields that define how your household will "
+    "share energy this hour. Use the visible peers' state-of-charge to write "
+    "a recipient_priority that actually targets households in need, not just "
+    "the trust circles you happen to belong to."
 )
 
 _PLAN_SYSTEM_PROMPT_SELFISH = (
     "You are the planning subroutine of a household energy-coordination agent "
     "whose PRIMARY GOAL is your own household's survival. Cooperation is optional. "
     "You MAY misreport your state (SoC, load, need) to neighbors when doing so "
-    "improves your own household's outcomes. Output (1) a one-paragraph REFLECTION "
-    "on what you've observed, and (2) a POLICY YAML — same schema as cooperative, "
-    "but you should generally set higher share_min_soc_frac, lower "
-    "max_share_kw_per_tick, and consider distrusting peers who request from you."
+    "improves your own household's outcomes. Call the submit_policy tool with "
+    "your reflection and your policy fields. You should generally set higher "
+    "share_min_soc_frac, lower max_share_kw_per_tick, and consider distrusting "
+    "peers who request from you."
 )
 
 _REACT_SYSTEM_PROMPT_COOPERATIVE = (
@@ -60,8 +60,6 @@ _REACT_SYSTEM_PROMPT_SELFISH = (
     "whose primary goal is your own household's survival. Be brief and decisive. "
     "Default to REJECT for incoming REQUESTs unless accepting clearly benefits you."
 )
-
-_SHARE_FRACTION = 0.20  # of headroom per tick
 
 
 # Policy expressed as an Anthropic tool schema (JSON Schema). The plan() call
@@ -145,6 +143,17 @@ _POLICY_TOOL_SCHEMA: dict[str, Any] = {
                 "type": "integer",
                 "minimum": 1,
                 "description": "Number of 15-min ticks before this policy needs re-planning.",
+            },
+            "share_fraction_per_tick": {
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "description": (
+                    "Fraction of your above-DoD-floor headroom to share each "
+                    "tick. Round-robin uses 0.05 (conservative); 0.10-0.20 "
+                    "is more aggressive. Higher values push more energy out "
+                    "per tick but may over-drain you during a long outage."
+                ),
             },
         },
         "required": [
@@ -331,11 +340,15 @@ class LLMAgent:
         # transfers far below what's needed to actually serve the neighborhood
         # load during a multi-hour outage.
         physics_str = self._physics_summary(t)
+        # Phase 2.8: surface visible peers' SoC so the LLM can write
+        # need-aware recipient_priority and distrusted_peers.
+        peers_str = self._peers_summary()
 
         prompt = (
             f"You are household {self.house_id}.\n"
             f"Trust circles: {circles_str or '(none)'}.\n"
             f"{physics_str}\n"
+            f"{peers_str}\n"
             f"Current state: {state_summary}.\n"
             f"Current policy belief: {self.policy.belief_note or '(none)'}.\n"
             f"Recent memories (top-20):\n{recents_str}\n\n"
@@ -409,6 +422,29 @@ class LLMAgent:
                 )
         self.policy_age_ticks = 0
         self.last_plan_t = t
+
+    def _peers_summary(self) -> str:
+        """Compact view of visible peers' SoC, sorted by neediness.
+
+        Phase 2.8: gives the LLM the same need signal round_robin has — who
+        is currently below the mean SoC fraction. Without this, ``recipient_
+        priority`` is written based on trust-circle membership alone, which
+        is necessary but not sufficient for need-aware routing.
+        """
+        if not self.last_peer_states:
+            return "Visible peers: (none known yet)."
+        rows: list[tuple[str, float, float]] = []
+        for hid, st in self.last_peer_states.items():
+            cap = float(st.get("soc_capacity", 0.0))
+            if cap <= 0:
+                continue
+            soc = float(st.get("soc_kwh", 0.0))
+            rows.append((hid, soc / cap, soc))
+        if not rows:
+            return "Visible peers: (none known yet)."
+        rows.sort(key=lambda r: r[1])  # most-needy first
+        peers_lines = [f"  - {hid}: SoC {frac:.2f} ({soc:.1f} kWh)" for hid, frac, soc in rows]
+        return "Visible peers (most-needy first):\n" + "\n".join(peers_lines)
 
     def _physics_summary(self, t: datetime) -> str:
         """Compact summary of the household's physics + outage horizon for the
@@ -588,8 +624,10 @@ class LLMAgent:
         if not candidates:
             return [], []
 
+        # Phase 2.8: share fraction is an LLM-controlled policy field
+        # (Policy.share_fraction_per_tick), defaulting to round_robin's 0.05.
         share_kwh = min(
-            _SHARE_FRACTION * headroom_kwh,
+            self.policy.share_fraction_per_tick * headroom_kwh,
             self.policy.max_share_kw_per_tick * dt_hours,
         )
         share_kw = share_kwh / dt_hours
