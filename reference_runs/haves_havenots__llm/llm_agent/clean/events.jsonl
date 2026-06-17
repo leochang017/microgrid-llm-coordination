@@ -1,20 +1,449 @@
-{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.3, "details": ""}
-{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.3, "details": ""}
-{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.3, "details": ""}
-{"t": "2018-01-01T02:45:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.3, "details": ""}
-{"t": "2018-01-01T03:00:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.25, "details": ""}
-{"t": "2018-01-01T03:15:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.25, "details": ""}
-{"t": "2018-01-01T03:30:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.25, "details": ""}
-{"t": "2018-01-01T03:45:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.25, "details": ""}
-{"t": "2018-01-01T10:00:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.125, "details": ""}
-{"t": "2018-01-01T10:00:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.125, "details": ""}
-{"t": "2018-01-01T10:15:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.125, "details": ""}
-{"t": "2018-01-01T10:15:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.125, "details": ""}
-{"t": "2018-01-01T11:00:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.125, "details": ""}
-{"t": "2018-01-01T11:00:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.125, "details": ""}
-{"t": "2018-01-01T11:15:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.125, "details": ""}
-{"t": "2018-01-01T11:15:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.125, "details": ""}
-{"t": "2018-01-01T11:30:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.125, "details": ""}
-{"t": "2018-01-01T11:30:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.125, "details": ""}
-{"t": "2018-01-01T11:45:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.125, "details": ""}
-{"t": "2018-01-01T11:45:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.125, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "sender_dod_floor", "house_ids": ["r0c0"], "kw": 0.1805830758908218, "details": "requested 0.632 kW, cap 0.451 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "sender_dod_floor", "house_ids": ["r0c3"], "kw": 0.21586364875481923, "details": "requested 0.756 kW, cap 0.540 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "sender_dod_floor", "house_ids": ["r1c0"], "kw": 0.16291477692459944, "details": "requested 0.570 kW, cap 0.407 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "sender_dod_floor", "house_ids": ["r1c1"], "kw": 0.29621456209379027, "details": "requested 1.037 kW, cap 0.741 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "sender_dod_floor", "house_ids": ["r1c2"], "kw": 0.2925325276783741, "details": "requested 1.024 kW, cap 0.731 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "sender_dod_floor", "house_ids": ["r1c4"], "kw": 0.26155287157895935, "details": "requested 0.915 kW, cap 0.654 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "sender_dod_floor", "house_ids": ["r1c5"], "kw": 0.1973377359347378, "details": "requested 0.691 kW, cap 0.493 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "sender_dod_floor", "house_ids": ["r2c1"], "kw": 0.1800504725151642, "details": "requested 0.630 kW, cap 0.450 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "sender_dod_floor", "house_ids": ["r2c3"], "kw": 0.22132204540436307, "details": "requested 0.775 kW, cap 0.553 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "sender_dod_floor", "house_ids": ["r3c0"], "kw": 0.25499037760783305, "details": "requested 0.892 kW, cap 0.637 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "sender_dod_floor", "house_ids": ["r3c2"], "kw": 0.24290805185630993, "details": "requested 0.850 kW, cap 0.607 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "sender_dod_floor", "house_ids": ["r3c3"], "kw": 0.1780197464808987, "details": "requested 0.623 kW, cap 0.445 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "sender_dod_floor", "house_ids": ["r4c1"], "kw": 0.2740535549856574, "details": "requested 0.959 kW, cap 0.685 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "sender_dod_floor", "house_ids": ["r4c3"], "kw": 0.267571375445095, "details": "requested 0.936 kW, cap 0.669 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "sender_dod_floor", "house_ids": ["r4c4"], "kw": 0.18543293400881788, "details": "requested 0.649 kW, cap 0.464 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "sender_dod_floor", "house_ids": ["r4c5"], "kw": 0.266804625469637, "details": "requested 0.934 kW, cap 0.667 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "receiver_full", "house_ids": ["r0c0"], "kw": 1.6420036078709073, "details": "wanted 2.093 kW net, cap 0.451 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 3.260340878112952, "details": "wanted 3.800 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "receiver_full", "house_ids": ["r1c0"], "kw": 0.25610105792012017, "details": "wanted 0.663 kW net, cap 0.407 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "receiver_full", "house_ids": ["r1c1"], "kw": 1.914117205093313, "details": "wanted 2.655 kW net, cap 0.741 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "receiver_full", "house_ids": ["r1c2"], "kw": 1.4031718757949816, "details": "wanted 2.135 kW net, cap 0.731 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 3.6147949438976035, "details": "wanted 4.269 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 7.727843730163184, "details": "wanted 8.221 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "receiver_full", "house_ids": ["r2c1"], "kw": 4.534377013703006, "details": "wanted 4.985 kW net, cap 0.450 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "receiver_full", "house_ids": ["r2c2"], "kw": 0.3817310512782811, "details": "wanted 1.112 kW net, cap 0.731 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "receiver_full", "house_ids": ["r2c3"], "kw": 5.287627185786469, "details": "wanted 5.841 kW net, cap 0.553 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "receiver_full", "house_ids": ["r3c0"], "kw": 0.31252405598041766, "details": "wanted 0.950 kW net, cap 0.637 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "receiver_full", "house_ids": ["r3c2"], "kw": 4.283662169656603, "details": "wanted 4.891 kW net, cap 0.607 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "receiver_full", "house_ids": ["r3c3"], "kw": 2.323964882635853, "details": "wanted 2.769 kW net, cap 0.445 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "receiver_full", "house_ids": ["r4c0"], "kw": 0.5580152844053283, "details": "wanted 1.256 kW net, cap 0.698 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "receiver_full", "house_ids": ["r4c1"], "kw": 0.26486611253585646, "details": "wanted 0.950 kW net, cap 0.685 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "receiver_full", "house_ids": ["r4c4"], "kw": 2.3878196588093936, "details": "wanted 2.851 kW net, cap 0.464 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "receiver_full", "house_ids": ["r4c5"], "kw": 3.3531900454613783, "details": "wanted 4.020 kW net, cap 0.667 kW"}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r0c0", "r1c0"], "kw": 0.27717236665080913, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r1c1"], "kw": 0.557915656003825, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r0c0"], "kw": 0.43130263764136184, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.6852473408446199, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.28403111678265675, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r0c3", "r0c4"], "kw": 0.5396591218870478, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.3063629129727182, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.28403111678265675, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.240035545050774, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r1c0", "r0c0"], "kw": 0.04391598312395865, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r1c0", "r1c1"], "kw": 0.05680794040037796, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r1c1", "r2c1"], "kw": 0.022291410741987264, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r1c1", "r1c0"], "kw": 0.15155073051918955, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r1c1", "r1c2"], "kw": 0.08457510041425968, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r1c2", "r2c2"], "kw": 0.24019126962714307, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r1c2", "r1c1"], "kw": 0.10200529817633579, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r2c3"], "kw": 0.378915614945557, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r1c4", "r1c5"], "kw": 0.039238741305656626, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r1c5", "r1c4"], "kw": 0.07557120452550915, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r2c0", "r2c1"], "kw": 0.36122049775412446, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r2c1", "r1c1"], "kw": 0.06278311092943532, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r2c1", "r2c2"], "kw": 0.14783501832634446, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r2c3", "r3c3"], "kw": 0.04446493733064384, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r2c3", "r2c2"], "kw": 0.18172209259613242, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r1c4"], "kw": 0.3063629129727182, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r2c3"], "kw": 0.1894578074727785, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.240035545050774, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r3c0", "r4c0"], "kw": 0.35436637834279794, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r2c1"], "kw": 0.09030512443853111, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r4c1"], "kw": 0.72119356575173, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c0"], "kw": 0.6710273094942972, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c2"], "kw": 0.12416244848206427, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r3c2", "r2c2"], "kw": 0.19944583202784857, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r3c2", "r3c3"], "kw": 0.048801696564686976, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r3c3", "r2c3"], "kw": 0.014053012856304564, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r3c3", "r4c3"], "kw": 0.1483497887340823, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r3c3", "r3c2"], "kw": 0.018419473001020613, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r3c4", "r4c4"], "kw": 0.3251609811769315, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r3c4", "r3c3"], "kw": 0.3214496757385724, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r3c5", "r4c5"], "kw": 0.663659814630571, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r4c1", "r4c0"], "kw": 0.38085894324058217, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.4966497939282571, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r4c3", "r3c3"], "kw": 0.0537567074210935, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r4c3", "r4c4"], "kw": 0.05437735685911762, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r4c4", "r4c3"], "kw": 0.23179116751102227, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r4c4", "r4c5"], "kw": 0.03845762081584217, "details": ""}
+{"t": "2018-01-01T00:15:00", "kind": "transfer_executed", "house_ids": ["r4c5", "r4c4"], "kw": 0.10844306725031362, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "sender_dod_floor", "house_ids": ["r1c1"], "kw": 0.18703569544668563, "details": "requested 0.928 kW, cap 0.741 kW"}
+{"t": "2018-01-01T00:30:00", "kind": "sender_dod_floor", "house_ids": ["r1c2"], "kw": 0.1637508257420517, "details": "requested 0.895 kW, cap 0.731 kW"}
+{"t": "2018-01-01T00:30:00", "kind": "sender_dod_floor", "house_ids": ["r2c2"], "kw": 0.23552764950330018, "details": "requested 0.966 kW, cap 0.731 kW"}
+{"t": "2018-01-01T00:30:00", "kind": "sender_dod_floor", "house_ids": ["r3c0"], "kw": 0.12749518880391653, "details": "requested 0.765 kW, cap 0.637 kW"}
+{"t": "2018-01-01T00:30:00", "kind": "receiver_full", "house_ids": ["r0c0"], "kw": 0.9735423102729454, "details": "wanted 1.425 kW net, cap 0.451 kW"}
+{"t": "2018-01-01T00:30:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 4.052007544779619, "details": "wanted 4.592 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T00:30:00", "kind": "receiver_full", "house_ids": ["r1c1"], "kw": 1.0318459713835941, "details": "wanted 1.772 kW net, cap 0.741 kW"}
+{"t": "2018-01-01T00:30:00", "kind": "receiver_full", "house_ids": ["r1c2"], "kw": 2.6698385424616484, "details": "wanted 3.401 kW net, cap 0.731 kW"}
+{"t": "2018-01-01T00:30:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 0.7711178210526015, "details": "wanted 1.425 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T00:30:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 4.2566556601631556, "details": "wanted 4.750 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T00:30:00", "kind": "receiver_full", "house_ids": ["r2c1"], "kw": 5.478276272653395, "details": "wanted 5.928 kW net, cap 0.450 kW"}
+{"t": "2018-01-01T00:30:00", "kind": "receiver_full", "house_ids": ["r2c3"], "kw": 0.944760812106147, "details": "wanted 1.498 kW net, cap 0.553 kW"}
+{"t": "2018-01-01T00:30:00", "kind": "receiver_full", "house_ids": ["r3c0"], "kw": 0.07502405598041761, "details": "wanted 0.712 kW net, cap 0.637 kW"}
+{"t": "2018-01-01T00:30:00", "kind": "receiver_full", "house_ids": ["r3c2"], "kw": 4.136629129309613, "details": "wanted 4.744 kW net, cap 0.607 kW"}
+{"t": "2018-01-01T00:30:00", "kind": "receiver_full", "house_ids": ["r4c1"], "kw": 0.027366112535856413, "details": "wanted 0.712 kW net, cap 0.685 kW"}
+{"t": "2018-01-01T00:30:00", "kind": "receiver_full", "house_ids": ["r4c5"], "kw": 2.182988436325907, "details": "wanted 2.850 kW net, cap 0.667 kW"}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r1c1"], "kw": 0.6267296620107842, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r0c0"], "kw": 0.4752186207653205, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.4300469244070722, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.2350602345787504, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.6882970304709457, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.1762951759340628, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r1c1", "r2c1"], "kw": 0.01874225120975406, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r1c1", "r1c0"], "kw": 0.24684546841149177, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r1c1", "r1c2"], "kw": 0.05307756724709257, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r1c2", "r2c2"], "kw": 0.3656656595979678, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r1c2", "r1c1"], "kw": 0.1527823434991899, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r0c3"], "kw": 0.15670682305250025, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r2c3"], "kw": 0.49246173932165316, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r1c2"], "kw": 0.2866979496047148, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r2c0", "r2c1"], "kw": 0.3796353105115686, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r2c2", "r3c2"], "kw": 0.031180625297784606, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r2c2", "r2c1"], "kw": 0.018494174636584756, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r2c2", "r2c3"], "kw": 0.08996469595298677, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.5193098314072047, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r3c0", "r4c0"], "kw": 0.6374759440195823, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r2c1"], "kw": 0.0569452965767353, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r4c1"], "kw": 0.7211935657517301, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c0"], "kw": 0.6710273094942972, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c2"], "kw": 0.09600806686003538, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r3c5", "r4c5"], "kw": 0.7021174354464133, "details": ""}
+{"t": "2018-01-01T00:30:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.512043023253522, "details": ""}
+{"t": "2018-01-01T00:45:00", "kind": "receiver_full", "house_ids": ["r0c0"], "kw": 0.9735423102729454, "details": "wanted 1.425 kW net, cap 0.451 kW"}
+{"t": "2018-01-01T00:45:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 4.052007544779619, "details": "wanted 4.592 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T00:45:00", "kind": "receiver_full", "house_ids": ["r1c1"], "kw": 0.6844635947655245, "details": "wanted 1.425 kW net, cap 0.741 kW"}
+{"t": "2018-01-01T00:45:00", "kind": "receiver_full", "house_ids": ["r1c2"], "kw": 2.4353353474707307, "details": "wanted 3.167 kW net, cap 0.731 kW"}
+{"t": "2018-01-01T00:45:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 0.7711178210526015, "details": "wanted 1.425 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T00:45:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 4.2566556601631556, "details": "wanted 4.750 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T00:45:00", "kind": "receiver_full", "house_ids": ["r2c1"], "kw": 0.26237381871208926, "details": "wanted 0.712 kW net, cap 0.450 kW"}
+{"t": "2018-01-01T00:45:00", "kind": "receiver_full", "house_ids": ["r2c3"], "kw": 0.7133615531557587, "details": "wanted 1.267 kW net, cap 0.553 kW"}
+{"t": "2018-01-01T00:45:00", "kind": "receiver_full", "house_ids": ["r3c0"], "kw": 4.825024055980418, "details": "wanted 5.463 kW net, cap 0.637 kW"}
+{"t": "2018-01-01T00:45:00", "kind": "receiver_full", "house_ids": ["r3c2"], "kw": 0.10522987035922504, "details": "wanted 0.712 kW net, cap 0.607 kW"}
+{"t": "2018-01-01T00:45:00", "kind": "receiver_full", "house_ids": ["r4c1"], "kw": 0.027366112535856413, "details": "wanted 0.712 kW net, cap 0.685 kW"}
+{"t": "2018-01-01T00:45:00", "kind": "receiver_full", "house_ids": ["r4c3"], "kw": 3.1310715613872624, "details": "wanted 3.800 kW net, cap 0.669 kW"}
+{"t": "2018-01-01T00:45:00", "kind": "receiver_full", "house_ids": ["r4c5"], "kw": 2.182988436325907, "details": "wanted 2.850 kW net, cap 0.667 kW"}
+{"t": "2018-01-01T00:45:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r1c1"], "kw": 0.779512005509974, "details": ""}
+{"t": "2018-01-01T00:45:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r0c0"], "kw": 0.4752186207653205, "details": ""}
+{"t": "2018-01-01T00:45:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.4618934647553278, "details": ""}
+{"t": "2018-01-01T00:45:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.2350602345787504, "details": ""}
+{"t": "2018-01-01T00:45:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.6882970304709457, "details": ""}
+{"t": "2018-01-01T00:45:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.1762951759340628, "details": ""}
+{"t": "2018-01-01T00:45:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r0c3"], "kw": 0.15670682305250025, "details": ""}
+{"t": "2018-01-01T00:45:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r2c3"], "kw": 0.58242643527464, "details": ""}
+{"t": "2018-01-01T00:45:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r1c2"], "kw": 0.30792897650355183, "details": ""}
+{"t": "2018-01-01T00:45:00", "kind": "transfer_executed", "house_ids": ["r2c0", "r3c0"], "kw": 0.5835020082559105, "details": ""}
+{"t": "2018-01-01T00:45:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.5193098314072047, "details": ""}
+{"t": "2018-01-01T00:45:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r2c1"], "kw": 0.47381703293464283, "details": ""}
+{"t": "2018-01-01T00:45:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r4c1"], "kw": 0.7211935657517301, "details": ""}
+{"t": "2018-01-01T00:45:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c0"], "kw": 0.08752530123838657, "details": ""}
+{"t": "2018-01-01T00:45:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c2"], "kw": 0.639231715411342, "details": ""}
+{"t": "2018-01-01T00:45:00", "kind": "transfer_executed", "house_ids": ["r3c5", "r4c5"], "kw": 0.7021174354464133, "details": ""}
+{"t": "2018-01-01T00:45:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.7041351985397236, "details": ""}
+{"t": "2018-01-01T01:00:00", "kind": "receiver_full", "house_ids": ["r0c0"], "kw": 0.9735423102729454, "details": "wanted 1.425 kW net, cap 0.451 kW"}
+{"t": "2018-01-01T01:00:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 4.685340878112952, "details": "wanted 5.225 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T01:00:00", "kind": "receiver_full", "house_ids": ["r1c0"], "kw": 1.9677130576885014, "details": "wanted 2.375 kW net, cap 0.407 kW"}
+{"t": "2018-01-01T01:00:00", "kind": "receiver_full", "house_ids": ["r1c1"], "kw": 0.6844635947655245, "details": "wanted 1.425 kW net, cap 0.741 kW"}
+{"t": "2018-01-01T01:00:00", "kind": "receiver_full", "house_ids": ["r1c2"], "kw": 1.1686686808040643, "details": "wanted 1.900 kW net, cap 0.731 kW"}
+{"t": "2018-01-01T01:00:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 0.7711178210526015, "details": "wanted 1.425 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T01:00:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 4.2566556601631556, "details": "wanted 4.750 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T01:00:00", "kind": "receiver_full", "house_ids": ["r2c1"], "kw": 2.6373738187120894, "details": "wanted 3.087 kW net, cap 0.450 kW"}
+{"t": "2018-01-01T01:00:00", "kind": "receiver_full", "house_ids": ["r2c3"], "kw": 1.346694886489092, "details": "wanted 1.900 kW net, cap 0.553 kW"}
+{"t": "2018-01-01T01:00:00", "kind": "receiver_full", "house_ids": ["r3c0"], "kw": 0.07502405598041761, "details": "wanted 0.712 kW net, cap 0.637 kW"}
+{"t": "2018-01-01T01:00:00", "kind": "receiver_full", "house_ids": ["r3c2"], "kw": 2.480229870359225, "details": "wanted 3.087 kW net, cap 0.607 kW"}
+{"t": "2018-01-01T01:00:00", "kind": "receiver_full", "house_ids": ["r4c1"], "kw": 0.027366112535856413, "details": "wanted 0.712 kW net, cap 0.685 kW"}
+{"t": "2018-01-01T01:00:00", "kind": "receiver_full", "house_ids": ["r4c3"], "kw": 1.7060715613872626, "details": "wanted 2.375 kW net, cap 0.669 kW"}
+{"t": "2018-01-01T01:00:00", "kind": "receiver_full", "house_ids": ["r4c5"], "kw": 2.182988436325907, "details": "wanted 2.850 kW net, cap 0.667 kW"}
+{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r1c1"], "kw": 0.779512005509974, "details": ""}
+{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r0c0"], "kw": 0.4752186207653205, "details": ""}
+{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.7698224412588797, "details": ""}
+{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.20656808493284126, "details": ""}
+{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.6882970304709457, "details": ""}
+{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.15492606369963094, "details": ""}
+{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r0c3"], "kw": 0.20656808493284126, "details": ""}
+{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r2c3"], "kw": 0.58242643527464, "details": ""}
+{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r2c0", "r1c0"], "kw": 0.4287230971699987, "details": ""}
+{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r2c0", "r2c1"], "kw": 0.36447464071895597, "details": ""}
+{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.5193098314072047, "details": ""}
+{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r2c1"], "kw": 0.1093423922156868, "details": ""}
+{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r4c1"], "kw": 0.7211935657517301, "details": ""}
+{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c0"], "kw": 0.6710273094942972, "details": ""}
+{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c2"], "kw": 0.14751501124877123, "details": ""}
+{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r3c5", "r4c5"], "kw": 0.7021174354464133, "details": ""}
+{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.4917167041625708, "details": ""}
+{"t": "2018-01-01T01:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.7041351985397236, "details": ""}
+{"t": "2018-01-01T01:15:00", "kind": "receiver_full", "house_ids": ["r0c0"], "kw": 0.9735423102729454, "details": "wanted 1.425 kW net, cap 0.451 kW"}
+{"t": "2018-01-01T01:15:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 4.685340878112952, "details": "wanted 5.225 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T01:15:00", "kind": "receiver_full", "house_ids": ["r1c0"], "kw": 1.9677130576885014, "details": "wanted 2.375 kW net, cap 0.407 kW"}
+{"t": "2018-01-01T01:15:00", "kind": "receiver_full", "house_ids": ["r1c1"], "kw": 0.6844635947655245, "details": "wanted 1.425 kW net, cap 0.741 kW"}
+{"t": "2018-01-01T01:15:00", "kind": "receiver_full", "house_ids": ["r1c2"], "kw": 1.1686686808040643, "details": "wanted 1.900 kW net, cap 0.731 kW"}
+{"t": "2018-01-01T01:15:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 0.7711178210526015, "details": "wanted 1.425 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T01:15:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 4.2566556601631556, "details": "wanted 4.750 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T01:15:00", "kind": "receiver_full", "house_ids": ["r2c1"], "kw": 2.8748738187120897, "details": "wanted 3.325 kW net, cap 0.450 kW"}
+{"t": "2018-01-01T01:15:00", "kind": "receiver_full", "house_ids": ["r2c3"], "kw": 1.346694886489092, "details": "wanted 1.900 kW net, cap 0.553 kW"}
+{"t": "2018-01-01T01:15:00", "kind": "receiver_full", "house_ids": ["r3c0"], "kw": 0.31252405598041766, "details": "wanted 0.950 kW net, cap 0.637 kW"}
+{"t": "2018-01-01T01:15:00", "kind": "receiver_full", "house_ids": ["r3c2"], "kw": 2.7177298703592254, "details": "wanted 3.325 kW net, cap 0.607 kW"}
+{"t": "2018-01-01T01:15:00", "kind": "receiver_full", "house_ids": ["r4c3"], "kw": 1.7060715613872626, "details": "wanted 2.375 kW net, cap 0.669 kW"}
+{"t": "2018-01-01T01:15:00", "kind": "receiver_full", "house_ids": ["r4c5"], "kw": 2.182988436325907, "details": "wanted 2.850 kW net, cap 0.667 kW"}
+{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r1c1"], "kw": 0.779512005509974, "details": ""}
+{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r0c0"], "kw": 0.4752186207653205, "details": ""}
+{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.7698224412588797, "details": ""}
+{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.20656808493284126, "details": ""}
+{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.6882970304709457, "details": ""}
+{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.15492606369963094, "details": ""}
+{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r0c3"], "kw": 0.20656808493284126, "details": ""}
+{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r2c3"], "kw": 0.58242643527464, "details": ""}
+{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r2c0", "r1c0"], "kw": 0.4287230971699987, "details": ""}
+{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r2c0", "r2c1"], "kw": 0.33844073781045914, "details": ""}
+{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.5193098314072047, "details": ""}
+{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r2c1"], "kw": 0.13537629512418364, "details": ""}
+{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c0"], "kw": 0.6710273094942972, "details": ""}
+{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c2"], "kw": 0.18263763297466912, "details": ""}
+{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r3c5", "r4c5"], "kw": 0.7021174354464133, "details": ""}
+{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.45659408243667277, "details": ""}
+{"t": "2018-01-01T01:15:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.7041351985397236, "details": ""}
+{"t": "2018-01-01T01:30:00", "kind": "receiver_full", "house_ids": ["r0c0"], "kw": 4.298542310272945, "details": "wanted 4.750 kW net, cap 0.451 kW"}
+{"t": "2018-01-01T01:30:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 5.635340878112952, "details": "wanted 6.175 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T01:30:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 4.0961178210526015, "details": "wanted 4.750 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T01:30:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 9.006655660163155, "details": "wanted 9.500 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T01:30:00", "kind": "receiver_full", "house_ids": ["r2c1"], "kw": 0.7373738187120893, "details": "wanted 1.188 kW net, cap 0.450 kW"}
+{"t": "2018-01-01T01:30:00", "kind": "receiver_full", "house_ids": ["r2c3"], "kw": 1.821694886489092, "details": "wanted 2.375 kW net, cap 0.553 kW"}
+{"t": "2018-01-01T01:30:00", "kind": "receiver_full", "house_ids": ["r3c0"], "kw": 0.5500240559804177, "details": "wanted 1.188 kW net, cap 0.637 kW"}
+{"t": "2018-01-01T01:30:00", "kind": "receiver_full", "house_ids": ["r3c2"], "kw": 5.330229870359225, "details": "wanted 5.938 kW net, cap 0.607 kW"}
+{"t": "2018-01-01T01:30:00", "kind": "receiver_full", "house_ids": ["r4c1"], "kw": 0.5023661125358565, "details": "wanted 1.188 kW net, cap 0.685 kW"}
+{"t": "2018-01-01T01:30:00", "kind": "receiver_full", "house_ids": ["r4c5"], "kw": 2.182988436325907, "details": "wanted 2.850 kW net, cap 0.667 kW"}
+{"t": "2018-01-01T01:30:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r0c0"], "kw": 0.4752186207653205, "details": ""}
+{"t": "2018-01-01T01:30:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.3441485152354728, "details": ""}
+{"t": "2018-01-01T01:30:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.2184854744481975, "details": ""}
+{"t": "2018-01-01T01:30:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.25965491570360233, "details": ""}
+{"t": "2018-01-01T01:30:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r0c3"], "kw": 0.349576759117116, "details": ""}
+{"t": "2018-01-01T01:30:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r1c4"], "kw": 0.3441485152354728, "details": ""}
+{"t": "2018-01-01T01:30:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r2c3"], "kw": 0.5824264352746399, "details": ""}
+{"t": "2018-01-01T01:30:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.25965491570360233, "details": ""}
+{"t": "2018-01-01T01:30:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r2c1"], "kw": 0.4738170329346428, "details": ""}
+{"t": "2018-01-01T01:30:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r4c1"], "kw": 0.72119356575173, "details": ""}
+{"t": "2018-01-01T01:30:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c0"], "kw": 0.6710273094942971, "details": ""}
+{"t": "2018-01-01T01:30:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c2"], "kw": 0.1278463430822684, "details": ""}
+{"t": "2018-01-01T01:30:00", "kind": "transfer_executed", "house_ids": ["r3c5", "r4c5"], "kw": 0.7021174354464133, "details": ""}
+{"t": "2018-01-01T01:30:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.5113853723290736, "details": ""}
+{"t": "2018-01-01T01:45:00", "kind": "receiver_full", "house_ids": ["r0c0"], "kw": 1.9235423102729454, "details": "wanted 2.375 kW net, cap 0.451 kW"}
+{"t": "2018-01-01T01:45:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 5.635340878112952, "details": "wanted 6.175 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T01:45:00", "kind": "receiver_full", "house_ids": ["r1c1"], "kw": 1.6344635947655246, "details": "wanted 2.375 kW net, cap 0.741 kW"}
+{"t": "2018-01-01T01:45:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 1.7211178210526017, "details": "wanted 2.375 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T01:45:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 9.006655660163155, "details": "wanted 9.500 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T01:45:00", "kind": "receiver_full", "house_ids": ["r2c1"], "kw": 0.7373738187120893, "details": "wanted 1.188 kW net, cap 0.450 kW"}
+{"t": "2018-01-01T01:45:00", "kind": "receiver_full", "house_ids": ["r3c0"], "kw": 0.5500240559804177, "details": "wanted 1.188 kW net, cap 0.637 kW"}
+{"t": "2018-01-01T01:45:00", "kind": "receiver_full", "house_ids": ["r3c2"], "kw": 2.9552298703592252, "details": "wanted 3.562 kW net, cap 0.607 kW"}
+{"t": "2018-01-01T01:45:00", "kind": "receiver_full", "house_ids": ["r4c1"], "kw": 0.5023661125358565, "details": "wanted 1.188 kW net, cap 0.685 kW"}
+{"t": "2018-01-01T01:45:00", "kind": "receiver_full", "house_ids": ["r4c3"], "kw": 1.7060715613872626, "details": "wanted 2.375 kW net, cap 0.669 kW"}
+{"t": "2018-01-01T01:45:00", "kind": "receiver_full", "house_ids": ["r4c5"], "kw": 2.182988436325907, "details": "wanted 2.850 kW net, cap 0.667 kW"}
+{"t": "2018-01-01T01:45:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r1c1"], "kw": 0.779512005509974, "details": ""}
+{"t": "2018-01-01T01:45:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r0c0"], "kw": 0.4752186207653205, "details": ""}
+{"t": "2018-01-01T01:45:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.6882970304709456, "details": ""}
+{"t": "2018-01-01T01:45:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.2184854744481975, "details": ""}
+{"t": "2018-01-01T01:45:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.25965491570360233, "details": ""}
+{"t": "2018-01-01T01:45:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r0c3"], "kw": 0.349576759117116, "details": ""}
+{"t": "2018-01-01T01:45:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.25965491570360233, "details": ""}
+{"t": "2018-01-01T01:45:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r2c1"], "kw": 0.4738170329346428, "details": ""}
+{"t": "2018-01-01T01:45:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r4c1"], "kw": 0.72119356575173, "details": ""}
+{"t": "2018-01-01T01:45:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c0"], "kw": 0.6710273094942971, "details": ""}
+{"t": "2018-01-01T01:45:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c2"], "kw": 0.21307723847044735, "details": ""}
+{"t": "2018-01-01T01:45:00", "kind": "transfer_executed", "house_ids": ["r3c5", "r4c5"], "kw": 0.7021174354464133, "details": ""}
+{"t": "2018-01-01T01:45:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.4261544769408947, "details": ""}
+{"t": "2018-01-01T01:45:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.7041351985397236, "details": ""}
+{"t": "2018-01-01T02:00:00", "kind": "receiver_full", "house_ids": ["r0c0"], "kw": 1.9235423102729454, "details": "wanted 2.375 kW net, cap 0.451 kW"}
+{"t": "2018-01-01T02:00:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 6.5853408781129525, "details": "wanted 7.125 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T02:00:00", "kind": "receiver_full", "house_ids": ["r1c1"], "kw": 1.6344635947655246, "details": "wanted 2.375 kW net, cap 0.741 kW"}
+{"t": "2018-01-01T02:00:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 1.7211178210526017, "details": "wanted 2.375 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T02:00:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 9.006655660163155, "details": "wanted 9.500 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T02:00:00", "kind": "receiver_full", "house_ids": ["r2c1"], "kw": 0.7373738187120893, "details": "wanted 1.188 kW net, cap 0.450 kW"}
+{"t": "2018-01-01T02:00:00", "kind": "receiver_full", "house_ids": ["r3c0"], "kw": 0.5500240559804177, "details": "wanted 1.188 kW net, cap 0.637 kW"}
+{"t": "2018-01-01T02:00:00", "kind": "receiver_full", "house_ids": ["r3c2"], "kw": 2.9552298703592252, "details": "wanted 3.562 kW net, cap 0.607 kW"}
+{"t": "2018-01-01T02:00:00", "kind": "receiver_full", "house_ids": ["r4c1"], "kw": 0.5023661125358565, "details": "wanted 1.188 kW net, cap 0.685 kW"}
+{"t": "2018-01-01T02:00:00", "kind": "receiver_full", "house_ids": ["r4c3"], "kw": 1.7060715613872626, "details": "wanted 2.375 kW net, cap 0.669 kW"}
+{"t": "2018-01-01T02:00:00", "kind": "receiver_full", "house_ids": ["r4c5"], "kw": 2.182988436325907, "details": "wanted 2.850 kW net, cap 0.667 kW"}
+{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r1c1"], "kw": 0.779512005509974, "details": ""}
+{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r0c0"], "kw": 0.4752186207653205, "details": ""}
+{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.6882970304709456, "details": ""}
+{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.1893540778551045, "details": ""}
+{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.25965491570360233, "details": ""}
+{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r0c3"], "kw": 0.378708155710209, "details": ""}
+{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.25965491570360233, "details": ""}
+{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r2c1"], "kw": 0.4738170329346428, "details": ""}
+{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r4c1"], "kw": 0.72119356575173, "details": ""}
+{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c0"], "kw": 0.6710273094942971, "details": ""}
+{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c2"], "kw": 0.21307723847044735, "details": ""}
+{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r3c5", "r4c5"], "kw": 0.7021174354464133, "details": ""}
+{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.4261544769408947, "details": ""}
+{"t": "2018-01-01T02:00:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.7041351985397236, "details": ""}
+{"t": "2018-01-01T02:15:00", "kind": "receiver_full", "house_ids": ["r0c0"], "kw": 1.9235423102729454, "details": "wanted 2.375 kW net, cap 0.451 kW"}
+{"t": "2018-01-01T02:15:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 4.2103408781129525, "details": "wanted 4.750 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T02:15:00", "kind": "receiver_full", "house_ids": ["r1c1"], "kw": 1.6344635947655246, "details": "wanted 2.375 kW net, cap 0.741 kW"}
+{"t": "2018-01-01T02:15:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 9.006655660163155, "details": "wanted 9.500 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T02:15:00", "kind": "receiver_full", "house_ids": ["r2c1"], "kw": 0.7373738187120893, "details": "wanted 1.188 kW net, cap 0.450 kW"}
+{"t": "2018-01-01T02:15:00", "kind": "receiver_full", "house_ids": ["r3c0"], "kw": 0.5500240559804177, "details": "wanted 1.188 kW net, cap 0.637 kW"}
+{"t": "2018-01-01T02:15:00", "kind": "receiver_full", "house_ids": ["r3c2"], "kw": 2.9552298703592252, "details": "wanted 3.562 kW net, cap 0.607 kW"}
+{"t": "2018-01-01T02:15:00", "kind": "receiver_full", "house_ids": ["r4c1"], "kw": 0.5023661125358565, "details": "wanted 1.188 kW net, cap 0.685 kW"}
+{"t": "2018-01-01T02:15:00", "kind": "receiver_full", "house_ids": ["r4c3"], "kw": 1.7060715613872626, "details": "wanted 2.375 kW net, cap 0.669 kW"}
+{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r1c1"], "kw": 0.779512005509974, "details": ""}
+{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r0c0"], "kw": 0.4752186207653205, "details": ""}
+{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.25965491570360233, "details": ""}
+{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r0c3"], "kw": 0.5680622335653135, "details": ""}
+{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.25965491570360233, "details": ""}
+{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r2c1"], "kw": 0.4738170329346428, "details": ""}
+{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r4c1"], "kw": 0.72119356575173, "details": ""}
+{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c0"], "kw": 0.6710273094942971, "details": ""}
+{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r3c1", "r3c2"], "kw": 0.21307723847044735, "details": ""}
+{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.4261544769408947, "details": ""}
+{"t": "2018-01-01T02:15:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.7041351985397236, "details": ""}
+{"t": "2018-01-01T02:30:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 5.635340878112952, "details": "wanted 6.175 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T02:30:00", "kind": "receiver_full", "house_ids": ["r1c0"], "kw": 1.9677130576885014, "details": "wanted 2.375 kW net, cap 0.407 kW"}
+{"t": "2018-01-01T02:30:00", "kind": "receiver_full", "house_ids": ["r1c1"], "kw": 4.009463594765525, "details": "wanted 4.750 kW net, cap 0.741 kW"}
+{"t": "2018-01-01T02:30:00", "kind": "receiver_full", "house_ids": ["r1c2"], "kw": 3.0686686808040644, "details": "wanted 3.800 kW net, cap 0.731 kW"}
+{"t": "2018-01-01T02:30:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 4.0961178210526015, "details": "wanted 4.750 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T02:30:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 9.006655660163155, "details": "wanted 9.500 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T02:30:00", "kind": "receiver_full", "house_ids": ["r2c1"], "kw": 1.9248738187120893, "details": "wanted 2.375 kW net, cap 0.450 kW"}
+{"t": "2018-01-01T02:30:00", "kind": "receiver_full", "house_ids": ["r2c3"], "kw": 1.821694886489092, "details": "wanted 2.375 kW net, cap 0.553 kW"}
+{"t": "2018-01-01T02:30:00", "kind": "receiver_full", "house_ids": ["r3c2"], "kw": 1.7677298703592252, "details": "wanted 2.375 kW net, cap 0.607 kW"}
+{"t": "2018-01-01T02:30:00", "kind": "receiver_full", "house_ids": ["r4c3"], "kw": 1.7060715613872626, "details": "wanted 2.375 kW net, cap 0.669 kW"}
+{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r1c1"], "kw": 0.779512005509974, "details": ""}
+{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.2886834154720799, "details": ""}
+{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.1310912846689185, "details": ""}
+{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.3441485152354728, "details": ""}
+{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.2184854744481975, "details": ""}
+{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.25965491570360233, "details": ""}
+{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r0c3"], "kw": 0.2184854744481975, "details": ""}
+{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r1c2"], "kw": 0.4811390257867998, "details": ""}
+{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r2c0", "r1c0"], "kw": 0.4287230971699987, "details": ""}
+{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r2c0", "r2c1"], "kw": 0.4738170329346428, "details": ""}
+{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r1c4"], "kw": 0.3441485152354728, "details": ""}
+{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r2c3"], "kw": 0.5824264352746399, "details": ""}
+{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.25965491570360233, "details": ""}
+{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.6392317154113419, "details": ""}
+{"t": "2018-01-01T02:30:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r4c3"], "kw": 0.7041351985397236, "details": ""}
+{"t": "2018-01-01T02:45:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 4.2103408781129525, "details": "wanted 4.750 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T02:45:00", "kind": "receiver_full", "house_ids": ["r1c1"], "kw": 4.009463594765525, "details": "wanted 4.750 kW net, cap 0.741 kW"}
+{"t": "2018-01-01T02:45:00", "kind": "receiver_full", "house_ids": ["r1c2"], "kw": 1.6436686808040644, "details": "wanted 2.375 kW net, cap 0.731 kW"}
+{"t": "2018-01-01T02:45:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 4.0961178210526015, "details": "wanted 4.750 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T02:45:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 4.2566556601631556, "details": "wanted 4.750 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T02:45:00", "kind": "receiver_full", "house_ids": ["r2c3"], "kw": 1.821694886489092, "details": "wanted 2.375 kW net, cap 0.553 kW"}
+{"t": "2018-01-01T02:45:00", "kind": "receiver_full", "house_ids": ["r3c2"], "kw": 4.142729870359225, "details": "wanted 4.750 kW net, cap 0.607 kW"}
+{"t": "2018-01-01T02:45:00", "kind": "transfer_executed", "house_ids": ["r0c1", "r1c1"], "kw": 0.779512005509974, "details": ""}
+{"t": "2018-01-01T02:45:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.3441485152354728, "details": ""}
+{"t": "2018-01-01T02:45:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.28403111678265675, "details": ""}
+{"t": "2018-01-01T02:45:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.5193098314072047, "details": ""}
+{"t": "2018-01-01T02:45:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r0c3"], "kw": 0.28403111678265675, "details": ""}
+{"t": "2018-01-01T02:45:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r1c2"], "kw": 0.7698224412588796, "details": ""}
+{"t": "2018-01-01T02:45:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r1c4"], "kw": 0.3441485152354728, "details": ""}
+{"t": "2018-01-01T02:45:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r2c3"], "kw": 0.5824264352746399, "details": ""}
+{"t": "2018-01-01T02:45:00", "kind": "transfer_executed", "house_ids": ["r4c2", "r3c2"], "kw": 0.6392317154113419, "details": ""}
+{"t": "2018-01-01T03:00:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 4.2103408781129525, "details": "wanted 4.750 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T03:00:00", "kind": "receiver_full", "house_ids": ["r1c2"], "kw": 1.6436686808040644, "details": "wanted 2.375 kW net, cap 0.731 kW"}
+{"t": "2018-01-01T03:00:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 4.0961178210526015, "details": "wanted 4.750 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T03:00:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 4.2566556601631556, "details": "wanted 4.750 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T03:00:00", "kind": "receiver_full", "house_ids": ["r2c3"], "kw": 1.821694886489092, "details": "wanted 2.375 kW net, cap 0.553 kW"}
+{"t": "2018-01-01T03:00:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.3441485152354728, "details": ""}
+{"t": "2018-01-01T03:00:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.28403111678265675, "details": ""}
+{"t": "2018-01-01T03:00:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.5193098314072047, "details": ""}
+{"t": "2018-01-01T03:00:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r0c3"], "kw": 0.28403111678265675, "details": ""}
+{"t": "2018-01-01T03:00:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r1c2"], "kw": 0.7698224412588796, "details": ""}
+{"t": "2018-01-01T03:00:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r1c4"], "kw": 0.3441485152354728, "details": ""}
+{"t": "2018-01-01T03:00:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r2c3"], "kw": 0.5824264352746399, "details": ""}
+{"t": "2018-01-01T03:15:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 6.5853408781129525, "details": "wanted 7.125 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T03:15:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 4.0961178210526015, "details": "wanted 4.750 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T03:15:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 4.2566556601631556, "details": "wanted 4.750 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T03:15:00", "kind": "receiver_full", "house_ids": ["r2c3"], "kw": 1.821694886489092, "details": "wanted 2.375 kW net, cap 0.553 kW"}
+{"t": "2018-01-01T03:15:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.3441485152354728, "details": ""}
+{"t": "2018-01-01T03:15:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.1893540778551045, "details": ""}
+{"t": "2018-01-01T03:15:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.5193098314072047, "details": ""}
+{"t": "2018-01-01T03:15:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r0c3"], "kw": 0.378708155710209, "details": ""}
+{"t": "2018-01-01T03:15:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r1c4"], "kw": 0.3441485152354728, "details": ""}
+{"t": "2018-01-01T03:15:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r2c3"], "kw": 0.5824264352746399, "details": ""}
+{"t": "2018-01-01T03:30:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 3.260340878112952, "details": "wanted 3.800 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T03:30:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 1.7211178210526017, "details": "wanted 2.375 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T03:30:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 9.006655660163155, "details": "wanted 9.500 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T03:30:00", "kind": "receiver_full", "house_ids": ["r2c3"], "kw": 1.821694886489092, "details": "wanted 2.375 kW net, cap 0.553 kW"}
+{"t": "2018-01-01T03:30:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.25965491570360233, "details": ""}
+{"t": "2018-01-01T03:30:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r0c3"], "kw": 0.5680622335653135, "details": ""}
+{"t": "2018-01-01T03:30:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r1c4"], "kw": 0.6882970304709456, "details": ""}
+{"t": "2018-01-01T03:30:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r2c3"], "kw": 0.5824264352746399, "details": ""}
+{"t": "2018-01-01T03:30:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.25965491570360233, "details": ""}
+{"t": "2018-01-01T03:45:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 3.260340878112952, "details": "wanted 3.800 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T03:45:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 1.7211178210526017, "details": "wanted 2.375 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T03:45:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 9.006655660163155, "details": "wanted 9.500 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T03:45:00", "kind": "receiver_full", "house_ids": ["r2c3"], "kw": 1.821694886489092, "details": "wanted 2.375 kW net, cap 0.553 kW"}
+{"t": "2018-01-01T03:45:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.25965491570360233, "details": ""}
+{"t": "2018-01-01T03:45:00", "kind": "transfer_executed", "house_ids": ["r1c3", "r0c3"], "kw": 0.5680622335653135, "details": ""}
+{"t": "2018-01-01T03:45:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r1c4"], "kw": 0.6882970304709456, "details": ""}
+{"t": "2018-01-01T03:45:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r2c3"], "kw": 0.5824264352746399, "details": ""}
+{"t": "2018-01-01T03:45:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.25965491570360233, "details": ""}
+{"t": "2018-01-01T04:00:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 1.7211178210526017, "details": "wanted 2.375 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T04:00:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 9.006655660163155, "details": "wanted 9.500 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T04:00:00", "kind": "receiver_full", "house_ids": ["r2c3"], "kw": 1.821694886489092, "details": "wanted 2.375 kW net, cap 0.553 kW"}
+{"t": "2018-01-01T04:00:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.25965491570360233, "details": ""}
+{"t": "2018-01-01T04:00:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r1c4"], "kw": 0.6882970304709456, "details": ""}
+{"t": "2018-01-01T04:00:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r2c3"], "kw": 0.5824264352746399, "details": ""}
+{"t": "2018-01-01T04:00:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.25965491570360233, "details": ""}
+{"t": "2018-01-01T04:15:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 1.7211178210526017, "details": "wanted 2.375 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T04:15:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 9.006655660163155, "details": "wanted 9.500 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T04:15:00", "kind": "receiver_full", "house_ids": ["r2c3"], "kw": 1.821694886489092, "details": "wanted 2.375 kW net, cap 0.553 kW"}
+{"t": "2018-01-01T04:15:00", "kind": "transfer_executed", "house_ids": ["r0c5", "r1c5"], "kw": 0.25965491570360233, "details": ""}
+{"t": "2018-01-01T04:15:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r1c4"], "kw": 0.6882970304709456, "details": ""}
+{"t": "2018-01-01T04:15:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r2c3"], "kw": 0.5824264352746399, "details": ""}
+{"t": "2018-01-01T04:15:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.25965491570360233, "details": ""}
+{"t": "2018-01-01T04:30:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 0.885340878112952, "details": "wanted 1.425 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T04:30:00", "kind": "receiver_full", "house_ids": ["r1c2"], "kw": 0.6936686808040642, "details": "wanted 1.425 kW net, cap 0.731 kW"}
+{"t": "2018-01-01T04:30:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 4.0961178210526015, "details": "wanted 4.750 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T04:30:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 4.2566556601631556, "details": "wanted 4.750 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T04:30:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.7698224412588797, "details": ""}
+{"t": "2018-01-01T04:30:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.5680622335653135, "details": ""}
+{"t": "2018-01-01T04:30:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r1c4"], "kw": 0.6882970304709456, "details": ""}
+{"t": "2018-01-01T04:30:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.5193098314072047, "details": ""}
+{"t": "2018-01-01T04:45:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 0.885340878112952, "details": "wanted 1.425 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T04:45:00", "kind": "receiver_full", "house_ids": ["r1c2"], "kw": 0.6936686808040642, "details": "wanted 1.425 kW net, cap 0.731 kW"}
+{"t": "2018-01-01T04:45:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 4.0961178210526015, "details": "wanted 4.750 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T04:45:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 4.2566556601631556, "details": "wanted 4.750 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T04:45:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.7698224412588797, "details": ""}
+{"t": "2018-01-01T04:45:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.5680622335653135, "details": ""}
+{"t": "2018-01-01T04:45:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r1c4"], "kw": 0.6882970304709456, "details": ""}
+{"t": "2018-01-01T04:45:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.5193098314072047, "details": ""}
+{"t": "2018-01-01T05:00:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 2.785340878112952, "details": "wanted 3.325 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T05:00:00", "kind": "receiver_full", "house_ids": ["r1c2"], "kw": 0.6936686808040642, "details": "wanted 1.425 kW net, cap 0.731 kW"}
+{"t": "2018-01-01T05:00:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 5.996117821052602, "details": "wanted 6.650 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T05:00:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 4.2566556601631556, "details": "wanted 4.750 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T05:00:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.7698224412588797, "details": ""}
+{"t": "2018-01-01T05:00:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.24345524295656296, "details": ""}
+{"t": "2018-01-01T05:00:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.19665629442027016, "details": ""}
+{"t": "2018-01-01T05:00:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.3246069906087506, "details": ""}
+{"t": "2018-01-01T05:00:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r1c4"], "kw": 0.4916407360506754, "details": ""}
+{"t": "2018-01-01T05:00:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.5193098314072047, "details": ""}
+{"t": "2018-01-01T05:15:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 2.785340878112952, "details": "wanted 3.325 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T05:15:00", "kind": "receiver_full", "house_ids": ["r1c2"], "kw": 0.6936686808040642, "details": "wanted 1.425 kW net, cap 0.731 kW"}
+{"t": "2018-01-01T05:15:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 5.764538350653563, "details": "wanted 6.418 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T05:15:00", "kind": "receiver_full", "house_ids": ["r1c5"], "kw": 4.2566556601631556, "details": "wanted 4.750 kW net, cap 0.493 kW"}
+{"t": "2018-01-01T05:15:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r1c2"], "kw": 0.7698224412588797, "details": ""}
+{"t": "2018-01-01T05:15:00", "kind": "transfer_executed", "house_ids": ["r0c2", "r0c3"], "kw": 0.24345524295656296, "details": ""}
+{"t": "2018-01-01T05:15:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.20375174108077668, "details": ""}
+{"t": "2018-01-01T05:15:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.3246069906087506, "details": ""}
+{"t": "2018-01-01T05:15:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r1c4"], "kw": 0.484545289390169, "details": ""}
+{"t": "2018-01-01T05:15:00", "kind": "transfer_executed", "house_ids": ["r2c5", "r1c5"], "kw": 0.5193098314072047, "details": ""}
+{"t": "2018-01-01T05:30:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 1.360340878112952, "details": "wanted 1.900 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T05:30:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 5.4672172050576044, "details": "wanted 6.121 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T05:30:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.21364860719499268, "details": ""}
+{"t": "2018-01-01T05:30:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.5680622335653135, "details": ""}
+{"t": "2018-01-01T05:30:00", "kind": "transfer_executed", "house_ids": ["r2c4", "r1c4"], "kw": 0.47464842327595286, "details": ""}
+{"t": "2018-01-01T05:45:00", "kind": "receiver_full", "house_ids": ["r0c3"], "kw": 1.360340878112952, "details": "wanted 1.900 kW net, cap 0.540 kW"}
+{"t": "2018-01-01T05:45:00", "kind": "receiver_full", "house_ids": ["r1c4"], "kw": 1.2461178210526016, "details": "wanted 1.900 kW net, cap 0.654 kW"}
+{"t": "2018-01-01T05:45:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r1c4"], "kw": 0.6882970304709456, "details": ""}
+{"t": "2018-01-01T05:45:00", "kind": "transfer_executed", "house_ids": ["r0c4", "r0c3"], "kw": 0.5680622335653135, "details": ""}
+{"t": "2018-01-01T10:00:00", "kind": "transfer_executed", "house_ids": ["r3c4", "r2c4"], "kw": 3.0, "details": ""}
