@@ -6,30 +6,30 @@
   "gini_welfare": 0.39943611892116926,
   "transfer_count": 259,
   "message_counts": {
-    "sent": 3404,
-    "delivered": 3404,
+    "sent": 5658,
+    "delivered": 5658,
     "dropped_invalid_recipient": 0,
     "dropped_comm": 0,
     "dropped_budget": 0
   },
   "llm_call_counts": {
-    "reflect_plan": 415,
-    "react_msg": 1646,
-    "cache_hits": 1870,
-    "cache_misses": 191
+    "reflect_plan": 300,
+    "react_msg": 2547,
+    "cache_hits": 1135,
+    "cache_misses": 1712
   },
   "llm_cost_usd_estimated": 0.0,
   "failure_modes_active": {},
-  "policy_parse_failures": 7,
+  "policy_parse_failures": 6,
   "policy_fallbacks_to_round_robin": 0,
   "llm_call_counts_detailed": {
-    "reflect_plan": 415,
-    "react_msg": 1646,
-    "react_skipped": 131,
-    "plan_parse_failures": 7,
+    "reflect_plan": 300,
+    "react_msg": 2547,
+    "react_skipped": 616,
+    "plan_parse_failures": 6,
     "plan_fallbacks": 0,
     "react_refusals": 0,
-    "cache_hits": 1870,
-    "cache_misses": 191
+    "cache_hits": 1135,
+    "cache_misses": 1712
   }
 }
