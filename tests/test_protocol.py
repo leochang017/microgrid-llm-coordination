@@ -177,15 +177,31 @@ def test_bus_dropout_is_deterministic_given_seed() -> None:
     nb = _bus_neighborhood()
     t0 = datetime(2026, 1, 1, 8, 0)
 
-    def collect_outcomes(seed: int) -> list[str]:
+    def collect_dropped_ids(seed: int) -> list[str]:
+        """Send 20 messages with distinct correlation_ids and return the ids
+        of the ones the bus dropped (in order). This identifies *which*
+        messages were dropped, not just how many, which makes the seed
+        comparison robust to count collisions."""
         bus = MessageBus(neighborhood=nb, seed=seed)
         bus.configure_failure_modes(drop_prob_by_circle={"geographic": 0.5})
-        for _ in range(20):
-            bus.send(_msg(t0, "r0c0", "r0c1"))
-        return [r["outcome"] for r in bus.iter_log()]
+        for i in range(20):
+            m = Message(
+                t_sent=t0,
+                sender="r0c0",
+                recipient="r0c1",
+                performative="REQUEST",
+                payload={"kwh": 0.5},
+                rationale_nl="ok",
+                correlation_id=f"msg{i:02d}",
+            )
+            bus.send(m)
+        return [row["correlation_id"] for row in bus.iter_log() if row["outcome"] == "dropped"]
 
-    a = collect_outcomes(123)
-    b = collect_outcomes(123)
-    assert a == b
-    c = collect_outcomes(456)
-    assert a != c
+    a = collect_dropped_ids(123)
+    b = collect_dropped_ids(123)
+    assert a == b, "same seed must produce the same drop pattern"
+    c = collect_dropped_ids(456)
+    # Different seeds should drop a different *subset* of messages. With
+    # drop_prob=0.5 over 20 trials, the chance of two independent seeds
+    # producing exactly the same dropped subset is 2^-20 ~ 1e-6.
+    assert a != c, "different seeds must produce different drop patterns"
