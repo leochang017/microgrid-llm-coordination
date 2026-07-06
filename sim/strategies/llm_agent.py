@@ -127,6 +127,7 @@ def prepare(
     wrapper = DefectorWrapper(defectors=defectors, scenario_seed=scenario.seed)
 
     model = scenario.llm.get("model", "claude-haiku-4-5-20251001")
+    react_max = int(scenario.llm.get("react_max_per_tick", 3))
     factory = llm_client_factory or _make_llm_client
     client = factory(model, run_dir or Path("runs/_inline"))
 
@@ -172,6 +173,7 @@ def prepare(
             system_prompt_plan=plan_prompt,
             system_prompt_react=react_prompt,
             llm_disabled=disable_llm,
+            react_max_per_tick=react_max,
             household_context={
                 "battery_kwh": float(hh.battery_kwh),
                 "battery_max_rate_kw": float(hh.battery_max_rate_kw),
@@ -275,6 +277,22 @@ def decide_transfers(
     return all_transfers
 
 
+# $/MTok (input, output) by model-id substring; used for the cost estimate.
+_PRICE_PER_MTOK: dict[str, tuple[float, float]] = {
+    "haiku": (1.0, 5.0),
+    "sonnet": (3.0, 15.0),
+    "opus": (15.0, 75.0),
+}
+
+
+def _estimate_cost_usd(model: str, tokens_in: int, tokens_out: int) -> float:
+    """Fresh-call token cost at current Anthropic rates (0 for unknown/mock models)."""
+    for key, (rin, rout) in _PRICE_PER_MTOK.items():
+        if key in model:
+            return tokens_in / 1e6 * rin + tokens_out / 1e6 * rout
+    return 0.0
+
+
 def current_call_counts() -> dict[str, int]:
     """Aggregate LLM call counters across all agents in the current run.
 
@@ -333,4 +351,14 @@ def update_summary_with_counts(run_dir: Path) -> None:
     summary["policy_fallbacks_to_round_robin"] = counts["plan_fallbacks"]
     # Also extend with finer-grained Phase-2.5 fields.
     summary["llm_call_counts_detailed"] = counts
+    # Real cost estimate from fresh-call tokens (was hardcoded 0.0 pre-2026-07-07;
+    # the shipped reference run claimed $0.00 against ~$11.6 of actual spend).
+    if _REGISTRY is not None and _REGISTRY.agents:
+        any_agent = next(iter(_REGISTRY.agents.values()))
+        client = any_agent.llm_client
+        summary["llm_cost_usd_estimated"] = _estimate_cost_usd(
+            any_agent.model,
+            getattr(client, "n_fresh_tokens_in", 0),
+            getattr(client, "n_fresh_tokens_out", 0),
+        )
     summary_path.write_text(json.dumps(summary, indent=2))

@@ -72,8 +72,15 @@ class JsonlLogger:
         self._state_file.close()
         self._events_file.close()
 
-    def finalize(self, dt_hours: float) -> dict[str, Any]:
-        """Compute top-level summary metrics from state + events, write summary.json."""
+    def finalize(
+        self, dt_hours: float, *, failure_modes: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """Compute top-level summary metrics from state + events, write summary.json.
+
+        ``failure_modes`` is the scenario's resolved failure-mode config; it lands
+        in summary.json as ``failure_modes_active`` so a run directory records
+        which cell it belongs to (was hardcoded {} before 2026-07-07).
+        """
         # Re-read state.jsonl
         self._state_file.flush()
         load_by_house: dict[str, float] = {}
@@ -123,7 +130,7 @@ class JsonlLogger:
             "cache_misses": 0,
         }
         summary["llm_cost_usd_estimated"] = 0.0
-        summary["failure_modes_active"] = {}
+        summary["failure_modes_active"] = failure_modes or {}
         summary["policy_parse_failures"] = 0
         summary["policy_fallbacks_to_round_robin"] = 0
         with (self.run_dir / "summary.json").open("w") as f:

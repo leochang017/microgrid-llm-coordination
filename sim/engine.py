@@ -6,6 +6,7 @@ per-tick simulation loop.
 
 from __future__ import annotations
 
+import dataclasses
 import math
 from collections.abc import Callable
 from datetime import datetime
@@ -212,6 +213,9 @@ def run(
             "bus_loss_factor": scenario.bus_loss_factor,
             "strategy": scenario.strategy,
             "data_source": scenario.data_source,
+            "solar_tz_offset_hours": scenario.solar_tz_offset_hours,
+            "llm": scenario.llm,
+            "failure_modes": dataclasses.asdict(scenario.failure_modes),
             "household_sampling": scenario.household_sampling,
             "outages": [
                 {
@@ -298,7 +302,10 @@ def run(
     if message_bus is not None:
         message_bus.write_jsonl(logger.run_dir / "messages.jsonl")
 
-    return logger.finalize(dt_hours=scenario.dt_hours)
+    return logger.finalize(
+        dt_hours=scenario.dt_hours,
+        failure_modes=dataclasses.asdict(scenario.failure_modes),
+    )
 
 
 def _build_data(

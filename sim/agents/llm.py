@@ -61,6 +61,9 @@ class LLMClient:
     """Abstract base. Subclasses implement ``_call_provider``."""
 
     cache: PromptCache
+    # Fresh-call token totals (cache hits are free); feed cost accounting.
+    n_fresh_tokens_in: int = 0
+    n_fresh_tokens_out: int = 0
 
     def call(self, req: LLMRequest) -> LLMResponse:
         cache_req = req.to_cache_dict()
@@ -73,6 +76,8 @@ class LLMClient:
                 tool_input=cached.get("tool_input"),
             )
         resp = self._call_provider(req)
+        self.n_fresh_tokens_in += resp.tokens_in
+        self.n_fresh_tokens_out += resp.tokens_out
         self.cache.put(
             cache_req,
             {
