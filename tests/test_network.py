@@ -223,3 +223,21 @@ def test_default_affiliations_different_seed_differs() -> None:
     from sim.network import default_affiliations
 
     assert default_affiliations(5, 6, seed=1) != default_affiliations(5, 6, seed=2)
+
+
+def test_settle_aggregates_duplicate_sender_receiver_pairs() -> None:
+    """Two same-pair transfers must sum, not dict-clobber (pre-P2.9 the second
+    silently replaced the first, and cap scaling used the wrong total)."""
+    n = build_grid_neighborhood(1, 2, bus_max_kw=50.0, bus_loss_factor=0.0)
+    result = settle_transfers(
+        n,
+        [
+            Transfer(from_id="r0c0", to_id="r0c1", kw=0.3),
+            Transfer(from_id="r0c0", to_id="r0c1", kw=0.4),
+        ],
+        grid_status={"r0c0": False, "r0c1": False},
+        sender_caps_kw={"r0c0": 10.0, "r0c1": 10.0},
+        receiver_caps_kw={"r0c0": 10.0, "r0c1": 10.0},
+    )
+    assert result.actual_sent["r0c0"] == pytest.approx(0.7, abs=1e-12)
+    assert result.actual_received["r0c1"] == pytest.approx(0.7, abs=1e-12)

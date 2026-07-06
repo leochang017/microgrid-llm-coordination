@@ -5,6 +5,8 @@ import importlib
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import pytest
+
 from sim.engine import run
 from sim.household import Household
 from sim.logging import JsonlLogger
@@ -188,3 +190,31 @@ def test_lp_run_deterministic(tmp_path: Path) -> None:
     sa = (tmp_path / "a" / "lp_optimal" / "state.jsonl").read_text()
     sb = (tmp_path / "b" / "lp_optimal" / "state.jsonl").read_text()
     assert sa == sb
+
+
+def test_schedule_conserves_gross_when_house_both_sends_and_receives() -> None:
+    """A house appearing in both the sender and receiver pools must not lose
+    its share: pre-P2.9 the self-pair share was silently dropped, so the
+    scheduled gross fell short of the LP's planned flows."""
+    from sim.strategies.lp_optimal import _schedule_from_solution
+
+    ids = ["a", "b"]
+    ticks = [datetime(2018, 1, 1)]
+    col = {}
+    x = []
+    for hid in ids:
+        for kind in ("send", "recv"):
+            col[(kind, hid, 0)] = len(x)
+            x.append(0.0)
+    import numpy as np
+
+    xa = np.zeros(len(x))
+    xa[col[("send", "a", 0)]] = 1.0
+    xa[col[("send", "b", 0)]] = 0.5
+    xa[col[("recv", "b", 0)]] = 1.425  # 0.95 * (1.0 + 0.5) gross
+    grid_at = {("a", 0): False, ("b", 0): False}
+    schedule = _schedule_from_solution(xa, col, ids, ticks, grid_at, loss=0.05)
+    transfers = schedule[ticks[0]]
+    assert all(t.from_id == "a" and t.to_id == "b" for t in transfers)
+    # b's own 0.5 kW send must be re-normalized onto a, conserving 1.5 kW gross.
+    assert sum(t.kw for t in transfers) == pytest.approx(1.5, abs=1e-9)

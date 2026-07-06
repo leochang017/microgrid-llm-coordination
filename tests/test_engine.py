@@ -1,5 +1,6 @@
 """Tests for the simulation engine."""
 
+from dataclasses import replace
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -301,3 +302,33 @@ def test_prepare_hook_called_once_and_supplies_decider(tmp_path) -> None:
     logger = JsonlLogger(run_dir=str(tmp_path), scenario_id=sc.scenario_id)
     run(sc, decide_transfers=None, logger=logger, prepare=prepare)
     assert calls["prepare"] == 1
+
+
+def test_outage_active_at_t0_emits_started_event(tmp_path) -> None:
+    """An outage covering the first tick must emit OUTAGE_STARTED (pre-P2.9 the
+    transition tracker was initialized to the outage state, so scenarios that
+    begin islanded — like the whole haves_havenots family — logged no onset)."""
+    import json
+
+    from sim.engine import run
+    from sim.logging import JsonlLogger
+    from sim.scenario import OutageWindow
+
+    s = make_scenario()
+    s = replace(
+        s,
+        outages=(
+            OutageWindow(
+                start=s.start,
+                end=s.end,
+                affected_houses=tuple(f"r{r}c{c}" for r in range(5) for c in range(6)),
+            ),
+        ),
+    )
+    logger = JsonlLogger(tmp_path / "run", scenario_id=s.scenario_id)
+    run(s, lambda *a: [], logger, strict=True)
+    logger.close()
+    events = [json.loads(x) for x in (tmp_path / "run" / "events.jsonl").read_text().splitlines()]
+    started = [e for e in events if e["kind"] == "outage_started"]
+    assert started, "no OUTAGE_STARTED emitted for an outage active at t=0"
+    assert started[0]["t"] == s.start.isoformat()

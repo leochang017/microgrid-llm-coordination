@@ -185,6 +185,8 @@ def run(
 
     # Initialize states: every battery starts at 50% capacity, every house
     # presumed grid-connected at t=0 unless the outage schedule says otherwise.
+    # The transition tracker starts at True (pre-sim = grid up) so an outage
+    # already active at t=0 emits OUTAGE_STARTED on the first tick.
     states: dict[str, HouseholdState] = {}
     last_grid_status: dict[str, bool] = {}
     for hid, h in households.items():
@@ -195,7 +197,7 @@ def run(
             last_load_kw=0.0,
             grid_connected=initial_grid,
         )
-        last_grid_status[hid] = initial_grid
+        last_grid_status[hid] = True
 
     logger.write_config(
         {

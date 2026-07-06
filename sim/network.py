@@ -165,15 +165,18 @@ def settle_transfers(
         by_sender.setdefault(t.from_id, []).append(t)
 
     # Stage 1: sender-cap clipping (gives a per-(sender, receiver) provisional kw).
+    # Duplicate (sender, receiver) pairs are summed — a dict comprehension here
+    # would silently keep only the last one (pre-Phase-2.9 bug).
     sender_alloc: dict[str, dict[str, float]] = {}
     for sender, transfers in by_sender.items():
         total_req = sum(t.kw for t in transfers)
         cap = sender_caps_kw.get(sender, 0.0)
-        if total_req <= cap or total_req == 0.0:
-            allocations = {t.to_id: t.kw for t in transfers}
-        else:
+        allocations: dict[str, float] = {}
+        for t in transfers:
+            allocations[t.to_id] = allocations.get(t.to_id, 0.0) + t.kw
+        if total_req > cap and total_req > 0.0:
             scale = cap / total_req
-            allocations = {t.to_id: t.kw * scale for t in transfers}
+            allocations = {r: kw * scale for r, kw in allocations.items()}
             events.append(
                 Event(
                     kind=EventKind.SENDER_DOD_FLOOR,

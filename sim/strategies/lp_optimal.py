@@ -339,14 +339,20 @@ def _schedule_from_solution(
                 for hid in members
                 if x[col[("recv", hid, k)]] > _TINY
             ]
-            total_send = sum(s for _, s in senders)
-            if total_send <= _TINY:
+            if sum(s for _, s in senders) <= _TINY:
                 continue
             for r_id, r_recv in receivers:
                 gross_needed = r_recv / (1.0 - loss) if loss < 1.0 else r_recv
-                for s_id, s_send in senders:
-                    share = gross_needed * (s_send / total_send)
-                    if share > _TINY and s_id != r_id:
+                # Exclude the receiver from its own sender pool and renormalize
+                # over the rest — pre-Phase-2.9 the self-pair share was silently
+                # dropped, so the scheduled gross fell short of the LP's flows.
+                pool = [(s_id, s_send) for s_id, s_send in senders if s_id != r_id]
+                pool_total = sum(s for _, s in pool)
+                if pool_total <= _TINY:
+                    continue
+                for s_id, s_send in pool:
+                    share = gross_needed * (s_send / pool_total)
+                    if share > _TINY:
                         transfers.append(Transfer(from_id=s_id, to_id=r_id, kw=share))
         if transfers:
             schedule[t] = transfers
