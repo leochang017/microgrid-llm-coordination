@@ -152,7 +152,7 @@ Advisor-gated work establishing that the Phase 2 LLM layer has real room to add 
   old round_robin figure of 0.5250 included ~0.56 points of phantom energy from a
   sender-cap bug. The honest round_robin→LP gap is now 1.0 point, not 0.44.)*
 
-  Note the served-maximizing LP optimum is *less* equitable (gini 0.362) than round_robin
+  Note the served-maximizing LP optimum is *less* equitable (gini ≈0.36; solver-version-dependent under degenerate optima) than round_robin
   (0.224) — the fairness tension Phase 3's needs-weighted welfare model will address.
 
 > The LP ceiling is the LP **objective** (`lp_optimal.optimal_metrics`), not an

@@ -31,7 +31,14 @@ _GOLDEN = {
     "no_coordination": (0.455996451, 195.841278, 0.485104102),
     "round_robin": (0.519448106, 172.998682, 0.224442279),
 }
-_GOLDEN_LP = (0.529368385, 169.427381, 0.361703260)
+# LP: only OBJECTIVE-derived values are pinned tightly. The LP has degenerate
+# optima — different scipy/HiGHS versions pick different optimal vertices with
+# identical served totals but different per-house distributions, so the LP's
+# gini is solver-version-dependent (observed 0.3617 locally vs 0.3620 on CI,
+# 2026-07-07). Never quote LP gini beyond ~2 decimals in the paper.
+_GOLDEN_LP_SERVED = 0.529368385
+_GOLDEN_LP_UNMET = 169.427381
+_GOLDEN_LP_GINI_BAND = (0.30, 0.42)
 
 
 @pytest.mark.parametrize("strategy", sorted(_GOLDEN))
@@ -60,7 +67,7 @@ def test_golden_lp_ceiling() -> None:
     )
     solar, loads = _build_data(base, hh)
     metrics = lp_optimal.optimal_metrics(base, hh, solar, loads, nbhd)
-    served, unmet, gini = _GOLDEN_LP
-    assert metrics["served_load_fraction"] == pytest.approx(served, abs=5e-7)
-    assert metrics["unmet_kwh_total"] == pytest.approx(unmet, abs=5e-4)
-    assert metrics["gini_welfare"] == pytest.approx(gini, abs=5e-7)
+    assert metrics["served_load_fraction"] == pytest.approx(_GOLDEN_LP_SERVED, abs=5e-7)
+    assert metrics["unmet_kwh_total"] == pytest.approx(_GOLDEN_LP_UNMET, abs=5e-4)
+    lo, hi = _GOLDEN_LP_GINI_BAND
+    assert lo <= metrics["gini_welfare"] <= hi
