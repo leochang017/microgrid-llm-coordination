@@ -144,12 +144,16 @@ Advisor-gated work establishing that the Phase 2 LLM layer has real room to add 
   | strategy | served | unmet_kwh | gini | gap_closed |
   |---|---|---|---|---|
   | no_coordination | 0.4560 | 195.8 | 0.4851 | 0.00% |
-  | round_robin | 0.5250 | 171.0 | 0.2416 | 0.00% |
-  | round_robin_overlay | 0.5249 | 171.0 | 0.2401 | 0.00% |
+  | round_robin | 0.5194 | 173.0 | 0.2244 | 0.00% |
+  | round_robin_overlay | 0.5194 | 173.0 | 0.2217 | 0.00% |
   | lp_optimal | 0.5294 | 169.4 | 0.3653 | 100.00% |
 
+  *(Numbers re-derived 2026-07-06 after the Phase 2.9 energy-conservation fix — the
+  old round_robin figure of 0.5250 included ~0.56 points of phantom energy from a
+  sender-cap bug. The honest round_robin→LP gap is now 1.0 point, not 0.44.)*
+
   Note the served-maximizing LP optimum is *less* equitable (gini 0.365) than round_robin
-  (0.242) — the fairness tension Phase 3's needs-weighted welfare model will address.
+  (0.224) — the fairness tension Phase 3's needs-weighted welfare model will address.
 
 > The LP ceiling is the LP **objective** (`lp_optimal.optimal_metrics`), not an
 > engine-realized run: the engine's greedy per-tick dispatch wouldn't faithfully execute
@@ -175,7 +179,7 @@ hitting the API:
 
 | Scenario | Failure cell | Notes |
 |---|---|---|
-| `haves_havenots__llm.yaml` | clean | live Haiku 4.5 run (Phase 2.8 architecture); served 0.513 vs round_robin 0.525 |
+| `haves_havenots__llm.yaml` | clean | live Haiku 4.5 run (Phase 2.8 architecture, **pre-conservation-fix physics**); served 0.513 vs round_robin-at-the-time 0.525. Post-fix round_robin is 0.5194; a live re-run under corrected physics is a Phase 3 deliverable. |
 
 **Phase 2.8 (2026-06-17, tag `phase2.8-complete`):** added a peer-state summary to every
 plan prompt and made the per-tick share fraction LLM-controlled. The live re-run left every
@@ -199,14 +203,13 @@ To run live, set `ANTHROPIC_API_KEY` and use `--out-dir runs` (instead of
 
 ### Phase 2 known limitations
 
-- **Live Haiku now within 1.2 points of round_robin** on `haves_havenots__llm`
-  (0.513 vs 0.525) after the Phase 2.7 architectural fixes. Phase 2v0 was
-  0.460 (6.5-pt gap). The three fixes (bumped fallback `max_share_kw_per_tick`,
-  physics-aware plan prompt, shorter TTL) closed 80% of the gap to round_robin
-  in a single pass. Gini also improved from 0.48 to 0.40 (more equitable
-  distribution). The remaining 1.2-pt gap may close with further prompt
-  refinement, or it may be Haiku reaching the limit of generic NL coordination
-  on this scenario — Phase 3 sweeps will tell.
+- **Live Haiku reached 0.513 on `haves_havenots__llm`** (Phase 2.7/2.8
+  architecture), 1.2 points behind the round_robin figure of the time (0.525).
+  Phase 2v0 was 0.460 (6.5-pt gap); the Phase 2.7 fixes closed 80% of that
+  deficit and Gini improved from 0.48 to 0.40. **Caveat (2026-07-06):** both
+  numbers predate the Phase 2.9 energy-conservation fix; post-fix round_robin
+  is 0.5194, and the LLM cell needs a live re-run under corrected physics
+  before any comparison is quoted in the paper (Phase 3 deliverable).
 - **`defector_realization: prompt`** is now wired in Phase 2.5 (selfish system
   prompt for plan + react calls when an agent is a defector). The `wrapper`
   realization (per-message payload mutation at the bus) remains the safer

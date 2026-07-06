@@ -94,6 +94,46 @@ def sample_households(scenario: Scenario, rng: np.random.Generator) -> dict[str,
     return households
 
 
+def _transfer_caps(
+    h: Household,
+    s: HouseholdState,
+    *,
+    solar_kw: float,
+    load_kw: float,
+    connected: bool,
+    dt_hours: float,
+) -> tuple[float, float]:
+    """Max export / useful-import power (kW) this house can honor in step().
+
+    Mirrors household.step()'s DC-bypass model exactly (fixed 2026-07-06 —
+    the old caps ignored the sender's own load and clipped receivers to
+    battery absorption, which let settlement book transfers step() could not
+    physically execute):
+
+      sender:   solar surplus passes through directly; the battery adds
+                min(rate, avail/dt) * sqrt(eta) of deliverable power, which
+                must first cover any load deficit; grid import backs a
+                connected sender.
+      receiver: energy serving the load deficit needs no battery headroom
+                (DC bypass); beyond that the battery absorbs at
+                min(rate, headroom/(sqrt(eta)*dt)).
+    """
+    sqrt_eff = math.sqrt(h.rt_efficiency)
+    if dt_hours <= 0:
+        return 0.0, 0.0
+    available_kwh = max(0.0, s.soc_kwh - h.dod_floor_frac * h.battery_kwh)
+    deliverable_batt_kw = min(h.battery_max_rate_kw, available_kwh / dt_hours) * sqrt_eff
+    sender_cap = (solar_kw - load_kw) + deliverable_batt_kw
+    if connected:
+        sender_cap += h.grid_max_kw
+    headroom_kwh = h.battery_kwh - s.soc_kwh
+    absorb_batt_kw = (
+        min(h.battery_max_rate_kw, headroom_kwh / (sqrt_eff * dt_hours)) if sqrt_eff > 0 else 0.0
+    )
+    receiver_cap = max(0.0, load_kw - solar_kw) + absorb_batt_kw
+    return max(0.0, sender_cap), max(0.0, receiver_cap)
+
+
 def run(
     scenario: Scenario,
     decide_transfers: DecideFn | None,
@@ -203,28 +243,18 @@ def run(
             t, states, households, solar_kw, load_kw, grid, neighborhood, scenario.dt_hours
         )
 
-        # Per-house caps. Sender cap (kW out) is limited by battery rate AND
-        # the energy available above the DoD floor (accounting for the sqrt(eta)
-        # discharge leg). Receiver cap (kW in) is limited by battery rate AND
-        # the headroom to capacity (accounting for the sqrt(eta) charge leg).
+        # Per-house caps mirroring step()'s physics exactly (see _transfer_caps).
         sender_caps_kw: dict[str, float] = {}
         receiver_caps_kw: dict[str, float] = {}
         for hid, h in households.items():
-            s = states[hid]
-            sqrt_eff = math.sqrt(h.rt_efficiency)
-            available_kwh = max(0.0, s.soc_kwh - h.dod_floor_frac * h.battery_kwh)
-            sender_caps_kw[hid] = min(
-                h.battery_max_rate_kw,
-                available_kwh * sqrt_eff / scenario.dt_hours if scenario.dt_hours > 0 else 0.0,
+            sender_caps_kw[hid], receiver_caps_kw[hid] = _transfer_caps(
+                h,
+                states[hid],
+                solar_kw=solar_kw[hid],
+                load_kw=load_kw[hid],
+                connected=grid[hid],
+                dt_hours=scenario.dt_hours,
             )
-            headroom_kwh = h.battery_kwh - s.soc_kwh
-            receiver_cap_rate = h.battery_max_rate_kw
-            receiver_cap_headroom = (
-                headroom_kwh / (sqrt_eff * scenario.dt_hours)
-                if sqrt_eff > 0 and scenario.dt_hours > 0
-                else 0.0
-            )
-            receiver_caps_kw[hid] = min(receiver_cap_rate, receiver_cap_headroom)
 
         settlement = settle_transfers(
             neighborhood, requested, grid, sender_caps_kw, receiver_caps_kw
@@ -249,6 +279,14 @@ def run(
                 ), f"SoC out of bounds at {t} for {hid}: {new_s.soc_kwh}"
                 assert new_s.wasted_kwh >= -1e-9
                 assert new_s.unmet_kwh >= -1e-9
+                # Conservation invariant: settlement already validated the
+                # export against _transfer_caps, so step() must achieve it
+                # exactly. A mismatch means receivers were credited energy
+                # this house never sourced (the pre-2026-07-06 bug).
+                assert abs(new_s.achieved_net_export_kw - net_export_kw) <= 1e-9, (
+                    f"export shortfall at {t} for {hid}: "
+                    f"desired {net_export_kw}, achieved {new_s.achieved_net_export_kw}"
+                )
             new_states[hid] = new_s
         states = new_states
 

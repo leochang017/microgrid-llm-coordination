@@ -9,6 +9,8 @@ needs tuning before Phase 2 lands.
 
 from pathlib import Path
 
+import pytest
+
 from sim.engine import run
 from sim.logging import JsonlLogger
 from sim.scenario import load_scenario
@@ -39,23 +41,43 @@ def test_round_robin_no_worse_than_no_coord_on_easy_scenario(tmp_path: Path) -> 
     assert rr_summary["served_load_fraction"] >= nc_summary["served_load_fraction"] - 0.05
 
 
-def test_round_robin_strictly_helps_on_harsh_overnight_outage(tmp_path: Path) -> None:
-    """On the overnight_outage_hard scenario (12 h outage with no solar to recharge,
-    high load, heterogeneous batteries) round_robin must STRICTLY improve on
-    no_coordination on at least one of: unmet kWh (lower), Gini (lower). This is
-    the test that proves coordination does something — the easy scenario's
-    sub-test passes vacuously because both strategies hit Gini=0."""
+def test_round_robin_cannot_create_energy_on_harsh_overnight_outage(tmp_path: Path) -> None:
+    """Conservation regression for overnight_outage_hard (2026-07-06 correction).
+
+    The pre-Phase-2.9 version of this test asserted round_robin saves >=10 kWh
+    of unmet load here. That entire saving was PHANTOM energy from the old
+    sender-cap bug: at night every house's load (3 kW) exceeds its battery's
+    deliverable power (~1.9 kW), so nobody has anything to spare — with
+    conservation enforced, round_robin's transfers are all clipped to zero and
+    it must land EXACTLY on no_coordination's numbers. Real coordination
+    headroom on this scenario exists (LP ceiling 0.8642 vs 0.8300) but the
+    5%-share heuristic cannot reach it; that gap is Phase 3 material.
+    """
     scenario = _SCENARIOS_DIR / "overnight_outage_hard.yaml"
     rr_summary = _run_to_summary(scenario, round_robin, tmp_path / "rr")
     nc_summary = _run_to_summary(scenario, no_coord, tmp_path / "nc")
-    # Round-robin must reduce total unmet load by at least 10 kWh (review fix I2).
-    assert rr_summary["unmet_kwh_total"] <= nc_summary["unmet_kwh_total"] - 10.0, (
+    assert rr_summary["unmet_kwh_total"] == pytest.approx(nc_summary["unmet_kwh_total"], abs=1e-6)
+    assert rr_summary["served_load_fraction"] == pytest.approx(
+        nc_summary["served_load_fraction"], abs=1e-9
+    )
+    assert rr_summary["gini_welfare"] <= nc_summary["gini_welfare"] + 1e-9
+
+
+def test_round_robin_genuinely_helps_on_lp_smoke(tmp_path: Path) -> None:
+    """The 'coordination actually does something' check, on a scenario where
+    that is physically true post-conservation-fix: synthetic_lp_smoke's mixed
+    battery sizes leave real deliverable surplus, and the load-aware receiver
+    cap lets deficit houses absorb it. round_robin saves ~4.7 kWh of unmet
+    load (10.6 -> 5.9) and executes real transfers.
+    """
+    scenario = _SCENARIOS_DIR / "synthetic_lp_smoke.yaml"
+    rr_summary = _run_to_summary(scenario, round_robin, tmp_path / "rr")
+    nc_summary = _run_to_summary(scenario, no_coord, tmp_path / "nc")
+    assert rr_summary["unmet_kwh_total"] <= nc_summary["unmet_kwh_total"] - 4.0, (
         f"round_robin unmet={rr_summary['unmet_kwh_total']:.1f} vs "
         f"no_coord unmet={nc_summary['unmet_kwh_total']:.1f}"
     )
-    # And Gini (welfare inequality) must not be worse.
     assert rr_summary["gini_welfare"] <= nc_summary["gini_welfare"]
-    # And round_robin must actually perform transfers (sanity check the strategy ran).
     assert rr_summary["transfer_count"] > 0
 
 
