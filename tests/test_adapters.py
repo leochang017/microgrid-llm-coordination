@@ -168,3 +168,28 @@ def test_nrel_noise_pinned_cross_platform_constant() -> None:
     assert solar.get_kw(datetime(2024, 7, 1, 9, 30)) == pytest.approx(
         0.45454901928641145, rel=1e-12
     )
+
+
+def test_resstock_kw_conversion_uses_native_interval_not_scenario_dt() -> None:
+    """ResStock kWh-per-interval must be divided by the DATA's interval (15 min),
+    not the simulator tick length — pre-2026-07-06 a dt=0.5 scenario silently
+    halved every real load."""
+    at = datetime(2024, 7, 1, 0, 10)
+    kw_at_quarter = ResStockLoad(path=_FIXTURES / "resstock_sample.csv", dt_hours=0.25).get_kw(at)
+    kw_at_half = ResStockLoad(path=_FIXTURES / "resstock_sample.csv", dt_hours=0.5).get_kw(at)
+    assert kw_at_quarter == pytest.approx(0.31 / 0.25, abs=1e-12)
+    assert kw_at_half == kw_at_quarter
+
+
+def test_resstock_period_ending_timestamps_are_realigned() -> None:
+    """Real ResStock files stamp each row with the interval END (first row
+    00:15 covering 00:00-00:15). The adapter must shift them back so lookups
+    at 00:00 return the first interval instead of crashing/lagging one tick."""
+    lp = ResStockLoad(path=_FIXTURES / "resstock_period_ending_sample.csv", dt_hours=0.25)
+    assert lp.get_kw(datetime(2024, 7, 1, 0, 0)) == pytest.approx(0.31 / 0.25, abs=1e-12)
+    assert lp.horizon()[0] == datetime(2024, 7, 1, 0, 0)
+    # And it must agree everywhere with the period-beginning twin fixture.
+    twin = ResStockLoad(path=_FIXTURES / "resstock_sample.csv", dt_hours=0.25)
+    for minutes in (0, 10, 15, 40):
+        t = datetime(2024, 7, 1, 0, minutes)
+        assert lp.get_kw(t) == twin.get_kw(t)

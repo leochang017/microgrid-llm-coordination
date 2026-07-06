@@ -38,10 +38,18 @@ class ResStockLoad:
 
     Parameters:
         path: A .csv or .parquet file. The path's extension determines the reader.
-        dt_hours: The simulator's tick length. Used to convert ResStock's
-            per-interval kWh to instantaneous kW. ResStock is natively 15-min
-            (dt=0.25), but the adapter doesn't enforce that — caller's
-            responsibility to pass the right value.
+        dt_hours: The simulator's tick length. Accepted for interface
+            compatibility but NOT used for the kWh->kW conversion — that uses
+            the data's own native interval (inferred from the first two
+            timestamps), because dividing per-interval energy by the *scenario*
+            tick length silently rescaled every load whenever dt != 0.25
+            (fixed 2026-07-06).
+
+    Timestamp convention: real ResStock files stamp each row with the interval
+    END (first sample 00:15 covering 00:00-00:15). When the first sample's
+    time-of-day equals exactly one native interval past midnight, the whole
+    index is shifted back by one interval so rows are period-beginning; files
+    already starting at midnight are left untouched.
 
     `get_kw(t)` returns kW at the most recent sample at or before `t`, forward-
     filling up to 1 h. Longer gaps raise — data must be clean.
@@ -68,10 +76,22 @@ class ResStockLoad:
 
         if _ENERGY_COL not in df.columns:
             raise ValueError(f"{p}: missing column {_ENERGY_COL!r}; got {list(df.columns)}")
+        if len(df) < 2:
+            raise ValueError(f"{p}: need at least 2 rows to infer the native interval")
+
+        native = df[time_col].iloc[1] - df[time_col].iloc[0]
+        first = df[time_col].iloc[0]
+        # Period-ending detection: first sample sits exactly one interval past
+        # midnight (00:15 for 15-min data) -> shift back to period-beginning.
+        if first.normalize() + native == first:
+            df[time_col] = df[time_col] - native
 
         self.df = df.set_index(time_col)
         self.path = p
         self.dt_hours = dt_hours
+        self.native_dt_hours = float(native.total_seconds()) / 3600.0
+        if self.native_dt_hours <= 0:
+            raise ValueError(f"{p}: non-increasing timestamps")
 
     def get_kw(self, t: datetime) -> float:
         idx = self.df.index.searchsorted(t, side="right") - 1
@@ -84,8 +104,8 @@ class ResStockLoad:
                 "data needs cleaning"
             )
         kwh_in_interval = float(self.df.iloc[idx][_ENERGY_COL])
-        # Convert kWh-per-interval to instantaneous kW.
-        return kwh_in_interval / self.dt_hours
+        # Convert kWh-per-native-interval to instantaneous kW.
+        return kwh_in_interval / self.native_dt_hours
 
     def horizon(self) -> tuple[datetime, datetime]:
         return (self.df.index[0].to_pydatetime(), self.df.index[-1].to_pydatetime())
