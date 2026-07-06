@@ -4,7 +4,7 @@ A research project asking: can a population of LLM agents — one per household 
 
 The contribution is on the CS/ML axis (natural-language coordination, robustness, explainability), not power systems. Classical optimization handles fairness under strong assumptions, struggles with robustness, and doesn't attempt explainability. That gap is what this project explores.
 
-**Status:** Phase 1 + Phase 1.6 + **Phase 2 LLM agent layer (through Phase 2.8)** — ✅ **complete.** 188 tests pass (mock-LLM only), ruff + mypy --strict clean, 1 live-Haiku reference run shipped (Phase 2.8 architecture).
+**Status:** Phase 1 + 1.6 + **Phase 2 LLM agent layer (through 2.8)** + **Phase 2.9 correctness hardening** — ✅ **complete.** 243 tests pass (mock-LLM only), ruff + mypy --strict clean. The shipped live-Haiku reference run predates the Phase 2.9 physics fixes (see the Phase 2.9 section).
 
 📐 [Phase 1 spec](docs/superpowers/specs/2026-05-14-phase1-simulator-design.md) · [Phase 1.6 spec](docs/superpowers/specs/2026-05-29-phase1.6-hardening-design.md) · [Phase 2 spec](docs/superpowers/specs/2026-06-13-phase2-llm-agent-design.md) · 📋 [Phase 1 plan](docs/superpowers/plans/2026-05-14-phase1-simulator.md) · [Phase 1.6 plan](docs/superpowers/plans/2026-05-29-phase1.6-hardening.md) · [Phase 2 plan](docs/superpowers/plans/2026-06-13-phase2-llm-agent.md) · 🧠 [Project context (CLAUDE.md)](CLAUDE.md)
 
@@ -38,7 +38,7 @@ Add `--no-strict` to disable the SoC-bound assertions while hacking on physics.
 ## Run the tests
 
 ```bash
-pytest                  # 54 tests
+pytest                  # 243 tests
 ruff check sim tests scripts
 mypy
 ```
@@ -146,13 +146,13 @@ Advisor-gated work establishing that the Phase 2 LLM layer has real room to add 
   | no_coordination | 0.4560 | 195.8 | 0.4851 | 0.00% |
   | round_robin | 0.5194 | 173.0 | 0.2244 | 0.00% |
   | round_robin_overlay | 0.5194 | 173.0 | 0.2217 | 0.00% |
-  | lp_optimal | 0.5294 | 169.4 | 0.3653 | 100.00% |
+  | lp_optimal | 0.5294 | 169.4 | 0.3617 | 100.00% |
 
   *(Numbers re-derived 2026-07-06 after the Phase 2.9 energy-conservation fix — the
   old round_robin figure of 0.5250 included ~0.56 points of phantom energy from a
   sender-cap bug. The honest round_robin→LP gap is now 1.0 point, not 0.44.)*
 
-  Note the served-maximizing LP optimum is *less* equitable (gini 0.365) than round_robin
+  Note the served-maximizing LP optimum is *less* equitable (gini 0.362) than round_robin
   (0.224) — the fairness tension Phase 3's needs-weighted welfare model will address.
 
 > The LP ceiling is the LP **objective** (`lp_optimal.optimal_metrics`), not an
@@ -223,6 +223,52 @@ To run live, set `ANTHROPIC_API_KEY` and use `--out-dir runs` (instead of
   Mock-LLM tests cover them in `tests/test_llm_agent_failure_axes.py`; live
   reference runs ship in a future phase.
 - **Not deployment-ready.** Research artifact only.
+
+
+## Phase 2.9 — Correctness hardening (2026-07-07)
+
+A full-repo adversarial review (65 verified findings) triggered an 18-task hardening pass
+before Phase 3. Everything below is TDD'd; the suite grew 188 → 243 tests.
+
+**Physics fixes that changed shipped numbers:**
+
+- **Energy conservation.** The engine's sender caps ignored the sender's own load, so
+  settlement could credit receivers energy that was never sourced. Round-robin's entire
+  "30 kWh saving" on `overnight_outage_hard` was phantom (post-fix: rr == no_coord
+  exactly, while the LP ceiling shows 73.8 kWh of real headroom the 5%-share heuristic
+  can't reach). Showcase round_robin: 0.5250 → **0.5194**; the honest rr→LP gap is
+  **1.0 point**, not 0.44. Strict mode now asserts `achieved == desired` export per tick.
+- **Receiver caps are load-aware** (DC bypass): a full-battery house with unmet load can
+  now receive, matching `step()` physics.
+- **Real-data solar was shifted ~+6 h** (NSRDB fetched in UTC, consumed as local time).
+  Corrected `24h_resstock_outage` numbers: no_coord **0.8425** / round_robin **0.8582**
+  (a real 21.4 kWh saving, previously overstated as 35.7) / LP ceiling **0.9111** —
+  a genuine 5.3-point coordination gap on real data. `NRELSolar` now validates that
+  solar noon lands at local noon and refuses UTC-shaped files; ResStock loads use the
+  data's native 15-min interval and period-ending timestamps are realigned.
+- **LP hardening:** curtailment slack (no more infeasibility crashes on solar-rich
+  islanded ticks) + engine-feasibility send/recv bounds; showcase ceiling unchanged
+  (0.529368, regression-pinned).
+
+**The zero-LLM control (new `llm_fallback` strategy, $0 to run):** identical llm_agent
+machinery with the LLM disabled scores **0.518** on the showcase clean cell — within
+0.15 points of round_robin and above the Phase 2.8 live Haiku run (0.513, old physics).
+The hand-tuned executor, not LLM reasoning, currently accounts for clean-cell
+performance; every Phase 3 comparison must beat this control. A `llm: messaging: off`
+ablation flag isolates whether NL messaging causally affects allocations.
+
+**Tooling for Phase 3:** `run.py --seed`, `compare.py --seeds a,b,c` (per-seed tables +
+paired aggregate; cross-seed spread on this scenario family is ~20 points, dwarfing
+single-seed differences), unclamped gap_closed (negative = worse than round_robin;
+n/a = no headroom), real `llm_cost_usd_estimated` from fresh-call tokens,
+`failure_modes_active` recorded in every summary, react-queue aging (19.5% of
+negotiation messages were being silently destroyed by a queue-clobber bug), and
+golden-number regression pins for every showcase metric.
+
+Deferred (tracked in the Phase 2.9 spec): INFORM-only peer state + binding negotiation
+(prerequisite for valid failure-cell experiments), needs-weighted welfare, the
+explainability instrument, live re-runs under corrected physics.
+
 
 ## License
 
