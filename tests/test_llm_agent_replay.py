@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 import yaml
 
 from sim.agents.cache import PromptCache
@@ -14,29 +15,42 @@ from sim.agents.llm import LLMResponse, MockLLMClient
 ROOT = Path(__file__).resolve().parent.parent
 SCEN_DIR = ROOT / "configs" / "scenarios"
 
+_POLICY_DICT = {
+    "sharing_intent": "balanced",
+    "share_min_soc_frac": 0.40,
+    "max_share_kw_per_tick": 1.0,
+    "recipient_priority": [
+        {"circle": "owner", "weight": 1.0},
+        {"circle": "geographic", "weight": 0.5},
+    ],
+    "distrusted_peers": [],
+    "request_urgency": "normal",
+    "belief_note": "",
+    "ttl_ticks": 4,
+}
 
-def _canned_mock(tmp_path: Path) -> MockLLMClient:
-    policy_yaml = yaml.safe_dump(
-        {
-            "sharing_intent": "balanced",
-            "share_min_soc_frac": 0.40,
-            "max_share_kw_per_tick": 1.0,
-            "recipient_priority": [
-                {"circle": "owner", "weight": 1.0},
-                {"circle": "geographic", "weight": 0.5},
-            ],
-            "distrusted_peers": [],
-            "request_urgency": "normal",
-            "belief_note": "",
-            "ttl_ticks": 4,
-        }
-    )
+
+def _canned_mock(tmp_path: Path, mode: str = "text") -> MockLLMClient:
+    """mode="tool" mirrors live runs (Anthropic tool-use returns tool_input);
+    mode="text" is the legacy YAML-code-fence path. Pre-2026-07-07 every e2e
+    mock test used ONLY the text path, so the branch the paper's live runs
+    actually take (agent.py's tool_input parse) had zero replay coverage."""
+    if mode == "tool":
+        plan_resp = LLMResponse(
+            text="",
+            tokens_in=400,
+            tokens_out=160,
+            tool_input={**_POLICY_DICT, "reflection": "r"},
+        )
+    else:
+        policy_yaml = yaml.safe_dump(_POLICY_DICT)
+        plan_resp = LLMResponse(
+            text=f"r\n\n```yaml\n{policy_yaml}\n```", tokens_in=400, tokens_out=160
+        )
     return MockLLMClient(
         cache=PromptCache(local_dir=tmp_path),
         canned={
-            "You are household": LLMResponse(
-                text=f"r\n\n```yaml\n{policy_yaml}\n```", tokens_in=400, tokens_out=160
-            ),
+            "You are household": plan_resp,
             "You are reacting": LLMResponse(
                 text="ACCEPT\nrationale: ok", tokens_in=80, tokens_out=20
             ),
@@ -44,7 +58,8 @@ def _canned_mock(tmp_path: Path) -> MockLLMClient:
     )
 
 
-def test_two_runs_with_same_mock_are_byte_identical(tmp_path: Path) -> None:
+@pytest.mark.parametrize("mode", ["text", "tool"])
+def test_two_runs_with_same_mock_are_byte_identical(tmp_path: Path, mode: str) -> None:
     from sim.agents.protocol import MessageBus
     from sim.engine import run
     from sim.logging import JsonlLogger
@@ -64,7 +79,7 @@ def test_two_runs_with_same_mock_are_byte_identical(tmp_path: Path) -> None:
     def one_run(label: str) -> Path:
         out = tmp_path / label
         out.mkdir()
-        mock = _canned_mock(tmp_path / f"mock_{label}")
+        mock = _canned_mock(tmp_path / f"mock_{label}", mode)
         llm_strat._make_llm_client = lambda model, run_dir: mock  # type: ignore[attr-defined]
         bus = MessageBus(neighborhood=nb, seed=s.seed)
         run(

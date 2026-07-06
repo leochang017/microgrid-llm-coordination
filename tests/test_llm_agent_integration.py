@@ -1,5 +1,5 @@
 """End-to-end smoke: LLM strategy runs on haves_havenots__llm.yaml with mock LLM,
-produces all four output files, and beats round_robin on served-load fraction."""
+produces all four output files, and stays within 10% of round_robin on served-load fraction."""
 
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ def _canned_mock(tmp_path: Path) -> MockLLMClient:
     )
 
 
-def test_llm_agent_beats_round_robin_on_haves_havenots(tmp_path: Path) -> None:
+def test_llm_agent_pipeline_integrates_on_haves_havenots(tmp_path: Path) -> None:
     from sim.agents.protocol import MessageBus
     from sim.engine import run
     from sim.logging import JsonlLogger

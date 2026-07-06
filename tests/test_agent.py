@@ -655,3 +655,43 @@ def test_react_queue_ages_out_stale_entries_with_counter(tmp_path) -> None:
     a.observe(t=t0, own_state=own, peer_states={}, inbox=[], t_idx=2)
     assert a.pending_react == []
     assert a.n_react_dropped_stale == 1
+
+
+def test_malformed_tool_input_counts_parse_failure_and_keeps_policy(tmp_path) -> None:
+    """The tool-use branch the LIVE runs take (agent.py plan(): tool_input is
+    preferred) had zero failure-path coverage pre-2026-07-07 — yet the paper's
+    policy_parse_failures statistic flows through exactly this branch."""
+    mock = MockLLMClient(
+        cache=PromptCache(local_dir=tmp_path),
+        canned={
+            "You are household": LLMResponse(
+                text="", tokens_in=10, tokens_out=5, tool_input={"bogus": True}
+            )
+        },
+    )
+    a = _bare_agent(tmp_path)
+    a.llm_client = mock
+    before = a.policy
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.plan(t=t0)
+    assert a.n_plan_parse_failures == 1
+    assert a.policy is before  # keeps previous policy on a single failure
+
+
+def test_three_malformed_tool_inputs_trigger_round_robin_fallback(tmp_path) -> None:
+    mock = MockLLMClient(
+        cache=PromptCache(local_dir=tmp_path),
+        canned={
+            "You are household": LLMResponse(
+                text="", tokens_in=10, tokens_out=5, tool_input={"bogus": True}
+            )
+        },
+    )
+    a = _bare_agent(tmp_path)
+    a.llm_client = mock
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.plan(t=t0)
+    a.plan(t=t0)
+    a.plan(t=t0)
+    assert a.policy.belief_note == "(fallback to geographic round-robin)"
+    assert a.n_plan_fallbacks == 1
