@@ -149,21 +149,78 @@ def test_rt_efficiency_on_charge() -> None:
 
 
 def test_rt_efficiency_full_cycle() -> None:
-    """Charge X kWh into the battery, drain it: end up with eta * X served to load."""
+    """Charge X kWh into the battery, drain it: end up with eta * X served to load.
+
+    Asserts on the DISCHARGE step's actual output (soc, unmet, wasted), not
+    test-side arithmetic — the pre-2026-07-06 version of this test was a
+    tautology that passed even with the discharge-leg sqrt(eta) removed.
+    """
     h = make_house(rt_efficiency=0.9, battery_max_rate_kw=20.0, battery_kwh=20.0)
     s = HouseholdState(soc_kwh=0.0, last_solar_kw=0.0, last_load_kw=0.0, grid_connected=False)
-    # Charge for 1 hour at 10 kW
+    # Charge for 1 hour at 10 kW: soc = sqrt(0.9) * 10.
     s = step(
         h, s, solar_kw=10.0, load_kw=0.0, desired_net_export_kw=0.0, grid_status=False, dt_hours=1.0
     )
-    soc_after_charge = s.soc_kwh
-    # Discharge what's in the battery (large enough load to drain it fully)
+    assert s.soc_kwh == pytest.approx(math.sqrt(0.9) * 10.0, abs=1e-9)
+    # Discharge into a 20 kW load for 1 h: the battery can deliver exactly
+    # soc * sqrt(0.9) = 0.9 * 10 = 9 kWh, so unmet must be 20 - 9 = 11 kWh
+    # and the battery must land exactly on empty.
     s = step(
         h, s, solar_kw=0.0, load_kw=20.0, desired_net_export_kw=0.0, grid_status=False, dt_hours=1.0
     )
-    # Original input was 10 kWh; full cycle returns 0.9 * 10 = 9 kWh to the load.
-    delivered_to_load = math.sqrt(0.9) * soc_after_charge
-    assert delivered_to_load == pytest.approx(9.0, abs=1e-6)
+    assert s.soc_kwh == pytest.approx(0.0, abs=1e-9)
+    assert s.unmet_kwh == pytest.approx(20.0 - 9.0, abs=1e-9)
+    served_from_battery = 20.0 - s.unmet_kwh
+    assert served_from_battery == pytest.approx(0.9 * 10.0, abs=1e-9)
+    # The discharge-leg conversion loss is logged as wasted.
+    assert s.wasted_kwh == pytest.approx(math.sqrt(0.9) * 10.0 - 9.0, abs=1e-9)
+
+
+def test_receive_leg_charges_battery_with_sqrt_eta() -> None:
+    """Negative desired_net_export (the receive leg of every P2P transfer).
+
+    Receiving 4 kW for 0.25 h with eta=0.9 and no load: 1 kWh arrives on the
+    DC bus, the battery stores sqrt(0.9) of it, the conversion loss is wasted.
+    """
+    h = make_house(rt_efficiency=0.9, battery_max_rate_kw=5.0, battery_kwh=13.5)
+    s0 = HouseholdState(soc_kwh=2.0, last_solar_kw=0.0, last_load_kw=0.0, grid_connected=False)
+    s1 = step(
+        h,
+        s0,
+        solar_kw=0.0,
+        load_kw=0.0,
+        desired_net_export_kw=-4.0,
+        grid_status=False,
+        dt_hours=0.25,
+    )
+    assert s1.soc_kwh == pytest.approx(2.0 + math.sqrt(0.9) * 1.0, abs=1e-9)
+    assert s1.wasted_kwh == pytest.approx(1.0 - math.sqrt(0.9) * 1.0, abs=1e-9)
+    assert s1.unmet_kwh == 0.0
+    assert s1.achieved_net_export_kw == pytest.approx(-4.0, abs=1e-12)
+
+
+def test_export_shortfall_cuts_export_before_load() -> None:
+    """When the battery can't cover load + promised export, export is cut first.
+
+    Case 1: rate 2 kW, load 1 kW, promised export 3 kW, dt 1 h, islanded.
+    Deliverable is 2 kWh against a 4 kWh need -> the 2 kWh shortfall lands
+    entirely on the export (achieved 1 kW), load fully served.
+    """
+    h = make_house(rt_efficiency=1.0, battery_max_rate_kw=2.0, battery_kwh=10.0)
+    s0 = HouseholdState(soc_kwh=10.0, last_solar_kw=0.0, last_load_kw=0.0, grid_connected=False)
+    s1 = step(
+        h, s0, solar_kw=0.0, load_kw=1.0, desired_net_export_kw=3.0, grid_status=False, dt_hours=1.0
+    )
+    assert s1.achieved_net_export_kw == pytest.approx(1.0, abs=1e-9)
+    assert s1.unmet_kwh == pytest.approx(0.0, abs=1e-9)
+    assert s1.soc_kwh == pytest.approx(8.0, abs=1e-9)
+    # Case 2: shortfall exceeds the export -> export goes to zero and the
+    # remainder is unmet load. load 3 kW, export 1 kW, deliverable 2 kWh.
+    s2 = step(
+        h, s0, solar_kw=0.0, load_kw=3.0, desired_net_export_kw=1.0, grid_status=False, dt_hours=1.0
+    )
+    assert s2.achieved_net_export_kw == pytest.approx(0.0, abs=1e-9)
+    assert s2.unmet_kwh == pytest.approx(1.0, abs=1e-9)
 
 
 def test_export_to_peers_drains_battery() -> None:
