@@ -1,0 +1,67 @@
+"""Tests for the zero-LLM control strategy + messaging-off ablation (P2.9 T13)."""
+
+from __future__ import annotations
+
+import dataclasses
+from pathlib import Path
+
+from sim.engine import run
+from sim.logging import JsonlLogger
+from sim.scenario import load_scenario
+from sim.strategies import llm_agent as llm_strat
+from sim.strategies import llm_fallback
+
+_SCENARIO = Path("configs/scenarios/haves_havenots__llm.yaml")
+
+
+def _run(sc, tmp_path: Path, sub: str):  # type: ignore[no-untyped-def]
+    logger = JsonlLogger(tmp_path / sub, scenario_id=sc.scenario_id)
+    summary = run(sc, None, logger, prepare=llm_fallback.prepare)
+    logger.close()
+    return summary
+
+
+def test_llm_fallback_runs_with_zero_llm_calls(tmp_path: Path) -> None:
+    """End-to-end on the showcase LLM scenario: no plan calls, no react calls,
+    no cache traffic — but real transfers from the pure-Python executor."""
+    sc = load_scenario(_SCENARIO)
+    summary = _run(sc, tmp_path, "control")
+    counts = llm_strat.current_call_counts()
+    assert counts["reflect_plan"] == 0
+    assert counts["react_msg"] == 0
+    assert counts["cache_hits"] == 0
+    assert counts["cache_misses"] == 0
+    assert summary["transfer_count"] > 0
+    assert 0.0 < summary["served_load_fraction"] < 1.0
+
+
+def test_llm_fallback_is_deterministic(tmp_path: Path) -> None:
+    sc = load_scenario(_SCENARIO)
+    a = _run(sc, tmp_path, "a")
+    b = _run(sc, tmp_path, "b")
+    assert a == b
+
+
+def test_messaging_off_flag_suppresses_all_bus_traffic(tmp_path: Path) -> None:
+    """llm.messaging: off must keep every agent message off the bus while
+    transfers still flow — the ablation that isolates whether NL messaging
+    causally affects allocations."""
+    from sim.agents.protocol import MessageBus
+    from sim.network import build_overlay_neighborhood
+
+    sc = load_scenario(_SCENARIO)
+    sc = dataclasses.replace(sc, llm={**sc.llm, "messaging": "off"})
+    nb = build_overlay_neighborhood(
+        rows=sc.rows,
+        cols=sc.cols,
+        affiliations=sc.affiliations,
+        bus_max_kw=sc.bus_max_kw,
+        bus_loss_factor=sc.bus_loss_factor,
+    )
+    bus = MessageBus(neighborhood=nb, seed=sc.seed)
+    logger = JsonlLogger(tmp_path / "moff", scenario_id=sc.scenario_id)
+    summary = run(sc, None, logger, prepare=llm_fallback.prepare, message_bus=bus)
+    logger.close()
+    messages = (tmp_path / "moff" / "messages.jsonl").read_text().strip()
+    assert messages == ""
+    assert summary["transfer_count"] > 0

@@ -201,6 +201,13 @@ class LLMAgent:
     last_grid_islanded: bool = False
     react_max_per_tick: int = 3
 
+    # Phase 2.9: when True the agent NEVER calls the LLM — it keeps its initial
+    # policy forever and act() runs pure-Python. This is the zero-LLM control
+    # (sim/strategies/llm_fallback.py) that bounds the LLM's marginal
+    # contribution: any served-load difference between llm_agent and
+    # llm_fallback is attributable to LLM-authored policies, not the executor.
+    llm_disabled: bool = False
+
     # Most recent observation snapshot — used by act() for below-mean SoC filter
     last_peer_states: dict[str, dict[str, Any]] = field(default_factory=dict)
 
@@ -290,6 +297,8 @@ class LLMAgent:
     # should_replan + plan (LLM)
     # ------------------------------------------------------------------
     def should_replan(self, grid_islanded: bool, t: datetime) -> bool:
+        if self.llm_disabled:
+            return False
         del t  # not used; kept in the signature for future trigger conditions
         """True if a plan() call is warranted this tick.
 
@@ -502,6 +511,9 @@ class LLMAgent:
     # ------------------------------------------------------------------
     def react_to_pending(self, t: datetime) -> list[Message]:
         """Handle up to react_max_per_tick pending REQUEST/OFFER this tick. Excess re-queued."""
+        if self.llm_disabled:
+            self.pending_react = []
+            return []
         out: list[Message] = []
         n = min(len(self.pending_react), self.react_max_per_tick)
         handled = self.pending_react[:n]

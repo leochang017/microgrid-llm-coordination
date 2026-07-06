@@ -51,6 +51,10 @@ class _AgentRegistry:
     defector_wrapper: DefectorWrapper
     tick_index: dict[datetime, int] = field(default_factory=dict)
     next_tick_idx: int = 0
+    # Phase 2.9 messaging-off ablation: when False, no agent message reaches
+    # the bus (scenario llm.messaging: "off"). Transfers still flow — this
+    # isolates whether NL messaging causally affects allocations.
+    messaging_enabled: bool = True
 
     def t_idx(self, t: datetime) -> int:
         if t not in self.tick_index:
@@ -99,12 +103,14 @@ def prepare(
     message_bus: MessageBus | None = None,
     run_dir: Path | None = None,
     llm_client_factory: LLMClientFactory | None = None,
+    disable_llm: bool = False,
     **_: Any,
 ) -> DecideFn:
     """Engine hook. Returns a ``decide_transfers`` callable bound to a fresh registry.
 
     Pass ``llm_client_factory`` to inject a test client (e.g., MockLLMClient).
     Defaults to ``_make_llm_client`` which builds an ``AnthropicLLMClient``.
+    ``disable_llm=True`` builds the zero-LLM control (see llm_fallback.py).
     """
     global _REGISTRY
     del solar, loads
@@ -165,6 +171,7 @@ def prepare(
             noise=noise,
             system_prompt_plan=plan_prompt,
             system_prompt_react=react_prompt,
+            llm_disabled=disable_llm,
             household_context={
                 "battery_kwh": float(hh.battery_kwh),
                 "battery_max_rate_kw": float(hh.battery_max_rate_kw),
@@ -180,6 +187,7 @@ def prepare(
         agents=agents,
         bus=bus,
         defector_wrapper=wrapper,
+        messaging_enabled=str(scenario.llm.get("messaging", "on")).lower() != "off",
     )
     return decide_transfers
 
@@ -233,8 +241,9 @@ def decide_transfers(
     # 4. React to pending messages
     for agent in reg.agents.values():
         replies = agent.react_to_pending(t=t)
-        for m in replies:
-            reg.bus.send(reg.defector_wrapper.maybe_corrupt(m))
+        if reg.messaging_enabled:
+            for m in replies:
+                reg.bus.send(reg.defector_wrapper.maybe_corrupt(m))
 
     # 5. Act: collect transfers + outbound messages
     all_transfers: list[Transfer] = []
@@ -255,8 +264,9 @@ def decide_transfers(
             dt_hours=dt_hours,
         )
         all_transfers.extend(transfers)
-        for m in outbox:
-            reg.bus.send(reg.defector_wrapper.maybe_corrupt(m))
+        if reg.messaging_enabled:
+            for m in outbox:
+                reg.bus.send(reg.defector_wrapper.maybe_corrupt(m))
 
     # 6. Age policies
     for agent in reg.agents.values():
