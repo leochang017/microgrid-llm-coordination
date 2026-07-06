@@ -107,6 +107,80 @@ def test_lp_dominates_all_other_strategies(tmp_path: Path) -> None:
         assert served["lp_optimal"] >= served[s] - 1e-6, (s, served)
 
 
+def test_lp_feasible_with_surplus_solar_on_islanded_houses() -> None:
+    """Excess islanded solar must be curtailable, not an infeasibility crash.
+
+    Pre-Phase-2.9 the power balance was a strict equality with no curtailment
+    slack: 12 kW of solar against ~8.5 kW of total system absorption (served 2
+    + charge 4 + max bus burn 2.5) made the LP hard-crash with
+    'RuntimeError: LP failed ... infeasible' — and the LP had never been solved
+    on a scenario with nonzero PV. Post-fix, the curt variable absorbs the
+    surplus exactly like the engine's wasted-energy accounting, and both loads
+    are fully served.
+    """
+    start = datetime(2018, 7, 1, 12, 0)
+    dt = 0.25
+    sc = Scenario(
+        scenario_id="lp_solar_rich",
+        start=start,
+        end=start + timedelta(hours=dt),
+        dt_hours=dt,
+        seed=1,
+        rows=1,
+        cols=2,
+        bus_max_kw=50.0,
+        bus_loss_factor=0.05,
+        strategy="lp_optimal",
+        data_source="synthetic",
+        household_sampling={
+            "pv_kw_peak": [0.0, 0.0],
+            "battery_kwh": [10.0, 10.0],
+            "rt_efficiency": 1.0,
+            "dod_floor_frac": 0.0,
+        },
+        outages=(
+            OutageWindow(
+                start=start, end=start + timedelta(hours=dt), affected_houses=("r0c0", "r0c1")
+            ),
+        ),
+    )
+    hh = {
+        "r0c0": dataclasses.replace(_h("r0c0", 10.0, 2.0), pv_kw_peak=1.0),
+        "r0c1": _h("r0c1", 10.0, 2.0),
+    }
+    solar = _Const(12.0)  # r0c0 sees 12 kW (pv_kw_peak=1), r0c1 sees 0
+    loads = {"r0c0": _Const(1.0), "r0c1": _Const(1.0)}
+    nbhd = build_overlay_neighborhood(
+        rows=1, cols=2, affiliations={}, bus_max_kw=50.0, bus_loss_factor=0.05
+    )
+    metrics = lp_optimal.optimal_metrics(sc, hh, solar, loads, nbhd)
+    assert metrics["served_load_fraction"] == 1.0
+
+
+def test_lp_ceiling_regression_haves_havenots() -> None:
+    """The showcase ceiling must not move when LP internals change.
+
+    Pinned 2026-07-06 (pre- and post- curtailment-slack + send/recv bounds:
+    verified identical). Update ONLY on an intentional physics/LP change.
+    """
+    import numpy as np
+
+    from sim.engine import _build_data, sample_households
+
+    sc = load_scenario("configs/scenarios/haves_havenots.yaml")
+    hh = sample_households(sc, np.random.default_rng(sc.seed))
+    nbhd = build_overlay_neighborhood(
+        sc.rows,
+        sc.cols,
+        sc.affiliations,
+        bus_max_kw=sc.bus_max_kw,
+        bus_loss_factor=sc.bus_loss_factor,
+    )
+    solar, loads = _build_data(sc, hh)
+    ceiling = lp_optimal.optimal_served_fraction(sc, hh, solar, loads, nbhd)
+    assert abs(ceiling - 0.529368385) < 5e-7
+
+
 def test_lp_run_deterministic(tmp_path: Path) -> None:
     a = _run_strategy("lp_optimal", tmp_path / "a")
     b = _run_strategy("lp_optimal", tmp_path / "b")

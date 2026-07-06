@@ -33,7 +33,7 @@ from sim.network import Neighborhood
 from sim.scenario import Scenario
 from sim.types import Transfer
 
-_VAR_KINDS = ("ch", "dis", "imp", "exp", "send", "recv", "served")
+_VAR_KINDS = ("ch", "dis", "imp", "exp", "send", "recv", "served", "curt")
 _TINY = 1e-9
 
 
@@ -125,14 +125,24 @@ def _solve_lp(
         floor = h.dod_floor_frac * cap
         rate = h.battery_max_rate_kw
         gmax = h.grid_max_kw
+        se = math.sqrt(h.rt_efficiency)
         for k in range(nT):
             bounds[col[("ch", hid, k)]] = (0.0, rate)
             bounds[col[("dis", hid, k)]] = (0.0, rate)
             connected = grid_at[(hid, k)]
             bounds[col[("imp", hid, k)]] = (0.0, gmax if connected else 0.0)
             bounds[col[("exp", hid, k)]] = (0.0, gmax if connected else 0.0)
-            bounds[col[("send", hid, k)]] = (0.0, neighborhood.bus_max_kw)
-            bounds[col[("recv", hid, k)]] = (0.0, neighborhood.bus_max_kw)
+            # Engine-feasibility bounds (Phase 2.9): a house can't push more
+            # onto the bus than its solar plus sqrt(eta)-derated battery rate
+            # (plus grid import when connected), nor usefully absorb more than
+            # its load plus battery charge rate. Both are relaxations of the
+            # engine's state-dependent _transfer_caps, so the LP stays a
+            # ceiling — they just stop it scheduling flows no house could
+            # physically source or sink.
+            send_ub = solar_at[(hid, k)] + rate * se + (gmax if connected else 0.0)
+            recv_ub = max(0.0, load_at[(hid, k)]) + rate
+            bounds[col[("send", hid, k)]] = (0.0, min(neighborhood.bus_max_kw, send_ub))
+            bounds[col[("recv", hid, k)]] = (0.0, min(neighborhood.bus_max_kw, recv_ub))
             bounds[col[("served", hid, k)]] = (0.0, max(0.0, load_at[(hid, k)]))
         bounds[col[("soc", hid, 0)]] = (0.5 * cap, 0.5 * cap)
         for k in range(1, nT + 1):
@@ -153,7 +163,10 @@ def _solve_lp(
             ev.append(val)
         beq.append(rhs)
 
-    # power balance: solar + dis + imp + recv - served - ch - exp - send = 0
+    # power balance: solar + dis + imp + recv - served - ch - exp - send - curt = 0
+    # (curt is zero-cost curtailment slack — mirrors the engine's wasted-energy
+    # accounting; without it any solar surplus beyond total absorption made the
+    # whole LP infeasible.)
     for hid in ids:
         for k in range(nT):
             eq_row(
@@ -165,6 +178,7 @@ def _solve_lp(
                     (col[("ch", hid, k)], -1.0),
                     (col[("exp", hid, k)], -1.0),
                     (col[("send", hid, k)], -1.0),
+                    (col[("curt", hid, k)], -1.0),
                 ],
                 -solar_at[(hid, k)],
             )
