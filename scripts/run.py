@@ -45,6 +45,12 @@ def main() -> None:
         help="Root directory for run outputs (default: runs/)",
     )
     parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Override the scenario's seed (each seed is a fresh household draw).",
+    )
+    parser.add_argument(
         "--no-strict",
         dest="strict",
         action="store_false",
@@ -65,6 +71,8 @@ def main() -> None:
     scenario = load_scenario(args.scenario)
     if args.strategy is not None:
         scenario = dataclasses.replace(scenario, strategy=args.strategy)
+    if args.seed is not None:
+        scenario = dataclasses.replace(scenario, seed=args.seed)
     decide, prepare = _resolve_strategy(scenario.strategy)
     if args.reference_cell is not None:
         run_dir = (
