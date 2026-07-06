@@ -127,7 +127,7 @@ def test_agent_pending_react_queued(tmp_path) -> None:
     )
     # Only REQUEST should be queued for react
     assert len(a.pending_react) == 1
-    assert a.pending_react[0].performative == "REQUEST"
+    assert a.pending_react[0][1].performative == "REQUEST"
 
 
 # --- LLMAgent.act tests (Task 14) ---
@@ -579,3 +579,79 @@ def test_plan_consumes_tool_input_when_present(tmp_path) -> None:
     assert any(
         e.kind == "reflection" and "owner group reciprocated" in e.nl for e in a.memory.entries
     )
+
+
+def test_react_queue_survives_across_ticks_and_gets_answered(tmp_path) -> None:
+    """A deferred REQUEST must be answered on the NEXT tick, not silently
+    destroyed — pre-2026-07-07 observe() replaced the queue every tick, so
+    19.5% of inbound REQUEST/OFFERs in the reference run vanished unanswered."""
+    mock = MockLLMClient(
+        cache=PromptCache(local_dir=tmp_path),
+        canned={
+            "You are reacting to a REQUEST": LLMResponse(
+                text="ACCEPT\nrationale: surplus available", tokens_in=50, tokens_out=10
+            )
+        },
+    )
+    a = _bare_agent(tmp_path)
+    a.llm_client = mock
+    a.react_max_per_tick = 1
+    t0 = datetime(2026, 1, 1, 8, 0)
+    own = {
+        "soc_kwh": 8.0,
+        "soc_capacity": 10.0,
+        "grid_islanded": True,
+        "load_kw": 1.0,
+        "solar_kw": 0.0,
+    }
+    inbox = [
+        Message(
+            t_sent=t0,
+            sender=f"r0c{i}",
+            recipient="r0c0",
+            performative="REQUEST",
+            payload={"kwh": 0.5},
+            rationale_nl="x",
+            correlation_id=f"id{i}",
+        )
+        for i in range(2)
+    ]
+    a.observe(t=t0, own_state=own, peer_states={}, inbox=inbox, t_idx=0)
+    first = a.react_to_pending(t=t0)
+    assert len(first) == 1 and first[0].correlation_id == "id0"
+    # Next tick, empty inbox: the deferred id1 must still be there and get answered.
+    t1 = datetime(2026, 1, 1, 8, 15)
+    a.observe(t=t1, own_state=own, peer_states={}, inbox=[], t_idx=1)
+    second = a.react_to_pending(t=t1)
+    assert len(second) == 1 and second[0].correlation_id == "id1"
+    assert a.n_react_dropped_stale == 0
+
+
+def test_react_queue_ages_out_stale_entries_with_counter(tmp_path) -> None:
+    a = _bare_agent(tmp_path)
+    a.react_max_per_tick = 0  # never answer anything
+    t0 = datetime(2026, 1, 1, 8, 0)
+    own = {
+        "soc_kwh": 8.0,
+        "soc_capacity": 10.0,
+        "grid_islanded": True,
+        "load_kw": 1.0,
+        "solar_kw": 0.0,
+    }
+    inbox = [
+        Message(
+            t_sent=t0,
+            sender="r0c1",
+            recipient="r0c0",
+            performative="REQUEST",
+            payload={"kwh": 0.5},
+            rationale_nl="x",
+            correlation_id="stale",
+        )
+    ]
+    a.observe(t=t0, own_state=own, peer_states={}, inbox=inbox, t_idx=0)
+    a.observe(t=t0, own_state=own, peer_states={}, inbox=[], t_idx=1)
+    assert len(a.pending_react) == 1  # age 1 < react_stale_after_ticks
+    a.observe(t=t0, own_state=own, peer_states={}, inbox=[], t_idx=2)
+    assert a.pending_react == []
+    assert a.n_react_dropped_stale == 1

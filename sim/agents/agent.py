@@ -196,10 +196,13 @@ class LLMAgent:
     # Trigger / cadence state
     policy_age_ticks: int = 0
     last_plan_t: datetime | None = None
-    pending_react: list[Message] = field(default_factory=list)
+    # (arrival_t_idx, message) pairs — REQUEST/OFFERs awaiting a react call.
+    pending_react: list[tuple[int, Message]] = field(default_factory=list)
     last_soc_frac: float | None = None
     last_grid_islanded: bool = False
     react_max_per_tick: int = 3
+    # Unanswered queue entries older than this many ticks are dropped (counted).
+    react_stale_after_ticks: int = 2
 
     # Phase 2.9: when True the agent NEVER calls the LLM — it keeps its initial
     # policy forever and act() runs pure-Python. This is the zero-LLM control
@@ -215,6 +218,7 @@ class LLMAgent:
     n_plan_calls: int = 0
     n_react_calls: int = 0
     n_react_skipped: int = 0
+    n_react_dropped_stale: int = 0
     n_plan_parse_failures: int = 0
     n_plan_fallbacks: int = 0
     n_react_refusals: int = 0  # how many times the LLM refused selfish-prompt instructions
@@ -284,8 +288,21 @@ class LLMAgent:
                     importance=6.0 if m.performative in ("REQUEST", "OFFER", "REJECT") else 4.0,
                 )
             )
-        # Queue REQUEST/OFFER for react step
-        self.pending_react = [m for m in inbox if m.performative in ("REQUEST", "OFFER")]
+        # Queue REQUEST/OFFER for the react step. EXTEND the queue — the
+        # pre-2026-07-07 version REPLACED it here, silently destroying every
+        # deferred message one tick later (19.5% of inbound REQUEST/OFFERs in
+        # the reference run, concentrated on the most-solicited donors) while
+        # the docstring claimed they were re-queued. Entries unanswered for
+        # react_stale_after_ticks are dropped and counted instead of lingering
+        # forever.
+        kept: list[tuple[int, Message]] = []
+        for arrival_idx, pending in self.pending_react:
+            if t_idx - arrival_idx >= self.react_stale_after_ticks:
+                self.n_react_dropped_stale += 1
+            else:
+                kept.append((arrival_idx, pending))
+        kept.extend((t_idx, m) for m in inbox if m.performative in ("REQUEST", "OFFER"))
+        self.pending_react = kept
         # Stash peer state snapshot for use by act()
         self.last_peer_states = dict(peer_states)
         # Trigger-tracking
@@ -510,7 +527,11 @@ class LLMAgent:
     # react_to_pending (LLM)
     # ------------------------------------------------------------------
     def react_to_pending(self, t: datetime) -> list[Message]:
-        """Handle up to react_max_per_tick pending REQUEST/OFFER this tick. Excess re-queued."""
+        """Handle up to react_max_per_tick pending REQUEST/OFFER this tick.
+
+        Excess genuinely stays queued (oldest first) and is retried on later
+        ticks until it ages out via react_stale_after_ticks in observe().
+        """
         if self.llm_disabled:
             self.pending_react = []
             return []
@@ -520,7 +541,7 @@ class LLMAgent:
         skipped = self.pending_react[n:]
         self.pending_react = skipped
         self.n_react_skipped += len(skipped)
-        for incoming in handled:
+        for _arrival_idx, incoming in handled:
             resp = self._react_to_message(t, incoming)
             if resp is not None:
                 out.append(resp)
