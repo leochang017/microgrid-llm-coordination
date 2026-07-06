@@ -40,19 +40,47 @@ class NRELSolar:
         seed: int,
         derate: float = 0.85,
         noise_std: float = 0.02,
+        tz_offset_hours: float = 0.0,
     ) -> None:
+        """tz_offset_hours shifts the CSV's clock onto the simulation's local
+        clock. NSRDB files fetched by scripts/fetch_data.py are in UTC, so a
+        US-central site needs tz_offset_hours=-6 (set `solar_tz_offset_hours`
+        in the scenario YAML). Loading validates that the resulting daily GHI
+        peak falls near local noon and refuses to run otherwise — consuming
+        UTC data as local time shifts the whole solar curve ~+6 h and silently
+        inverts day and night (the 2026-07-06 bug behind every pre-Phase-2.9
+        real-data result).
+        """
         df = pd.read_csv(csv_path)
         df["datetime"] = pd.to_datetime(df[["Year", "Month", "Day", "Hour", "Minute"]])
+        if tz_offset_hours:
+            df["datetime"] = df["datetime"] + pd.Timedelta(hours=tz_offset_hours)
         df = df.sort_values("datetime").reset_index(drop=True)
         self.df = df.set_index("datetime")
         self.derate = derate
         self.noise_std = noise_std
         self.seed = seed
+        self._validate_solar_noon(csv_path)
+
+    def _validate_solar_noon(self, csv_path: Path | str) -> None:
+        ghi_by_hour = self.df.groupby(self.df.index.hour)["GHI"].mean()
+        if float(ghi_by_hour.max()) <= 0.0:
+            return  # degenerate all-dark frame; nothing to validate
+        peak_hour = int(ghi_by_hour.idxmax())
+        if not 10 <= peak_hour <= 16:
+            raise ValueError(
+                f"{csv_path}: mean GHI peaks at hour {peak_hour:02d}:00, outside "
+                "10:00-16:00 — the file is probably on a UTC clock (NSRDB fetched "
+                "with utc=true). Set the scenario's solar_tz_offset_hours (e.g. -6 "
+                "for US central standard time) so timestamps land on local time."
+            )
 
     def _noise(self, t: datetime) -> float:
-        # Seed a fresh Generator from a stable mix of (self.seed, t). Using
-        # numpy's SeedSequence so two ints combine into a uniform-quality seed.
-        ss = np.random.SeedSequence([self.seed, int(t.timestamp())])
+        # Seed a fresh Generator from a stable mix of (self.seed, t). The time
+        # component is derived from calendar fields, NOT t.timestamp() — a
+        # naive datetime's timestamp depends on the machine's TZ setting,
+        # which broke byte-identical reproducibility across machines.
+        ss = np.random.SeedSequence([self.seed, int(t.strftime("%Y%m%d%H%M"))])
         rng = np.random.default_rng(ss)
         return float(rng.normal(0.0, self.noise_std))
 

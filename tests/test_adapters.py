@@ -101,3 +101,70 @@ def test_resstock_load_rejects_unknown_file_type(tmp_path: Path) -> None:
     bogus.write_text("hello")
     with pytest.raises(ValueError, match="unsupported file extension"):
         ResStockLoad(path=bogus, dt_hours=0.25)
+
+
+_FIXTURE_NREL = Path(__file__).parent / "fixtures" / "nrel_sample.csv"
+
+
+def _utc_shaped_csv(tmp_path: Path) -> Path:
+    """A day of hourly GHI whose peak sits at 18:00 — the shape of NSRDB data
+    fetched with utc=true for a US-central site (solar noon ~18:30 UTC)."""
+    rows = ["Year,Month,Day,Hour,Minute,GHI"]
+    for hour in range(24):
+        ghi = max(0, 900 - 120 * abs(hour - 18))
+        rows.append(f"2018,7,15,{hour},0,{ghi}")
+    p = tmp_path / "utc_shaped.csv"
+    p.write_text("\n".join(rows) + "\n")
+    return p
+
+
+def test_nrel_solar_rejects_utc_shaped_data_without_offset(tmp_path: Path) -> None:
+    """Peak GHI outside 10:00-16:00 local means the CSV is on the wrong clock
+    (the 2026-07-06 bug: UTC data consumed as naive local time shifted every
+    real-data scenario's solar by ~+6 h). Must fail loudly, not run wrong."""
+    with pytest.raises(ValueError, match=r"UTC"):
+        NRELSolar(csv_path=_utc_shaped_csv(tmp_path), seed=1)
+
+
+def test_nrel_solar_tz_offset_realigns_utc_data(tmp_path: Path) -> None:
+    """tz_offset_hours=-6 shifts UTC timestamps to US-central standard time."""
+    solar = NRELSolar(csv_path=_utc_shaped_csv(tmp_path), seed=1, tz_offset_hours=-6.0)
+    assert solar.get_kw(datetime(2018, 7, 15, 12, 0)) > 0.5
+    assert solar.get_kw(datetime(2018, 7, 15, 3, 0)) == 0.0
+
+
+def test_nrel_noise_is_timezone_independent() -> None:
+    """The per-(seed, t) noise draw must not depend on the machine's TZ env.
+
+    Pre-2026-07-06 the seed came from naive datetime.timestamp(), which Python
+    interprets in the machine's local timezone — same code, same seed, same
+    scenario gave different numbers on differently-configured machines.
+    """
+    import os
+    import time
+
+    t = datetime(2024, 7, 1, 9, 30)
+    old_tz = os.environ.get("TZ")
+    try:
+        os.environ["TZ"] = "UTC"
+        time.tzset()
+        kw_utc = NRELSolar(csv_path=_FIXTURE_NREL, seed=7).get_kw(t)
+        os.environ["TZ"] = "America/Chicago"
+        time.tzset()
+        kw_chicago = NRELSolar(csv_path=_FIXTURE_NREL, seed=7).get_kw(t)
+    finally:
+        if old_tz is None:
+            os.environ.pop("TZ", None)
+        else:
+            os.environ["TZ"] = old_tz
+        time.tzset()
+    assert kw_utc == kw_chicago
+
+
+def test_nrel_noise_pinned_cross_platform_constant() -> None:
+    """Hardcoded expected value for a fixed (seed, t): any platform- or
+    TZ-dependence in the noise seeding fails this in CI on other machines."""
+    solar = NRELSolar(csv_path=_FIXTURE_NREL, seed=7)
+    assert solar.get_kw(datetime(2024, 7, 1, 9, 30)) == pytest.approx(
+        0.45454901928641145, rel=1e-12
+    )

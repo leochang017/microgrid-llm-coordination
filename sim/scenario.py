@@ -52,6 +52,9 @@ class Scenario:
     # Phase 2 additions (purely additive — defaults preserve Phase 1.x behavior):
     failure_modes: FailureModeConfig = field(default_factory=FailureModeConfig)
     llm: dict[str, Any] = field(default_factory=dict)
+    # Phase 2.9: shift applied to the solar CSV's clock to land on local time.
+    # NSRDB files fetched by scripts/fetch_data.py are UTC -> -6 for US central.
+    solar_tz_offset_hours: float = 0.0
 
     def __post_init__(self) -> None:
         if self.dt_hours <= 0:
@@ -134,4 +137,5 @@ def load_scenario(path: Path | str) -> Scenario:
         affiliations=affiliations,
         failure_modes=FailureModeConfig.from_dict(raw.get("failure_modes")),
         llm=dict(raw.get("llm", {}) or {}),
+        solar_tz_offset_hours=float(raw.get("solar_tz_offset_hours", 0.0)),
     )

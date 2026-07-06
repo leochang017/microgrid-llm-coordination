@@ -9,6 +9,7 @@ bus_max_kw: 50.0
 bus_loss_factor: 0.05
 strategy: round_robin
 data_source: pecan_street
+solar_tz_offset_hours: -6  # austin_2018.csv is UTC (NSRDB utc=true); CST = UTC-6
 data_paths:
   # Run scripts/fetch_data.py (Task 24) for NREL; download Pecan Street manually.
   solar_csv: data/nrel_solar/austin_2024.csv

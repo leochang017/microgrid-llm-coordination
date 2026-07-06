@@ -334,7 +334,11 @@ def _build_data(
                 f"house_dataids has {len(scenario.house_dataids)} entries, "
                 f"need {scenario.rows * scenario.cols}"
             )
-        nrel = NRELSolar(csv_path=scenario.data_paths["solar_csv"], seed=scenario.seed)
+        nrel = NRELSolar(
+            csv_path=scenario.data_paths["solar_csv"],
+            seed=scenario.seed,
+            tz_offset_hours=scenario.solar_tz_offset_hours,
+        )
         load_map: dict[str, LoadProfile] = {}
         for (hid, _), dataid in zip(households.items(), scenario.house_dataids, strict=True):
             load_map[hid] = PecanStreetLoad(csv_path=scenario.data_paths["load_csv"], dataid=dataid)
@@ -356,7 +360,11 @@ def _build_data(
                 f"house_building_files has {len(scenario.house_building_files)} "
                 f"entries, need {scenario.rows * scenario.cols}"
             )
-        nrel = NRELSolar(csv_path=scenario.data_paths["solar_csv"], seed=scenario.seed)
+        nrel = NRELSolar(
+            csv_path=scenario.data_paths["solar_csv"],
+            seed=scenario.seed,
+            tz_offset_hours=scenario.solar_tz_offset_hours,
+        )
         load_dir = Path(scenario.data_paths["load_dir"])
         rs_load_map: dict[str, LoadProfile] = {}
         for (hid, _), fname in zip(households.items(), scenario.house_building_files, strict=True):
