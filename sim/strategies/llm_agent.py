@@ -185,13 +185,35 @@ def prepare(
             },
         )
 
-    _REGISTRY = _AgentRegistry(
+    reg = _AgentRegistry(
         agents=agents,
         bus=bus,
         defector_wrapper=wrapper,
         messaging_enabled=str(scenario.llm.get("messaging", "on")).lower() != "off",
     )
-    return decide_transfers
+    # Module global kept for single-run-per-process callers (scripts/run.py's
+    # post-run counter fill). The returned closure carries ITS OWN registry so
+    # in-process sweeps that prepare several cells don't cross-attribute
+    # counters (Phase 2.9 Task 16) — sweep drivers should still prefer
+    # subprocess-per-cell (see scripts/compare.py docstring).
+    _REGISTRY = reg
+
+    def _decide(
+        t: datetime,
+        states: dict[str, Any],
+        households_: dict[str, Household],
+        solar_kw: dict[str, float],
+        load_kw: dict[str, float],
+        grid: dict[str, bool],
+        neighborhood_: Neighborhood,
+        dt_hours: float,
+    ) -> list[Transfer]:
+        return _decide_with_registry(
+            reg, t, states, households_, solar_kw, load_kw, grid, neighborhood_, dt_hours
+        )
+
+    _decide.registry = reg  # type: ignore[attr-defined]
+    return _decide
 
 
 def decide_transfers(
@@ -204,8 +226,24 @@ def decide_transfers(
     neighborhood: Neighborhood,
     dt_hours: float,
 ) -> list[Transfer]:
+    """Back-compat module-level entry point bound to the LAST prepared registry."""
     assert _REGISTRY is not None, "llm_agent.prepare() must be called before decide_transfers"
-    reg = _REGISTRY
+    return _decide_with_registry(
+        _REGISTRY, t, states, households, solar_kw, load_kw, grid, neighborhood, dt_hours
+    )
+
+
+def _decide_with_registry(
+    reg: _AgentRegistry,
+    t: datetime,
+    states: dict[str, Any],
+    households: dict[str, Household],
+    solar_kw: dict[str, float],
+    load_kw: dict[str, float],
+    grid: dict[str, bool],
+    neighborhood: Neighborhood,
+    dt_hours: float,
+) -> list[Transfer]:
     t_idx = reg.t_idx(t)
 
     # 1. Deliver pending messages from prior tick into agent inboxes
@@ -293,37 +331,44 @@ def _estimate_cost_usd(model: str, tokens_in: int, tokens_out: int) -> float:
     return 0.0
 
 
-def current_call_counts() -> dict[str, int]:
+def current_call_counts(registry: _AgentRegistry | None = None) -> dict[str, int]:
     """Aggregate LLM call counters across all agents in the current run.
 
+    ``registry`` defaults to the module-global (last prepared); pass the
+    ``.registry`` attribute of a prepared decide callable to read a specific
+    run's counters in multi-prepare processes.
     Returns zeros if no run has been prepared. Callable from ``scripts/run.py``
     after the engine returns to fill summary.json's `llm_call_counts` field.
     """
-    if _REGISTRY is None:
+    registry = registry or _REGISTRY
+    if registry is None:
         return {
             "reflect_plan": 0,
             "react_msg": 0,
             "react_skipped": 0,
+            "react_dropped_stale": 0,
             "plan_parse_failures": 0,
             "plan_fallbacks": 0,
             "react_refusals": 0,
             "cache_hits": 0,
             "cache_misses": 0,
         }
-    plan = sum(a.n_plan_calls for a in _REGISTRY.agents.values())
-    react = sum(a.n_react_calls for a in _REGISTRY.agents.values())
-    react_skipped = sum(a.n_react_skipped for a in _REGISTRY.agents.values())
-    parse_fails = sum(a.n_plan_parse_failures for a in _REGISTRY.agents.values())
-    fallbacks = sum(a.n_plan_fallbacks for a in _REGISTRY.agents.values())
-    refusals = sum(a.n_react_refusals for a in _REGISTRY.agents.values())
+    plan = sum(a.n_plan_calls for a in registry.agents.values())
+    react = sum(a.n_react_calls for a in registry.agents.values())
+    react_skipped = sum(a.n_react_skipped for a in registry.agents.values())
+    react_stale = sum(a.n_react_dropped_stale for a in registry.agents.values())
+    parse_fails = sum(a.n_plan_parse_failures for a in registry.agents.values())
+    fallbacks = sum(a.n_plan_fallbacks for a in registry.agents.values())
+    refusals = sum(a.n_react_refusals for a in registry.agents.values())
     # Cache hits/misses come from the shared LLM client (all agents share one).
-    # The client lives on each agent; pick any.
-    any_agent = next(iter(_REGISTRY.agents.values()))
-    cache = any_agent.llm_client.cache
+    # The client lives on each agent; pick any (zeros for a degenerate
+    # zero-household run).
+    cache = next(iter(registry.agents.values())).llm_client.cache if registry.agents else None
     return {
         "reflect_plan": plan,
         "react_msg": react,
         "react_skipped": react_skipped,
+        "react_dropped_stale": react_stale,
         "plan_parse_failures": parse_fails,
         "plan_fallbacks": fallbacks,
         "react_refusals": refusals,
@@ -332,7 +377,7 @@ def current_call_counts() -> dict[str, int]:
     }
 
 
-def update_summary_with_counts(run_dir: Path) -> None:
+def update_summary_with_counts(run_dir: Path, registry: _AgentRegistry | None = None) -> None:
     """Read run_dir/summary.json, fill in llm_call_counts + policy_* fields, write back."""
     import json
 
@@ -340,7 +385,7 @@ def update_summary_with_counts(run_dir: Path) -> None:
     if not summary_path.exists():
         return
     summary = json.loads(summary_path.read_text())
-    counts = current_call_counts()
+    counts = current_call_counts(registry)
     summary["llm_call_counts"] = {
         "reflect_plan": counts["reflect_plan"],
         "react_msg": counts["react_msg"],
@@ -353,8 +398,9 @@ def update_summary_with_counts(run_dir: Path) -> None:
     summary["llm_call_counts_detailed"] = counts
     # Real cost estimate from fresh-call tokens (was hardcoded 0.0 pre-2026-07-07;
     # the shipped reference run claimed $0.00 against ~$11.6 of actual spend).
-    if _REGISTRY is not None and _REGISTRY.agents:
-        any_agent = next(iter(_REGISTRY.agents.values()))
+    reg = registry or _REGISTRY
+    if reg is not None and reg.agents:
+        any_agent = next(iter(reg.agents.values()))
         client = any_agent.llm_client
         summary["llm_cost_usd_estimated"] = _estimate_cost_usd(
             any_agent.model,

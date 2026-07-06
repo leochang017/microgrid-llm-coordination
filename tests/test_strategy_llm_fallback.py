@@ -65,3 +65,17 @@ def test_messaging_off_flag_suppresses_all_bus_traffic(tmp_path: Path) -> None:
     messages = (tmp_path / "moff" / "messages.jsonl").read_text().strip()
     assert messages == ""
     assert summary["transfer_count"] > 0
+
+
+def test_prepared_closures_keep_their_own_registries(tmp_path: Path) -> None:
+    """Two prepares in one process must not cross-attribute counters — the
+    module global is only a convenience for the last run (P2.9 T16)."""
+    sc = load_scenario(_SCENARIO)
+    decide_a = llm_fallback.prepare(sc, {}, None, None, None, run_dir=tmp_path / "a")
+    decide_b = llm_fallback.prepare(sc, {}, None, None, None, run_dir=tmp_path / "b")
+    reg_a = decide_a.registry  # type: ignore[attr-defined]
+    reg_b = decide_b.registry  # type: ignore[attr-defined]
+    assert reg_a is not reg_b
+    assert llm_strat._REGISTRY is reg_b  # global tracks the LAST prepare
+    counts_a = llm_strat.current_call_counts(reg_a)
+    assert counts_a["reflect_plan"] == 0
