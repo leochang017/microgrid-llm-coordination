@@ -103,6 +103,22 @@ def load_scenario(path: Path | str) -> Scenario:
     rows_i = int(raw["rows"])
     cols_i = int(raw["cols"])
     valid_ids = {f"r{r}c{c}" for r in range(rows_i) for c in range(cols_i)}
+
+    # Outage validation (2026-07-06): a typo'd house id silently exempts the
+    # house from the outage, and a window outside the horizon is silently
+    # inert — both inflate served-load numbers, so both are hard rejects.
+    for o in outages:
+        for hid in o.affected_houses:
+            if hid not in valid_ids:
+                raise ValueError(
+                    f"outage {o.start} -> {o.end} references unknown house {hid!r} "
+                    f"(grid is {rows_i}x{cols_i})"
+                )
+        if o.end <= start or o.start >= end:
+            raise ValueError(
+                f"outage {o.start} -> {o.end} lies entirely outside the scenario "
+                f"horizon {start} -> {end} and would never take effect"
+            )
     affiliations: dict[str, dict[str, tuple[str, ...]]] = {}
     for atype, groups in (raw.get("affiliations", {}) or {}).items():
         parsed_groups: dict[str, tuple[str, ...]] = {}

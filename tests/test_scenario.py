@@ -232,3 +232,43 @@ def test_scenario_omitting_failure_modes_block_uses_defaults(tmp_path: Path) -> 
     s = load_scenario(_write_affil(tmp_path, _AFFIL_BASE))
     assert s.failure_modes.defector_fraction == 0.0
     assert s.llm == {}
+
+
+def _yaml_with_outage(outage_block: str) -> str:
+    return _SMOKE_YAML.replace("outages: []", textwrap.dedent(outage_block).rstrip())
+
+
+def test_load_rejects_outage_with_unknown_house(tmp_path: Path) -> None:
+    """A typo'd house id would silently exempt that house from the outage,
+    inflating served-load numbers — must be a hard reject (2026-07-06)."""
+    p = tmp_path / "bad_house.yaml"
+    p.write_text(
+        _yaml_with_outage(
+            """
+            outages:
+              - start: "2024-07-01T08:00:00"
+                end:   "2024-07-01T20:00:00"
+                affected_houses: [r0c0, r9c9]
+            """
+        )
+    )
+    with pytest.raises(ValueError, match="unknown house 'r9c9'"):
+        load_scenario(p)
+
+
+def test_load_rejects_outage_outside_horizon(tmp_path: Path) -> None:
+    """An outage window that never intersects [start, end) is silently inert —
+    the scenario runs grid-up and reports great numbers. Hard reject."""
+    p = tmp_path / "bad_window.yaml"
+    p.write_text(
+        _yaml_with_outage(
+            """
+            outages:
+              - start: "2024-08-01T08:00:00"
+                end:   "2024-08-01T20:00:00"
+                affected_houses: [r0c0]
+            """
+        )
+    )
+    with pytest.raises(ValueError, match="outside the scenario horizon"):
+        load_scenario(p)
