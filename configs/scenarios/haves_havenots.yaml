@@ -1,4 +1,4 @@
-# Stress scenario: bimodal "have" vs "have-not" capacity under a 24 h full outage.
+# Stress scenario: bimodal "have" vs "have-not" capacity under a 12 h full outage.
 # Designed so simple geographic round-robin visibly fails (substantial unmet load
 # and welfare inequality remain), giving the overlay baseline and the LP ceiling
 # real room to recover. The acceptance test in tests/test_stress_scenarios.py

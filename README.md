@@ -4,7 +4,7 @@ A research project asking: can a population of LLM agents — one per household 
 
 The contribution is on the CS/ML axis (natural-language coordination, robustness, explainability), not power systems. Classical optimization handles fairness under strong assumptions, struggles with robustness, and doesn't attempt explainability. That gap is what this project explores.
 
-**Status:** Phase 1 + Phase 1.6 + **Phase 2 LLM agent layer** — ✅ **complete.** 183 tests pass (mock-LLM only), ruff + mypy --strict clean, 1 live-Haiku reference run shipped.
+**Status:** Phase 1 + Phase 1.6 + **Phase 2 LLM agent layer (through Phase 2.8)** — ✅ **complete.** 188 tests pass (mock-LLM only), ruff + mypy --strict clean, 1 live-Haiku reference run shipped (Phase 2.8 architecture).
 
 📐 [Phase 1 spec](docs/superpowers/specs/2026-05-14-phase1-simulator-design.md) · [Phase 1.6 spec](docs/superpowers/specs/2026-05-29-phase1.6-hardening-design.md) · [Phase 2 spec](docs/superpowers/specs/2026-06-13-phase2-llm-agent-design.md) · 📋 [Phase 1 plan](docs/superpowers/plans/2026-05-14-phase1-simulator.md) · [Phase 1.6 plan](docs/superpowers/plans/2026-05-29-phase1.6-hardening.md) · [Phase 2 plan](docs/superpowers/plans/2026-06-13-phase2-llm-agent.md) · 🧠 [Project context (CLAUDE.md)](CLAUDE.md)
 
@@ -175,7 +175,14 @@ hitting the API:
 
 | Scenario | Failure cell | Notes |
 |---|---|---|
-| `haves_havenots__llm.yaml` | clean | live Haiku 4.5 run, ~3000 cached prompts; v0.5 architecture served 0.458 (v0 was 0.460) |
+| `haves_havenots__llm.yaml` | clean | live Haiku 4.5 run (Phase 2.8 architecture); served 0.513 vs round_robin 0.525 |
+
+**Phase 2.8 (2026-06-17, tag `phase2.8-complete`):** added a peer-state summary to every
+plan prompt and made the per-tick share fraction LLM-controlled. The live re-run left every
+macro metric unchanged (served 0.513, gini 0.399, transfers 259) while message traffic rose
+66% — the clean cell has hit this architecture's ceiling ~1.2 points behind round_robin.
+The Phase 3 hypothesis is therefore that the LLM advantage, if any, lives in the
+failure-mode cells (defectors / noise / comm), which so far have only mock-LLM coverage.
 
 ### Quickstart
 
