@@ -167,6 +167,17 @@ _POLICY_TOOL_SCHEMA: dict[str, Any] = {
 }
 
 
+@dataclass(frozen=True, slots=True)
+class PeerBelief:
+    """What this agent believes about a peer, derived ONLY from received
+    INFORM messages (Phase 3): noised, possibly corrupted, possibly stale.
+    Never engine ground truth."""
+
+    soc_kwh: float
+    soc_capacity: float
+    t_idx_reported: int
+
+
 @dataclass
 class LLMAgent:
     """One per household; owns memory, policy, RNG, and references to shared LLM client + noise."""
@@ -213,6 +224,10 @@ class LLMAgent:
 
     # Most recent observation snapshot — used by act() for below-mean SoC filter
     last_peer_states: dict[str, dict[str, Any]] = field(default_factory=dict)
+    # Phase 3: message-borne knowledge. peer_beliefs is fed ONLY by INFORMs;
+    # last_visible_own is the agent's noised self-view captured in observe().
+    peer_beliefs: dict[str, PeerBelief] = field(default_factory=dict)
+    last_visible_own: dict[str, Any] = field(default_factory=dict)
 
     # LLM call counters (for summary.json + Phase 3 cost accounting)
     n_plan_calls: int = 0
@@ -288,6 +303,26 @@ class LLMAgent:
                     importance=6.0 if m.performative in ("REQUEST", "OFFER", "REJECT") else 4.0,
                 )
             )
+        # Phase 3: fold INFORM messages into peer beliefs (newest report wins).
+        for m in inbox:
+            if m.performative == "INFORM" and "soc_kwh" in m.payload:
+                prev = self.peer_beliefs.get(m.sender)
+                if prev is None or t_idx >= prev.t_idx_reported:
+                    self.peer_beliefs[m.sender] = PeerBelief(
+                        soc_kwh=float(m.payload["soc_kwh"]),
+                        soc_capacity=float(m.payload.get("soc_capacity", 0.0)),
+                        t_idx_reported=t_idx,
+                    )
+        # Stash the noised self-view for act()/emit_informs (Phase 3: agents
+        # decide and report from what they SEE, not engine truth).
+        self.last_visible_own = {
+            "soc_kwh": visible_soc,
+            "soc_capacity": capacity,
+            "load_kw": visible_load,
+            "solar_kw": float(own_state.get("solar_kw", 0.0)),
+            "grid_islanded": bool(own_state["grid_islanded"]),
+            "dod_floor_frac": float(own_state.get("dod_floor_frac", 0.1)),
+        }
         # Queue REQUEST/OFFER for the react step. EXTEND the queue — the
         # pre-2026-07-07 version REPLACED it here, silently destroying every
         # deferred message one tick later (19.5% of inbound REQUEST/OFFERs in
@@ -695,6 +730,37 @@ class LLMAgent:
                 )
             )
         return transfers, outbox
+
+    def emit_informs(self, t: datetime, neighborhood: Neighborhood) -> list[Message]:
+        """One INFORM per union-neighbor carrying the noised self-view.
+
+        Pure Python (no LLM). This is the ONLY channel peers learn our state
+        through (Phase 3) — so observation noise, defector corruption at the
+        bus wrapper, dropout, and budget all causally shape what neighbors
+        believe. Empty before the first observe().
+        """
+        if not self.last_visible_own:
+            return []
+        out: list[Message] = []
+        for peer in neighborhood.union_neighbors(self.house_id):
+            out.append(
+                Message(
+                    t_sent=t,
+                    sender=self.house_id,
+                    recipient=peer,
+                    performative="INFORM",
+                    payload={
+                        "soc_kwh": float(self.last_visible_own["soc_kwh"]),
+                        "soc_capacity": float(self.last_visible_own["soc_capacity"]),
+                    },
+                    rationale_nl=(
+                        f"status: SoC {self.last_visible_own['soc_kwh']:.2f}/"
+                        f"{self.last_visible_own['soc_capacity']:.0f} kWh"
+                    ),
+                    correlation_id=new_correlation_id(rng=self.rng),
+                )
+            )
+        return out
 
     def _candidate_recipients(self, neighborhood: Neighborhood) -> list[tuple[str, str, float]]:
         """Return [(target_hid, circle, weight)] for each (peer, circle) the policy ranks."""

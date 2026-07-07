@@ -695,3 +695,86 @@ def test_three_malformed_tool_inputs_trigger_round_robin_fallback(tmp_path) -> N
     a.plan(t=t0)
     assert a.policy.belief_note == "(fallback to geographic round-robin)"
     assert a.n_plan_fallbacks == 1
+
+
+# --- Phase 3 Task 2: PeerBelief store + INFORM emission ---
+
+
+def _own(soc: float = 5.0) -> dict:
+    return {
+        "soc_kwh": soc,
+        "soc_capacity": 10.0,
+        "grid_islanded": True,
+        "load_kw": 1.0,
+        "solar_kw": 0.0,
+        "dod_floor_frac": 0.1,
+    }
+
+
+def _inform(sender: str, soc: float, cap: float, t: datetime, cid: str) -> Message:
+    return Message(
+        t_sent=t,
+        sender=sender,
+        recipient="r0c0",
+        performative="INFORM",
+        payload={"soc_kwh": soc, "soc_capacity": cap},
+        rationale_nl="status report",
+        correlation_id=cid,
+    )
+
+
+def test_observe_updates_peer_beliefs_from_inform(tmp_path) -> None:
+    a = _bare_agent(tmp_path)
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.observe(
+        t=t0,
+        own_state=_own(),
+        peer_states={},
+        inbox=[_inform("r0c1", 3.2, 10.0, t0, "i1")],
+        t_idx=4,
+    )
+    b = a.peer_beliefs["r0c1"]
+    assert b.soc_kwh == 3.2 and b.soc_capacity == 10.0 and b.t_idx_reported == 4
+    # A newer INFORM overwrites.
+    a.observe(
+        t=t0,
+        own_state=_own(),
+        peer_states={},
+        inbox=[_inform("r0c1", 2.0, 10.0, t0, "i2")],
+        t_idx=5,
+    )
+    assert a.peer_beliefs["r0c1"].soc_kwh == 2.0
+    assert a.peer_beliefs["r0c1"].t_idx_reported == 5
+
+
+def test_emit_informs_carry_the_noised_self_view(tmp_path) -> None:
+    """INFORM payloads must carry what the agent BELIEVES (noised observe()
+    output), not engine truth — that is how observation noise propagates to
+    peers under the Phase 3 information-flow design."""
+    from sim.agents.failure_modes import ObsNoiseConfig
+
+    noisy_cfg = FailureModeConfig(obs_noise=ObsNoiseConfig(soc_std_frac=0.3))
+    a = _bare_agent(tmp_path)
+    a.noise = NoiseSource(cfg=noisy_cfg.obs_noise, scenario_seed=42)
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.observe(t=t0, own_state=_own(soc=5.0), peer_states={}, inbox=[], t_idx=0)
+    visible = a.last_visible_own["soc_kwh"]
+    assert visible != 5.0  # noise actually applied at this std
+
+    from sim.network import build_grid_neighborhood
+
+    nb = build_grid_neighborhood(rows=1, cols=3, bus_max_kw=50.0)
+    informs = a.emit_informs(t=t0, neighborhood=nb)
+    assert len(informs) == len(nb.union_neighbors("r0c0"))
+    for m in informs:
+        assert m.performative == "INFORM"
+        assert m.payload["soc_kwh"] == visible
+        assert m.payload["soc_capacity"] == 10.0
+
+
+def test_emit_informs_empty_before_first_observe(tmp_path) -> None:
+    from sim.network import build_grid_neighborhood
+
+    a = _bare_agent(tmp_path)
+    nb = build_grid_neighborhood(rows=1, cols=3, bus_max_kw=50.0)
+    assert a.emit_informs(t=datetime(2026, 1, 1, 8, 0), neighborhood=nb) == []

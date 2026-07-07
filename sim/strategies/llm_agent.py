@@ -308,6 +308,14 @@ def _decide_with_registry(
             for m in outbox:
                 reg.bus.send(reg.defector_wrapper.maybe_corrupt(m))
 
+    # 5c. INFORM broadcast LAST (Phase 3 ordering: replies > need signals >
+    # status reports — under per_tick_budget the freshest need wins the slot,
+    # and INFORM loss degrades beliefs gracefully instead of dropping asks).
+    if reg.messaging_enabled:
+        for agent in reg.agents.values():
+            for m in agent.emit_informs(t=t, neighborhood=neighborhood):
+                reg.bus.send(reg.defector_wrapper.maybe_corrupt(m))
+
     # 6. Age policies
     for agent in reg.agents.values():
         agent.policy_age_ticks += 1

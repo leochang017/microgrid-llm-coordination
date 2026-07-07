@@ -26,12 +26,12 @@ finished those). New scripts: `sweep.py`, `eval_explanations.py`.
 - [x] Commit spec + this plan with progress-log row.
 
 ### Task 2: PeerBelief store + INFORM emission
-- [ ] `sim/agents/agent.py`: `PeerBelief` dataclass (soc_kwh, soc_capacity, t_idx_reported); `LLMAgent.peer_beliefs: dict[str, PeerBelief]`.
-- [ ] `observe()` updates beliefs from INFORM messages in the inbox (latest t_idx wins).
-- [ ] `act()` emits one INFORM per union-neighbor per tick carrying the NOISED self-view (payload keys: `soc_kwh`, `soc_capacity`); pure Python, no LLM.
-- [ ] Facade bus-send ordering per tick: react replies → act() REQUEST/OFFER → INFORMs.
-- [ ] Tests: belief created/updated from INFORM; noised value (not truth) in payload; ordering observable via bus log.
-- [ ] Commit `feat: message-borne peer beliefs (INFORM emission + belief store) (P3 T2)`.
+- [x] `sim/agents/agent.py`: `PeerBelief` dataclass (soc_kwh, soc_capacity, t_idx_reported); `LLMAgent.peer_beliefs: dict[str, PeerBelief]`.
+- [x] `observe()` updates beliefs from INFORM messages in the inbox (latest t_idx wins).
+- [x] `act()` emits one INFORM per union-neighbor per tick carrying the NOISED self-view (payload keys: `soc_kwh`, `soc_capacity`); pure Python, no LLM.
+- [x] Facade bus-send ordering per tick: react replies → act() REQUEST/OFFER → INFORMs.
+- [x] Tests: belief created/updated from INFORM; noised value (not truth) in payload; ordering observable via bus log.
+- [x] Commit `feat: message-borne peer beliefs (INFORM emission + belief store) (P3 T2)`.
 
 ### Task 3: Cut the ground-truth feed
 - [ ] Facade `observe()` call no longer receives `peer_states` built from engine states; plan-prompt peers section renders `peer_beliefs` with age ("reported N ticks ago"); `act()` recipient filter consumes beliefs; unknown peers ineligible.
