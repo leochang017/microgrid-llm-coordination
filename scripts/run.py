@@ -45,6 +45,14 @@ def main() -> None:
         help="Root directory for run outputs (default: runs/)",
     )
     parser.add_argument(
+        "--set",
+        action="append",
+        default=[],
+        metavar="KEY.PATH=VALUE",
+        help="Override any scenario field (repeatable), e.g. "
+        "--set failure_modes.defector_fraction=0.4. Unknown keys are rejected.",
+    )
+    parser.add_argument(
         "--seed",
         type=int,
         default=None,
@@ -73,6 +81,10 @@ def main() -> None:
         scenario = dataclasses.replace(scenario, strategy=args.strategy)
     if args.seed is not None:
         scenario = dataclasses.replace(scenario, seed=args.seed)
+    if args.set:
+        from sim.overrides import apply_overrides
+
+        scenario = apply_overrides(scenario, args.set)
     decide, prepare = _resolve_strategy(scenario.strategy)
     if args.reference_cell is not None:
         run_dir = (

@@ -189,7 +189,9 @@ def prepare(
         agents=agents,
         bus=bus,
         defector_wrapper=wrapper,
-        messaging_enabled=str(scenario.llm.get("messaging", "on")).lower() != "off",
+        # "off" via YAML/--set may arrive as the string "off" or as boolean False
+        # (bare `off` is a YAML boolean) — treat both as disabled.
+        messaging_enabled=str(scenario.llm.get("messaging", "on")).lower() not in ("off", "false"),
     )
     # Module global kept for single-run-per-process callers (scripts/run.py's
     # post-run counter fill). The returned closure carries ITS OWN registry so

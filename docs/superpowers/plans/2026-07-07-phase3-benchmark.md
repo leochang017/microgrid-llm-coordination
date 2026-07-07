@@ -67,9 +67,9 @@ finished those). New scripts: `sweep.py`, `eval_explanations.py`.
 - [x] Commit `feat: explanation provenance + rubric judge harness (P3 T8)`.
 
 ### Task 9: Override + sweep machinery
-- [ ] `run.py --set dotted.key=value` (repeatable) with type coercion + unknown-key rejection.
-- [ ] `scripts/sweep.py`: grid YAML → subprocess-per-cell runs → harvested matrix + dose-response markdown; `configs/sweeps/phase3_grid.yaml` with spec defaults.
-- [ ] Commit `feat: scenario overrides + sweep driver for dose-response grids (P3 T9)`.
+- [x] `run.py --set dotted.key=value` (repeatable) with type coercion + unknown-key rejection.
+- [x] `scripts/sweep.py`: grid YAML → subprocess-per-cell runs → harvested matrix + dose-response markdown; `configs/sweeps/phase3_grid.yaml` with spec defaults.
+- [x] Commit `feat: scenario overrides + sweep driver for dose-response grids (P3 T9)`.
 
 ### Task 10: Showcase-tight scenario
 - [ ] Scan bus_max_kw / bimodal params (free strategies only) for a materially larger rr→LP gap; ship best as `haves_havenots_tight.yaml` + goldens + compare table in docs.

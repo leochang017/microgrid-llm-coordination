@@ -1,0 +1,18 @@
+# Phase 3 dose-response grid (spec Part D defaults).
+# Each axis is swept independently against the base scenario:
+#   base + {set: value} x strategies x seeds.
+# Run:  python -m scripts.sweep --grid configs/sweeps/phase3_grid.yaml
+name: phase3_grid
+scenario: configs/scenarios/haves_havenots__llm.yaml
+strategies: [no_coordination, round_robin, llm_fallback]
+seeds: [23, 1, 7, 42, 99]
+axes:
+  - name: defector_fraction
+    set: failure_modes.defector_fraction
+    values: [0.0, 0.1, 0.2, 0.4]
+  - name: noise_soc_std
+    set: failure_modes.obs_noise.soc_std_frac
+    values: [0.0, 0.05, 0.1, 0.2]
+  - name: comm_budget
+    set: failure_modes.comm.per_tick_budget
+    values: [null, 4, 2, 1]
