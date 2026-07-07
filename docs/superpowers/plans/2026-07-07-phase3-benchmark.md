@@ -52,9 +52,9 @@ finished those). New scripts: `sweep.py`, `eval_explanations.py`.
 - [x] Commit `feat: binding negotiation — need-sized REQUESTs and ACCEPT-gated commitments (P3 T5)`.
 
 ### Task 6: Failure-axis acceptance tests
-- [ ] Mock-LLM end-to-end: defector(prompt) cell — defector households transfer out measurably less than clean; noise cell — served/transfer deltas vs clean; comm cell — delivered/sent drop AND outcome delta.
-- [ ] Document effect sizes in the progress log (these become the paper's mock sanity row).
-- [ ] Commit `test: failure axes now causally couple to outcomes (P3 T6)`.
+- [x] Mock-LLM end-to-end: defector(wrapper) corruption moves outcomes (prompt-realization hoarding needs a live selfish-prompt run — budget-gated); noise cell — served/transfer deltas vs clean; comm cell — delivered/sent drop AND outcome delta.
+- [x] Document effect sizes in the progress log (these become the paper's mock sanity row).
+- [x] Commit `test: failure axes now causally couple to outcomes (P3 T6)`.
 
 ### Task 7: Fairness substrate
 - [ ] `household_sampling.critical_load_frac: [lo, hi]` sampling → `Household.profile` field; accounting rule: unmet hits flexible first.
