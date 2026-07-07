@@ -260,15 +260,16 @@ def _decide_with_registry(
             "solar_kw": solar_kw.get(hid, 0.0),
             "dod_floor_frac": households[hid].dod_floor_frac,
         }
-        peer_states = {
-            p: {"soc_kwh": states[p].soc_kwh, "soc_capacity": households[p].battery_kwh}
-            for p in neighborhood.union_neighbors(hid)
-            if p in states
-        }
+        # Phase 3: NO ground-truth peer feed. Peer knowledge arrives only via
+        # INFORM messages (agent.peer_beliefs); the obs memory snapshot gets
+        # the agent's current beliefs so prompts and logs stay message-borne.
         agent.observe(
             t=t,
             own_state=own_state,
-            peer_states=peer_states,
+            peer_states={
+                p: {"soc_kwh": b.soc_kwh, "soc_capacity": b.soc_capacity}
+                for p, b in agent.peer_beliefs.items()
+            },
             inbox=inboxes.get(hid, []),
             t_idx=t_idx,
         )

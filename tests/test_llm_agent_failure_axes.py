@@ -74,40 +74,38 @@ def _run(scenario_file: str, tmp_path: Path) -> dict:
     return json.loads((out / "summary.json").read_text())  # type: ignore[no-any-return]
 
 
-def test_defectors_scenario_runs_end_to_end(tmp_path: Path) -> None:
-    """The defectors scenario completes a full run with measurable message traffic.
-
-    Note: in Phase 2 the `wrapper` defector realization mutates the *payload* of
-    outbound OFFER/REQUEST/INFORM messages (their claimed kwh / soc_kwh), but the
-    underlying Transfer math used by settle_transfers is unaffected — so settled
-    outcomes (served fraction, transfer count) don't necessarily differ from clean.
-    The wrapper's per-message mutation is unit-tested in test_failure_modes.py.
-    Strict effect-on-outcome from defectors is a Phase 3 concern (requires
-    receiver-side reasoning that consumes the message payload as ground truth).
-    """
+def test_defector_wrapper_corruption_changes_outcomes(tmp_path: Path) -> None:
+    """Phase 3: the wrapper corrupts defectors' INFORM soc_kwh in transit, and
+    receivers now ROUTE ON those corrupted beliefs (below-mean filter), so the
+    defector cell must produce a different settled outcome than clean."""
+    clean = _run("haves_havenots__llm.yaml", tmp_path)
     dirty = _run("haves_havenots__defectors.yaml", tmp_path)
-    assert dirty["served_load_fraction"] > 0.0, dirty
     assert dirty["message_counts"]["sent"] > 0, dirty
+    assert (
+        dirty["served_load_fraction"] != clean["served_load_fraction"]
+        or dirty["transfer_count"] != clean["transfer_count"]
+    ), f"defector corruption had no settled effect: clean={clean['served_load_fraction']:.6f}/{clean['transfer_count']}, dirty={dirty['served_load_fraction']:.6f}/{dirty['transfer_count']}"
 
 
-def test_noise_scenario_runs_end_to_end(tmp_path: Path) -> None:
-    """The noise scenario completes a full run end-to-end.
-
-    Note: in Phase 2 with a MockLLMClient that always returns the same canned
-    policy regardless of prompt content, noise applied in `observe()` only
-    affects the agent's *memory* of own state — but `act()` consumes the
-    engine's true state directly. So noise doesn't propagate to settlement
-    outcomes in mock mode. Real-LLM runs (where the model reads the noisy
-    state in the prompt and writes different policies) are the right place to
-    test the served-load effect of noise; that's a Phase 3 live-experiment
-    concern. The NoiseSource correctness is unit-tested in test_failure_modes.
-    """
+def test_noise_changes_outcomes_vs_clean(tmp_path: Path) -> None:
+    """Phase 3: observation noise flows into INFORM payloads, hence into every
+    receiver's beliefs, hence into routing — the noise cell must differ from
+    clean on settled outcomes. (Pre-Phase-3 this test could only assert 'runs
+    end-to-end' because act() read engine truth and the assertion was
+    impossible by construction.)"""
+    clean = _run("haves_havenots__llm.yaml", tmp_path)
     noisy = _run("haves_havenots__noise.yaml", tmp_path)
     assert noisy["served_load_fraction"] > 0.0, noisy
-    assert noisy["message_counts"]["sent"] > 0, noisy
+    assert (
+        noisy["served_load_fraction"] != clean["served_load_fraction"]
+        or noisy["transfer_count"] != clean["transfer_count"]
+    ), f"noise had no settled effect: clean={clean['served_load_fraction']:.6f}/{clean['transfer_count']}, noisy={noisy['served_load_fraction']:.6f}/{noisy['transfer_count']}"
 
 
-def test_comm_constraint_reduces_message_delivery(tmp_path: Path) -> None:
+def test_comm_constraint_reduces_delivery_AND_changes_outcomes(tmp_path: Path) -> None:
+    """Phase 3: dropped/budgeted messages destroy the beliefs sharing depends
+    on, so comm constraints must both cut the delivery ratio AND move settled
+    outcomes vs clean."""
     clean = _run("haves_havenots__llm.yaml", tmp_path)
     constrained = _run("haves_havenots__comm.yaml", tmp_path)
     clean_ratio = clean["message_counts"]["delivered"] / max(1, clean["message_counts"]["sent"])
@@ -117,3 +115,7 @@ def test_comm_constraint_reduces_message_delivery(tmp_path: Path) -> None:
     assert (
         cons_ratio < clean_ratio
     ), f"clean ratio={clean_ratio:.3f} constrained ratio={cons_ratio:.3f}"
+    assert (
+        constrained["served_load_fraction"] != clean["served_load_fraction"]
+        or constrained["transfer_count"] != clean["transfer_count"]
+    ), "comm constraints had no settled effect"

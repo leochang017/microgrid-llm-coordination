@@ -34,10 +34,10 @@ finished those). New scripts: `sweep.py`, `eval_explanations.py`.
 - [x] Commit `feat: message-borne peer beliefs (INFORM emission + belief store) (P3 T2)`.
 
 ### Task 3: Cut the ground-truth feed
-- [ ] Facade `observe()` call no longer receives `peer_states` built from engine states; plan-prompt peers section renders `peer_beliefs` with age ("reported N ticks ago"); `act()` recipient filter consumes beliefs; unknown peers ineligible.
-- [ ] Update `test_llm_agent_failure_axes.py`: noise and comm cells must now produce measurable outcome deltas vs clean (the assertions the old architecture couldn't satisfy).
-- [ ] Replay determinism (both parse paths) still byte-identical; golden clean-cell mock numbers re-derived if moved (same commit).
-- [ ] Commit `feat!: agents decide on message-borne beliefs, never engine ground truth (P3 T3)`.
+- [x] Facade `observe()` call no longer receives `peer_states` built from engine states; plan-prompt peers section renders `peer_beliefs` with age ("reported N ticks ago"); `act()` recipient filter consumes beliefs; unknown peers ineligible.
+- [x] Update `test_llm_agent_failure_axes.py`: noise and comm cells must now produce measurable outcome deltas vs clean (the assertions the old architecture couldn't satisfy).
+- [x] Replay determinism (both parse paths) still byte-identical; golden clean-cell mock numbers re-derived if moved (same commit).
+- [x] Commit `feat!: agents decide on message-borne beliefs, never engine ground truth (P3 T3)`.
 
 ### Task 4: act() uses the noised own view
 - [ ] `observe()` stashes the visible own-state snapshot; `act()` reads it instead of the facade-passed raw state (facade keeps passing raw for capacity bookkeeping only).

@@ -43,9 +43,11 @@ def test_llm_fallback_is_deterministic(tmp_path: Path) -> None:
 
 
 def test_messaging_off_flag_suppresses_all_bus_traffic(tmp_path: Path) -> None:
-    """llm.messaging: off must keep every agent message off the bus while
-    transfers still flow — the ablation that isolates whether NL messaging
-    causally affects allocations."""
+    """llm.messaging: off keeps every message off the bus — and since Phase 3
+    ALL peer knowledge is message-borne, a communication blackout means no
+    beliefs, hence NO transfers. (Pre-Phase-3, messaging-off changed nothing
+    about transfers — proof that messages were epiphenomenal. Now the ablation
+    is the causal lower anchor: coordination requires communication.)"""
     from sim.agents.protocol import MessageBus
     from sim.network import build_overlay_neighborhood
 
@@ -64,7 +66,7 @@ def test_messaging_off_flag_suppresses_all_bus_traffic(tmp_path: Path) -> None:
     logger.close()
     messages = (tmp_path / "moff" / "messages.jsonl").read_text().strip()
     assert messages == ""
-    assert summary["transfer_count"] > 0
+    assert summary["transfer_count"] == 0  # no beliefs -> nobody shares blind
 
 
 def test_prepared_closures_keep_their_own_registries(tmp_path: Path) -> None:

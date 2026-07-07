@@ -228,6 +228,7 @@ class LLMAgent:
     # last_visible_own is the agent's noised self-view captured in observe().
     peer_beliefs: dict[str, PeerBelief] = field(default_factory=dict)
     last_visible_own: dict[str, Any] = field(default_factory=dict)
+    last_t_idx: int = 0
 
     # LLM call counters (for summary.json + Phase 3 cost accounting)
     n_plan_calls: int = 0
@@ -313,6 +314,7 @@ class LLMAgent:
                         soc_capacity=float(m.payload.get("soc_capacity", 0.0)),
                         t_idx_reported=t_idx,
                     )
+        self.last_t_idx = t_idx
         # Stash the noised self-view for act()/emit_informs (Phase 3: agents
         # decide and report from what they SEE, not engine truth).
         self.last_visible_own = {
@@ -663,31 +665,26 @@ class LLMAgent:
         if not candidates:
             return [], []
 
-        # Filter recipients to those with *below-mean SoC fraction* among
-        # peers we can see. Round-robin's secret sauce. If we have no
-        # peer-state knowledge for a candidate, skip the filter (be
-        # conservative: don't share blind).
-        if self.last_peer_states:
-            peer_fracs: list[float] = []
-            for st in self.last_peer_states.values():
-                cap = float(st.get("soc_capacity", 0.0))
-                if cap <= 0:
-                    continue
-                peer_fracs.append(float(st["soc_kwh"]) / cap)
-            if peer_fracs:
-                mean_frac = statistics.mean(peer_fracs)
-                filtered: list[tuple[str, str, float]] = []
-                for tgt, circle, weight in candidates:
-                    tgt_st = self.last_peer_states.get(tgt)
-                    if not tgt_st:
-                        # No info on this peer — skip (be conservative)
-                        continue
-                    tgt_cap = float(tgt_st.get("soc_capacity", 0.0))
-                    if tgt_cap <= 0:
-                        continue
-                    if float(tgt_st["soc_kwh"]) / tgt_cap < mean_frac:
-                        filtered.append((tgt, circle, weight))
-                candidates = filtered
+        # Filter recipients to those with *below-mean believed SoC fraction*.
+        # Phase 3: beliefs come only from INFORMs — a peer we have never heard
+        # from is NOT an eligible recipient (never share blind), and noise,
+        # corruption, and message loss therefore shape routing decisions.
+        peer_fracs: list[float] = []
+        for b in self.peer_beliefs.values():
+            if b.soc_capacity <= 0:
+                continue
+            peer_fracs.append(b.soc_kwh / b.soc_capacity)
+        if not peer_fracs:
+            return [], []
+        mean_frac = statistics.mean(peer_fracs)
+        filtered: list[tuple[str, str, float]] = []
+        for tgt, circle, weight in candidates:
+            belief = self.peer_beliefs.get(tgt)
+            if belief is None or belief.soc_capacity <= 0:
+                continue
+            if belief.soc_kwh / belief.soc_capacity < mean_frac:
+                filtered.append((tgt, circle, weight))
+        candidates = filtered
 
         if not candidates:
             return [], []

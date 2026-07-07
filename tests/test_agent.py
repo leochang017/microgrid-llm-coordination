@@ -177,18 +177,18 @@ def test_act_emits_offers_to_neighbors_when_soc_above_threshold(tmp_path) -> Non
     a.policy = _generous_policy()
     nb = _three_house_neighborhood()
     t0 = datetime(2026, 1, 1, 8, 0)
-    # Asymmetric peers + a third "have" peer the agent sees but doesn't share
-    # with directly — raises the mean so both connected peers (r0c1, r1c0)
-    # fall below it under the Phase-2.5 filter and receive OFFERs.
+    # Phase 3: peer knowledge arrives ONLY via INFORM messages. A third
+    # "have" peer raises the believed mean so both connected peers (r0c1,
+    # r1c0) fall below it and receive OFFERs.
     a.observe(
         t=t0,
         own_state=_own_state(8.0),
-        peer_states={
-            "r0c1": {"soc_kwh": 2.0, "soc_capacity": 10.0},  # geo neighbor, below mean
-            "r1c0": {"soc_kwh": 3.0, "soc_capacity": 10.0},  # owner neighbor, below mean
-            "r2c2": {"soc_kwh": 8.0, "soc_capacity": 10.0},  # visible but not a neighbor
-        },
-        inbox=[],
+        peer_states={},
+        inbox=[
+            _inform("r0c1", 2.0, 10.0, t0, "b1"),  # geo neighbor, below mean
+            _inform("r1c0", 3.0, 10.0, t0, "b2"),  # owner neighbor, below mean
+            _inform("r2c2", 8.0, 10.0, t0, "b3"),  # heard from, but not a neighbor
+        ],
         t_idx=0,
     )
     transfers, outbox = a.act(
@@ -213,16 +213,16 @@ def test_act_filters_recipients_by_below_mean_soc(tmp_path) -> None:
     a.policy = _generous_policy()
     nb = _three_house_neighborhood()
     t0 = datetime(2026, 1, 1, 8, 0)
-    # Asymmetric peers: r0c1 well below mean (have-not), r1c0 well above mean
-    # (another have). Only r0c1 should receive an OFFER.
+    # Asymmetric believed peers: r0c1 well below mean (have-not), r1c0 well
+    # above (another have). Beliefs from INFORMs only. Only r0c1 gets an OFFER.
     a.observe(
         t=t0,
         own_state=_own_state(8.0),
-        peer_states={
-            "r0c1": {"soc_kwh": 1.0, "soc_capacity": 10.0},
-            "r1c0": {"soc_kwh": 9.0, "soc_capacity": 10.0},
-        },
-        inbox=[],
+        peer_states={},
+        inbox=[
+            _inform("r0c1", 1.0, 10.0, t0, "c1"),
+            _inform("r1c0", 9.0, 10.0, t0, "c2"),
+        ],
         t_idx=0,
     )
     transfers, _ = a.act(t=t0, own_state=_own_state(8.0), neighborhood=nb, dt_hours=0.25)
