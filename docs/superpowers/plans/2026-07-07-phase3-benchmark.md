@@ -45,11 +45,11 @@ finished those). New scripts: `sweep.py`, `eval_explanations.py`.
 - [x] Commit `feat: act() decides on the agent's noised self-view (P3 T4)`.
 
 ### Task 5: Binding negotiation (REQUEST sizing + commitments)
-- [ ] REQUEST kwh = estimated next-tick deficit from the noised view (replaces hardcoded 0.5); payload carries `kwh` + `deficit_estimate`.
-- [ ] React replies parse a committed amount (`ACCEPT 0.4` / `COUNTER 0.2`; bare ACCEPT ⇒ requested amount, counted in `n_react_amount_defaulted`).
-- [ ] `LLMAgent.commitments` ledger (recipient, kwh_remaining, expires 2 ticks); `act()` serves commitments first, then residual policy-driven sharing; commitments respect policy caps.
-- [ ] Tests: request sizing math; ACCEPT creates commitment; commitment produces a transfer next tick; TTL expiry counted; llm_fallback unchanged (no commitments path).
-- [ ] Commit `feat: binding negotiation — need-sized REQUESTs and ACCEPT-gated commitments (P3 T5)`.
+- [x] REQUEST kwh = estimated next-tick deficit from the noised view (replaces hardcoded 0.5); payload carries `kwh` + `deficit_estimate`.
+- [x] React replies parse a committed amount (`ACCEPT 0.4` / `COUNTER 0.2`; bare ACCEPT ⇒ requested amount, counted in `n_react_amount_defaulted`).
+- [x] `LLMAgent.commitments` ledger (recipient, kwh_remaining, expires 2 ticks); `act()` serves commitments first, then residual policy-driven sharing; commitments respect policy caps.
+- [x] Tests: request sizing math; ACCEPT creates commitment; commitment produces a transfer next tick; TTL expiry counted; llm_fallback unchanged (no commitments path).
+- [x] Commit `feat: binding negotiation — need-sized REQUESTs and ACCEPT-gated commitments (P3 T5)`.
 
 ### Task 6: Failure-axis acceptance tests
 - [ ] Mock-LLM end-to-end: defector(prompt) cell — defector households transfer out measurably less than clean; noise cell — served/transfer deltas vs clean; comm cell — delivered/sent drop AND outcome delta.

@@ -134,3 +134,30 @@ def test_defector_wrapper_deterministic_given_seed() -> None:
     out_a = [a.maybe_corrupt(m).payload["kwh"] for _ in range(5)]
     out_b = [b.maybe_corrupt(m).payload["kwh"] for _ in range(5)]
     assert out_a == out_b
+
+
+def test_rng_seeding_is_stable_across_processes() -> None:
+    """All agent-layer RNG seeds must be identical under different
+    PYTHONHASHSEED values — Python's hash() is salted per process, and seeding
+    via hash((seed, "label", ...)) silently made defector assignment, noise
+    draws, bus drops, and agent RNGs differ between processes (2026-07-07)."""
+    import os
+    import subprocess
+    import sys
+
+    snippet = (
+        "from sim.agents.seeding import stable_seed;"
+        "from sim.agents.failure_modes import FailureModeConfig, NoiseSource, ObsNoiseConfig, assign_defectors;"
+        "n = NoiseSource(cfg=ObsNoiseConfig(soc_std_frac=0.2), scenario_seed=23);"
+        "print(stable_seed(23, 'agent', 'r0c0'), n.noise_soc(3, 'r0c0', 5.0, 10.0),"
+        " sorted(assign_defectors([f'h{i}' for i in range(10)],"
+        " FailureModeConfig(defector_fraction=0.3), 23)))"
+    )
+    outs = set()
+    for hash_seed in ("0", "1", "12345"):
+        env = dict(os.environ, PYTHONHASHSEED=hash_seed)
+        r = subprocess.run(
+            [sys.executable, "-c", snippet], capture_output=True, text=True, env=env, check=True
+        )
+        outs.add(r.stdout.strip())
+    assert len(outs) == 1, f"seeding varies with PYTHONHASHSEED: {outs}"

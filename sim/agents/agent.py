@@ -15,6 +15,7 @@ modes from advisor mandate 2026-05-26.
 
 from __future__ import annotations
 
+import math
 import random
 import re
 import statistics
@@ -27,6 +28,7 @@ from sim.agents.llm import LLMClient, LLMRequest
 from sim.agents.memory import MemoryEntry, MemoryStream
 from sim.agents.policy import Policy, PolicyValidationError, policy_from_yaml
 from sim.agents.protocol import Message, new_correlation_id
+from sim.agents.seeding import stable_seed
 from sim.network import Neighborhood
 from sim.types import Transfer
 
@@ -178,6 +180,18 @@ class PeerBelief:
     t_idx_reported: int
 
 
+@dataclass(slots=True)
+class Commitment:
+    """Energy this agent has PROMISED to deliver (its ACCEPT/COUNTER to a
+    REQUEST). Served by act() ahead of discretionary sharing, bypassing the
+    below-mean belief filter — a promise is a promise — until fulfilled or
+    expired (TTL keeps damage from over-promising bounded)."""
+
+    recipient: str
+    kwh_remaining: float
+    expires_t_idx: int
+
+
 @dataclass
 class LLMAgent:
     """One per household; owns memory, policy, RNG, and references to shared LLM client + noise."""
@@ -229,6 +243,7 @@ class LLMAgent:
     peer_beliefs: dict[str, PeerBelief] = field(default_factory=dict)
     last_visible_own: dict[str, Any] = field(default_factory=dict)
     last_t_idx: int = 0
+    commitments: list[Commitment] = field(default_factory=list)
 
     # LLM call counters (for summary.json + Phase 3 cost accounting)
     n_plan_calls: int = 0
@@ -238,13 +253,16 @@ class LLMAgent:
     n_plan_parse_failures: int = 0
     n_plan_fallbacks: int = 0
     n_react_refusals: int = 0  # how many times the LLM refused selfish-prompt instructions
+    n_commitments_made: int = 0
+    n_commitments_expired: int = 0
+    n_react_amount_defaulted: int = 0  # ACCEPT/COUNTER without a parseable kwh
 
     _prev_soc_frac: float | None = field(default=None, init=False, repr=False)
     plan_consecutive_failures: int = field(default=0, init=False)
     rng: random.Random = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
-        self.rng = random.Random(hash((self.scenario_seed, "agent", self.house_id)) & 0xFFFFFFFF)
+        self.rng = random.Random(stable_seed(self.scenario_seed, "agent", self.house_id))
 
     # ------------------------------------------------------------------
     # observe (no LLM)
@@ -592,8 +610,10 @@ class LLMAgent:
             f"share_min_soc_frac={self.policy.share_min_soc_frac}, "
             f"distrusted_peers={list(self.policy.distrusted_peers)}.\n"
             f"Your latest belief: {self.policy.belief_note or '(none)'}.\n"
-            f"Reply with one of ACCEPT / REJECT / COUNTER on the first line, "
-            f"followed by `rationale: <one sentence>`."
+            f"Reply on the first line with `ACCEPT <kwh>` (commit to deliver that "
+            f"much), `COUNTER <kwh>` (commit to a smaller amount), or `REJECT` — "
+            f"then `rationale: <one sentence>`. Your commitment is binding for "
+            f"the next 2 ticks."
         )
         resp = self.llm_client.call(
             LLMRequest(
@@ -605,7 +625,8 @@ class LLMAgent:
         )
         self.n_react_calls += 1
         text = resp.text.strip()
-        first_line = text.split("\n", 1)[0].strip().upper()
+        tokens = text.split("\n", 1)[0].strip().upper().split()
+        first_line = tokens[0] if tokens else ""
         if first_line not in ("ACCEPT", "REJECT", "COUNTER"):
             # Selfish-prompted models often refuse adversarial instructions
             # entirely. We count this and return None so the bus doesn't
@@ -619,12 +640,38 @@ class LLMAgent:
             if low.startswith("rationale:"):
                 rationale = line.split(":", 1)[1].strip()
                 break
+        # Phase 3: an ACCEPT/COUNTER to a REQUEST is BINDING — it enters the
+        # commitments ledger and act() will ship the energy. The committed
+        # amount is parsed from the first line; a bare ACCEPT defaults to the
+        # requested amount (counted, so live runs reveal how often the model
+        # omits it).
+        amount: float | None = None
+        if len(tokens) > 1:
+            try:
+                amount = float(tokens[1])
+            except ValueError:
+                amount = None
+        payload = dict(m.payload)
+        if first_line in ("ACCEPT", "COUNTER") and m.performative == "REQUEST":
+            if amount is None or amount <= 0:
+                amount = float(payload.get("kwh", 0.0) or 0.0)
+                self.n_react_amount_defaulted += 1
+            if amount > 0:
+                self.commitments.append(
+                    Commitment(
+                        recipient=m.sender,
+                        kwh_remaining=amount,
+                        expires_t_idx=self.last_t_idx + 2,
+                    )
+                )
+                self.n_commitments_made += 1
+            payload["kwh"] = amount
         return Message(
             t_sent=t,
             sender=self.house_id,
             recipient=m.sender,
             performative=first_line,  # type: ignore[arg-type]
-            payload=dict(m.payload),
+            payload=payload,
             rationale_nl=rationale or "(no rationale)",
             correlation_id=m.correlation_id,
         )
@@ -664,12 +711,50 @@ class LLMAgent:
         headroom_kwh = max(0.0, soc - dod_floor)
         soc_frac = soc / max(1e-9, capacity)
 
+        # Serve outstanding commitments FIRST (Phase 3): promised energy ships
+        # regardless of the below-mean filter and threshold, bounded by the
+        # policy power cap and believed headroom. Expired promises are dropped
+        # and counted.
+        c_transfers: list[Transfer] = []
+        c_outbox: list[Message] = []
+        committed_kw = 0.0
+        if self.commitments:
+            budget_kw = min(self.policy.max_share_kw_per_tick, headroom_kwh / dt_hours)
+            still_open: list[Commitment] = []
+            for c in self.commitments:
+                if self.last_t_idx > c.expires_t_idx:
+                    self.n_commitments_expired += 1
+                    continue
+                kw = min(c.kwh_remaining / dt_hours, max(0.0, budget_kw - committed_kw))
+                if kw > 1e-12:
+                    c_transfers.append(Transfer(from_id=self.house_id, to_id=c.recipient, kw=kw))
+                    c_outbox.append(
+                        Message(
+                            t_sent=t,
+                            sender=self.house_id,
+                            recipient=c.recipient,
+                            performative="OFFER",
+                            payload={"kwh": kw * dt_hours, "committed": True},
+                            rationale_nl=(
+                                f"honoring my accepted request: delivering "
+                                f"{kw * dt_hours:.2f} kWh as committed"
+                            ),
+                            correlation_id=new_correlation_id(rng=self.rng),
+                        )
+                    )
+                    c.kwh_remaining -= kw * dt_hours
+                    committed_kw += kw
+                if c.kwh_remaining > 1e-9 and self.last_t_idx <= c.expires_t_idx:
+                    still_open.append(c)
+            self.commitments = still_open
+            headroom_kwh = max(0.0, headroom_kwh - committed_kw * dt_hours)
+
         if soc_frac < self.policy.share_min_soc_frac:
-            return [], self._emit_requests(t, neighborhood, soc_frac)
+            return c_transfers, c_outbox + self._emit_requests(t, neighborhood, soc_frac, dt_hours)
 
         candidates = self._candidate_recipients(neighborhood)
         if not candidates:
-            return [], []
+            return c_transfers, c_outbox
 
         # Filter recipients to those with *below-mean believed SoC fraction*.
         # Phase 3: beliefs come only from INFORMs — a peer we have never heard
@@ -681,7 +766,7 @@ class LLMAgent:
                 continue
             peer_fracs.append(b.soc_kwh / b.soc_capacity)
         if not peer_fracs:
-            return [], []
+            return c_transfers, c_outbox
         mean_frac = statistics.mean(peer_fracs)
         filtered: list[tuple[str, str, float]] = []
         for tgt, circle, weight in candidates:
@@ -693,24 +778,24 @@ class LLMAgent:
         candidates = filtered
 
         if not candidates:
-            return [], []
+            return c_transfers, c_outbox
 
         # Phase 2.8: share fraction is an LLM-controlled policy field
         # (Policy.share_fraction_per_tick), defaulting to round_robin's 0.05.
         share_kwh = min(
             self.policy.share_fraction_per_tick * headroom_kwh,
-            self.policy.max_share_kw_per_tick * dt_hours,
+            max(0.0, self.policy.max_share_kw_per_tick - committed_kw) * dt_hours,
         )
         share_kw = share_kwh / dt_hours
         if share_kw <= 0:
-            return [], []
+            return c_transfers, c_outbox
 
         total_weight = sum(w for _, _, w in candidates)
         if total_weight <= 0:
-            return [], []
+            return c_transfers, c_outbox
 
-        transfers: list[Transfer] = []
-        outbox: list[Message] = []
+        transfers: list[Transfer] = list(c_transfers)
+        outbox: list[Message] = list(c_outbox)
         for target, circle, weight in candidates:
             kw = share_kw * (weight / total_weight)
             if kw <= 0:
@@ -781,9 +866,29 @@ class LLMAgent:
         return candidates
 
     def _emit_requests(
-        self, t: datetime, neighborhood: Neighborhood, soc_frac: float
+        self, t: datetime, neighborhood: Neighborhood, soc_frac: float, dt_hours: float
     ) -> list[Message]:
-        """Below-threshold houses send REQUEST messages to highest-priority circles."""
+        """Below-threshold houses REQUEST their estimated next-tick deficit.
+
+        Phase 3: the amount is the genuine shortfall from the NOISED view —
+        `(load - solar)*dt - deliverable_from_battery` — replacing the
+        pre-Phase-3 hardcoded 0.5 kWh (which made every negotiation about a
+        constant nothing consumed). No deficit -> no request.
+        """
+        view = self.last_visible_own
+        if not view:
+            return []
+        cap = float(view.get("soc_capacity", 0.0))
+        floor = float(view.get("dod_floor_frac", 0.1)) * cap
+        avail = max(0.0, float(view["soc_kwh"]) - floor)
+        rate = float(self.household_context.get("battery_max_rate_kw", 0.0))
+        eta = float(self.household_context.get("rt_efficiency", 1.0))
+        deliverable_kwh = min(rate * dt_hours, avail) * math.sqrt(eta)
+        load_kw = float(view.get("load_kw", 0.0))
+        solar_kw = float(view.get("solar_kw", 0.0))
+        need_kwh = max(0.0, (load_kw - solar_kw) * dt_hours - deliverable_kwh)
+        if need_kwh <= 1e-9:
+            return []
         candidates = self._candidate_recipients(neighborhood)
         candidates.sort(key=lambda x: x[2], reverse=True)
         top = candidates[:3]
@@ -796,10 +901,14 @@ class LLMAgent:
                     sender=self.house_id,
                     recipient=target,
                     performative="REQUEST",
-                    payload={"kwh": 0.5, "urgency": urgency},
+                    payload={
+                        "kwh": need_kwh,
+                        "deficit_estimate": need_kwh,
+                        "urgency": urgency,
+                    },
                     rationale_nl=(
-                        f"SoC frac {soc_frac:.2f} below share threshold; "
-                        f"requesting energy via {circle} circle."
+                        f"SoC frac {soc_frac:.2f} below share threshold; next-tick "
+                        f"shortfall ~{need_kwh:.2f} kWh; requesting via {circle} circle."
                     ),
                     correlation_id=new_correlation_id(rng=self.rng),
                 )

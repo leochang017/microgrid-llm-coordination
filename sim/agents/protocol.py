@@ -19,6 +19,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal
 
+from sim.agents.seeding import stable_seed
 from sim.network import Neighborhood
 
 Performative = Literal["REQUEST", "OFFER", "ACCEPT", "REJECT", "COUNTER", "INFORM"]
@@ -96,7 +97,7 @@ class MessageBus:
     _budget_used: dict[tuple[datetime, str], int] = field(default_factory=lambda: defaultdict(int))
 
     def __post_init__(self) -> None:
-        self._rng = random.Random(hash((self.seed, "bus")) & 0xFFFFFFFF)
+        self._rng = random.Random(stable_seed(self.seed, "bus"))
 
     def configure_failure_modes(
         self,

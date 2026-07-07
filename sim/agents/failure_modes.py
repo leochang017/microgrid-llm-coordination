@@ -15,6 +15,7 @@ from dataclasses import dataclass, field, replace
 from typing import Any, Literal
 
 from sim.agents.protocol import Message
+from sim.agents.seeding import stable_seed
 
 
 @dataclass(frozen=True)
@@ -77,7 +78,7 @@ def assign_defectors(
         return set(cfg.defector_house_ids)
     if cfg.defector_fraction <= 0:
         return set()
-    rng = random.Random(hash((scenario_seed, "defector_assignment")) & 0xFFFFFFFF)
+    rng = random.Random(stable_seed(scenario_seed, "defector_assignment"))
     n = round(len(house_ids) * cfg.defector_fraction)
     return set(rng.sample(house_ids, k=n))
 
@@ -91,9 +92,7 @@ class NoiseSource:
     scenario_seed: int
 
     def _gaussian(self, t_idx: int, house_id: str, channel: str) -> float:
-        rng = random.Random(
-            hash((self.scenario_seed, "noise", channel, house_id, t_idx)) & 0xFFFFFFFF
-        )
+        rng = random.Random(stable_seed(self.scenario_seed, "noise", channel, house_id, t_idx))
         return rng.gauss(0.0, 1.0)
 
     def noise_soc(self, t_idx: int, house_id: str, true_soc: float, capacity: float) -> float:
@@ -128,16 +127,13 @@ class DefectorWrapper:
         if m.sender not in self.defectors:
             return m
         rng = random.Random(
-            hash(
-                (
-                    self.scenario_seed,
-                    "defector_wrap",
-                    m.sender,
-                    m.correlation_id,
-                    m.t_sent.isoformat(),
-                )
+            stable_seed(
+                self.scenario_seed,
+                "defector_wrap",
+                m.sender,
+                m.correlation_id,
+                m.t_sent.isoformat(),
             )
-            & 0xFFFFFFFF
         )
         new_payload = dict(m.payload)
         if m.performative == "OFFER" and "kwh" in new_payload:

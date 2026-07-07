@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+import pytest
 import yaml
 
 from sim.agents.agent import LLMAgent
@@ -791,12 +792,15 @@ def test_act_decides_on_noised_view_not_raw_state(tmp_path) -> None:
     nb = build_grid_neighborhood(rows=1, cols=3, bus_max_kw=50.0)
     t0 = datetime(2026, 1, 1, 8, 0)
     true_soc = 5.0
+    # Two beliefs so the below-mean filter can pass someone: r0c1 (needy
+    # neighbor) sits below the mean lifted by r0c2 (rich non-neighbor).
     a.observe(
         t=t0,
         own_state=_own(soc=true_soc),
         peer_states={},
         inbox=[
             _inform("r0c1", 1.0, 10.0, t0, "n1"),
+            _inform("r0c2", 9.0, 10.0, t0, "n2"),
         ],
         t_idx=0,
     )
@@ -818,3 +822,185 @@ def test_act_decides_on_noised_view_not_raw_state(tmp_path) -> None:
         # Visible below threshold -> requests (raw would have shared).
         assert not transfers
         assert all(m.performative == "REQUEST" for m in outbox)
+
+
+# --- Phase 3 Task 5: binding negotiation ---
+
+
+def _ctx() -> dict:
+    return {
+        "battery_kwh": 10.0,
+        "battery_max_rate_kw": 2.0,
+        "rt_efficiency": 1.0,
+        "dod_floor_frac": 0.1,
+        "outage_start_iso": "",
+        "outage_end_iso": "",
+        "n_houses_neighborhood": 3,
+    }
+
+
+def test_request_kwh_sized_by_estimated_deficit(tmp_path) -> None:
+    """REQUEST asks for the actual next-tick shortfall, not a hardcoded 0.5:
+    need = (load - solar)*dt - deliverable_from_battery, from the noised view."""
+    from sim.network import build_grid_neighborhood
+
+    a = _bare_agent(tmp_path)
+    a.household_context = _ctx()
+    nb = build_grid_neighborhood(rows=1, cols=3, bus_max_kw=50.0)
+    t0 = datetime(2026, 1, 1, 8, 0)
+    # soc 1.2, floor 1.0 -> avail 0.2 kWh; rate 2 kW * 0.25 h = 0.5 kWh cap
+    # deliverable = min(0.5, 0.2) * 1.0 = 0.2 kWh. load 4 kW, solar 0:
+    # need = 4*0.25 - 0.2 = 0.8 kWh.
+    own = {
+        "soc_kwh": 1.2,
+        "soc_capacity": 10.0,
+        "grid_islanded": True,
+        "load_kw": 4.0,
+        "solar_kw": 0.0,
+        "dod_floor_frac": 0.1,
+    }
+    a.observe(
+        t=t0,
+        own_state=own,
+        peer_states={},
+        inbox=[
+            _inform("r0c1", 9.0, 10.0, t0, "q1"),
+        ],
+        t_idx=0,
+    )
+    _, outbox = a.act(t=t0, own_state=own, neighborhood=nb, dt_hours=0.25)
+    reqs = [m for m in outbox if m.performative == "REQUEST"]
+    assert reqs, "below-threshold agent with deficit must request"
+    for m in reqs:
+        assert m.payload["kwh"] == pytest.approx(0.8, abs=1e-9)
+        assert m.payload["deficit_estimate"] == pytest.approx(0.8, abs=1e-9)
+
+
+def test_no_request_when_battery_covers_the_load(tmp_path) -> None:
+    from sim.network import build_grid_neighborhood
+
+    a = _bare_agent(tmp_path)
+    a.household_context = _ctx()
+    nb = build_grid_neighborhood(rows=1, cols=3, bus_max_kw=50.0)
+    t0 = datetime(2026, 1, 1, 8, 0)
+    # soc 2.0, floor 1.0 -> avail 1.0; deliverable = min(0.5, 1.0) = 0.5 kWh;
+    # load 1 kW * 0.25 = 0.25 kWh < 0.5 -> no deficit -> no REQUEST spam.
+    own = {
+        "soc_kwh": 2.0,
+        "soc_capacity": 10.0,
+        "grid_islanded": True,
+        "load_kw": 1.0,
+        "solar_kw": 0.0,
+        "dod_floor_frac": 0.1,
+    }
+    a.observe(
+        t=t0,
+        own_state=own,
+        peer_states={},
+        inbox=[
+            _inform("r0c1", 9.0, 10.0, t0, "q2"),
+        ],
+        t_idx=0,
+    )
+    _, outbox = a.act(t=t0, own_state=own, neighborhood=nb, dt_hours=0.25)
+    assert [m for m in outbox if m.performative == "REQUEST"] == []
+
+
+def _request(sender: str, kwh: float, t: datetime, cid: str) -> Message:
+    return Message(
+        t_sent=t,
+        sender=sender,
+        recipient="r0c0",
+        performative="REQUEST",
+        payload={"kwh": kwh, "urgency": "normal"},
+        rationale_nl="need energy",
+        correlation_id=cid,
+    )
+
+
+def _react_agent(tmp_path, reply_text: str) -> LLMAgent:
+    a = _bare_agent(tmp_path)
+    a.llm_client = MockLLMClient(
+        cache=PromptCache(local_dir=tmp_path / "rc"),
+        canned={"You are reacting": LLMResponse(text=reply_text, tokens_in=50, tokens_out=10)},
+    )
+    return a
+
+
+def test_accept_with_amount_creates_commitment(tmp_path) -> None:
+    a = _react_agent(tmp_path, "ACCEPT 0.4\nrationale: can spare that much")
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.observe(
+        t=t0, own_state=_own(8.0), peer_states={}, inbox=[_request("r0c1", 0.9, t0, "r1")], t_idx=0
+    )
+    out = a.react_to_pending(t=t0)
+    assert out[0].performative == "ACCEPT"
+    assert out[0].payload["kwh"] == pytest.approx(0.4)
+    assert len(a.commitments) == 1
+    c = a.commitments[0]
+    assert c.recipient == "r0c1" and c.kwh_remaining == pytest.approx(0.4)
+    assert a.n_commitments_made == 1
+
+
+def test_bare_accept_defaults_to_requested_amount(tmp_path) -> None:
+    a = _react_agent(tmp_path, "ACCEPT\nrationale: ok")
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.observe(
+        t=t0, own_state=_own(8.0), peer_states={}, inbox=[_request("r0c1", 0.9, t0, "r2")], t_idx=0
+    )
+    a.react_to_pending(t=t0)
+    assert a.commitments[0].kwh_remaining == pytest.approx(0.9)
+    assert a.n_react_amount_defaulted == 1
+
+
+def test_counter_commits_at_countered_amount(tmp_path) -> None:
+    a = _react_agent(tmp_path, "COUNTER 0.2\nrationale: only a little")
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.observe(
+        t=t0, own_state=_own(8.0), peer_states={}, inbox=[_request("r0c1", 0.9, t0, "r3")], t_idx=0
+    )
+    out = a.react_to_pending(t=t0)
+    assert out[0].performative == "COUNTER"
+    assert a.commitments[0].kwh_remaining == pytest.approx(0.2)
+
+
+def test_reject_creates_no_commitment(tmp_path) -> None:
+    a = _react_agent(tmp_path, "REJECT\nrationale: no headroom")
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.observe(
+        t=t0, own_state=_own(8.0), peer_states={}, inbox=[_request("r0c1", 0.9, t0, "r4")], t_idx=0
+    )
+    a.react_to_pending(t=t0)
+    assert a.commitments == []
+
+
+def test_commitment_produces_transfer_bypassing_belief_filter(tmp_path) -> None:
+    """A promise is a promise: committed energy flows next act() even though
+    the recipient's believed SoC would fail the below-mean filter."""
+    from sim.agents.agent import Commitment
+    from sim.network import build_grid_neighborhood
+
+    a = _bare_agent(tmp_path)
+    nb = build_grid_neighborhood(rows=1, cols=3, bus_max_kw=50.0)
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.observe(t=t0, own_state=_own(8.0), peer_states={}, inbox=[], t_idx=0)
+    a.commitments.append(Commitment(recipient="r0c1", kwh_remaining=0.4, expires_t_idx=2))
+    transfers, outbox = a.act(t=t0, own_state=_own(8.0), neighborhood=nb, dt_hours=0.25)
+    by_target = {tr.to_id: tr.kw for tr in transfers}
+    assert by_target.get("r0c1") == pytest.approx(0.4 / 0.25)
+    assert a.commitments == []  # fully served
+    assert any(m.recipient == "r0c1" and m.performative == "OFFER" for m in outbox)
+
+
+def test_commitment_expires_after_ttl_with_counter(tmp_path) -> None:
+    from sim.agents.agent import Commitment
+    from sim.network import build_grid_neighborhood
+
+    a = _bare_agent(tmp_path)
+    nb = build_grid_neighborhood(rows=1, cols=3, bus_max_kw=50.0)
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.commitments.append(Commitment(recipient="r0c1", kwh_remaining=0.4, expires_t_idx=1))
+    a.observe(t=t0, own_state=_own(8.0), peer_states={}, inbox=[], t_idx=3)  # past TTL
+    a.act(t=t0, own_state=_own(8.0), neighborhood=nb, dt_hours=0.25)
+    assert a.commitments == []
+    assert a.n_commitments_expired == 1
