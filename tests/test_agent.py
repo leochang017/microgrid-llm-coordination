@@ -778,3 +778,43 @@ def test_emit_informs_empty_before_first_observe(tmp_path) -> None:
     a = _bare_agent(tmp_path)
     nb = build_grid_neighborhood(rows=1, cols=3, bus_max_kw=50.0)
     assert a.emit_informs(t=datetime(2026, 1, 1, 8, 0), neighborhood=nb) == []
+
+
+def test_act_decides_on_noised_view_not_raw_state(tmp_path) -> None:
+    """Phase 3 T4: the share-vs-request branch must follow the agent's noised
+    self-view from observe(), not the raw engine state the facade passes."""
+    from sim.agents.failure_modes import ObsNoiseConfig
+    from sim.network import build_grid_neighborhood
+
+    a = _bare_agent(tmp_path)
+    a.noise = NoiseSource(cfg=ObsNoiseConfig(soc_std_frac=0.4), scenario_seed=7)
+    nb = build_grid_neighborhood(rows=1, cols=3, bus_max_kw=50.0)
+    t0 = datetime(2026, 1, 1, 8, 0)
+    true_soc = 5.0
+    a.observe(
+        t=t0,
+        own_state=_own(soc=true_soc),
+        peer_states={},
+        inbox=[
+            _inform("r0c1", 1.0, 10.0, t0, "n1"),
+        ],
+        t_idx=0,
+    )
+    visible = a.last_visible_own["soc_kwh"]
+    assert visible != true_soc
+    # Pick a threshold strictly between the true and visible SoC fractions:
+    # the branch act() takes reveals which value it consulted.
+    import dataclasses
+
+    lo, hi = sorted((true_soc / 10.0, visible / 10.0))
+    a.policy = dataclasses.replace(
+        a.policy, share_min_soc_frac=(lo + hi) / 2, sharing_intent="generous"
+    )
+    transfers, outbox = a.act(t=t0, own_state=_own(soc=true_soc), neighborhood=nb, dt_hours=0.25)
+    if visible > true_soc:
+        # Visible above threshold -> shares (raw would have requested).
+        assert transfers or any(m.performative == "OFFER" for m in outbox)
+    else:
+        # Visible below threshold -> requests (raw would have shared).
+        assert not transfers
+        assert all(m.performative == "REQUEST" for m in outbox)

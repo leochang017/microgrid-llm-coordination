@@ -652,8 +652,14 @@ class LLMAgent:
         if not bool(own_state.get("grid_islanded", False)):
             return [], []
 
-        soc = float(own_state["soc_kwh"])
-        capacity = float(own_state["soc_capacity"])
+        # Phase 3 T4: decisions run on the agent's NOISED self-view captured in
+        # observe() — the engine still settles against true state, so agents
+        # can over-promise or under-share exactly the way imperfect knowledge
+        # should cause. Raw own_state is only the fallback for direct unit
+        # calls that skipped observe(), plus non-noised bookkeeping fields.
+        view = self.last_visible_own or own_state
+        soc = float(view["soc_kwh"])
+        capacity = float(view.get("soc_capacity", own_state["soc_capacity"]))
         dod_floor = float(own_state.get("dod_floor_frac", 0.1)) * capacity
         headroom_kwh = max(0.0, soc - dod_floor)
         soc_frac = soc / max(1e-9, capacity)

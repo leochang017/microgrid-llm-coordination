@@ -40,9 +40,9 @@ finished those). New scripts: `sweep.py`, `eval_explanations.py`.
 - [x] Commit `feat!: agents decide on message-borne beliefs, never engine ground truth (P3 T3)`.
 
 ### Task 4: act() uses the noised own view
-- [ ] `observe()` stashes the visible own-state snapshot; `act()` reads it instead of the facade-passed raw state (facade keeps passing raw for capacity bookkeeping only).
-- [ ] Test: with soc noise configured, act()'s share decisions differ from the zero-noise run on the same seed.
-- [ ] Commit `feat: act() decides on the agent's noised self-view (P3 T4)`.
+- [x] `observe()` stashes the visible own-state snapshot; `act()` reads it instead of the facade-passed raw state (facade keeps passing raw for capacity bookkeeping only).
+- [x] Test: with soc noise configured, act()'s share decisions differ from the zero-noise run on the same seed.
+- [x] Commit `feat: act() decides on the agent's noised self-view (P3 T4)`.
 
 ### Task 5: Binding negotiation (REQUEST sizing + commitments)
 - [ ] REQUEST kwh = estimated next-tick deficit from the noised view (replaces hardcoded 0.5); payload carries `kwh` + `deficit_estimate`.
