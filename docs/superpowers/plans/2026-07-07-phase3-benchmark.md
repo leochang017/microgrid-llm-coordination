@@ -62,9 +62,9 @@ finished those). New scripts: `sweep.py`, `eval_explanations.py`.
 - [x] Commit `feat: needs-aware fairness metrics (critical load, Rawlsian floor, Jain) (P3 T7)`.
 
 ### Task 8: Explainability substrate
-- [ ] messages.jsonl rationale entries flagged `templated: true/false`; llm_agent rationales trace to LLM output.
-- [ ] `scripts/eval_explanations.py`: rubric LLM-judge over sampled messages/policies, PromptCache-backed, `--mock` mode for tests; 3-axis rubric per spec.
-- [ ] Commit `feat: explanation provenance + rubric judge harness (P3 T8)`.
+- [x] messages.jsonl rationale entries flagged `templated: true/false`; llm_agent rationales trace to LLM output.
+- [x] `scripts/eval_explanations.py`: rubric LLM-judge over sampled messages/policies, PromptCache-backed, `--mock` mode for tests; 3-axis rubric per spec.
+- [x] Commit `feat: explanation provenance + rubric judge harness (P3 T8)`.
 
 ### Task 9: Override + sweep machinery
 - [ ] `run.py --set dotted.key=value` (repeatable) with type coercion + unknown-key rejection.

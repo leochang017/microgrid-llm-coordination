@@ -674,6 +674,7 @@ class LLMAgent:
             payload=payload,
             rationale_nl=rationale or "(no rationale)",
             correlation_id=m.correlation_id,
+            templated=not rationale,  # LLM-authored when a rationale was parsed
         )
 
     # ------------------------------------------------------------------

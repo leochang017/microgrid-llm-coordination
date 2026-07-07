@@ -1,0 +1,184 @@
+"""Rubric-based LLM-judge for agent explanations (Phase 3 Task 8).
+
+  python -m scripts.eval_explanations --run-dir runs/<...>/<ts> [--n 50] [--mock]
+
+Samples LLM-authored messages (templated=false in messages.jsonl) from a run,
+pairs each with the sender's logged reality at that tick (state.jsonl), and
+asks a judge model to score the rationale 1-5 on three axes:
+
+  state_accuracy : does the explanation match the sender's actual logged state?
+  actionability  : could a resident act on it (amounts, direction, reason)?
+  consistency    : does it match what the sender actually did that tick?
+
+Output: <run-dir>/explanations_eval.json with per-axis means + per-sample rows.
+
+METHOD NOTE [ADVISOR]: LLM-judge with this rubric is the provisional
+instrument (a human-subjects study is not feasible pre-college). Confirm with
+the advisor before the paper freezes on it. Judge calls go through the
+standard PromptCache, so re-scoring a run is free; --mock uses a fixed-score
+stub for tests and costs nothing.
+
+Sampling is deterministic (seeded from the run's config.json seed), so two
+invocations score the same messages.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import random
+import re
+from pathlib import Path
+from typing import Any
+
+from sim.agents.cache import PromptCache
+from sim.agents.llm import AnthropicLLMClient, LLMClient, LLMRequest, LLMResponse, MockLLMClient
+
+_AXES = ("state_accuracy", "actionability", "consistency")
+
+_JUDGE_SYSTEM = (
+    "You are grading explanations that household energy agents gave their "
+    "neighbors during a simulated grid outage. Score STRICTLY on the rubric; "
+    "reply with ONLY a JSON object like "
+    '{"state_accuracy": 1-5, "actionability": 1-5, "consistency": 1-5}.'
+)
+
+_MOCK_JUDGE_RESPONSE = LLMResponse(
+    text='{"state_accuracy": 3, "actionability": 3, "consistency": 3}',
+    tokens_in=0,
+    tokens_out=0,
+)
+
+
+def _load_jsonl(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+
+
+def _judge_prompt(msg: dict[str, Any], state_row: dict[str, Any] | None) -> str:
+    reality = (
+        json.dumps(
+            {
+                k: state_row[k]
+                for k in ("soc_kwh", "solar_kw", "load_kw", "grid_status", "unmet_kwh")
+                if state_row and k in state_row
+            }
+        )
+        if state_row
+        else "(no state row found for sender at this tick)"
+    )
+    return (
+        f"Message from {msg['sender']} to {msg['recipient']} "
+        f"({msg['performative']}, payload={json.dumps(msg['payload'])}):\n"
+        f"Explanation given: \"{msg['rationale_nl']}\"\n"
+        f"Sender's actual logged state at that tick: {reality}\n\n"
+        f"Rubric (score each 1-5):\n"
+        f"- state_accuracy: does the explanation's account of the sender's "
+        f"situation match the logged state?\n"
+        f"- actionability: could the recipient act on this (clear amount, "
+        f"direction, and reason)?\n"
+        f"- consistency: is the explanation consistent with the action taken "
+        f"(the performative and payload)?"
+    )
+
+
+def _parse_scores(text: str) -> dict[str, int] | None:
+    m = re.search(r"\{.*\}", text, flags=re.DOTALL)
+    if not m:
+        return None
+    try:
+        raw = json.loads(m.group(0))
+        scores = {axis: int(raw[axis]) for axis in _AXES}
+    except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+        return None
+    if all(1 <= v <= 5 for v in scores.values()):
+        return scores
+    return None
+
+
+def evaluate_run(
+    run_dir: Path,
+    *,
+    n: int = 50,
+    client: LLMClient | None = None,
+    model: str = "claude-haiku-4-5-20251001",
+) -> dict[str, Any]:
+    messages = _load_jsonl(run_dir / "messages.jsonl")
+    config = json.loads((run_dir / "config.json").read_text())
+    states = _load_jsonl(run_dir / "state.jsonl")
+    state_by_key = {(r["t"], r["house_id"]): r for r in states}
+
+    authored = [m for m in messages if not m.get("templated", True)]
+    templated_count = len(messages) - len(authored)
+    rng = random.Random(int(config.get("seed", 0)))
+    sample = authored if len(authored) <= n else rng.sample(authored, n)
+
+    if client is None:
+        client = AnthropicLLMClient(
+            cache=PromptCache(local_dir=run_dir / "judge_cache", reference_dir=None),
+            api_key="",
+        )
+
+    rows: list[dict[str, Any]] = []
+    unparseable = 0
+    for msg in sample:
+        prompt = _judge_prompt(msg, state_by_key.get((msg["t_sent"], msg["sender"])))
+        resp = client.call(
+            LLMRequest(model=model, system=_JUDGE_SYSTEM, user=prompt, max_tokens=100)
+        )
+        scores = _parse_scores(resp.text)
+        if scores is None:
+            unparseable += 1
+            continue
+        rows.append({"sender": msg["sender"], "t_sent": msg["t_sent"], **scores})
+
+    means = {axis: (sum(r[axis] for r in rows) / len(rows) if rows else None) for axis in _AXES}
+    result: dict[str, Any] = {
+        "run_dir": str(run_dir),
+        "n_messages_total": len(messages),
+        "n_llm_authored": len(authored),
+        "n_templated": templated_count,
+        "n_scored": len(rows),
+        "n_unparseable_judge_replies": unparseable,
+        "means": means,
+        "samples": rows,
+    }
+    (run_dir / "explanations_eval.json").write_text(json.dumps(result, indent=2))
+    return result
+
+
+def main() -> None:
+    p = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    p.add_argument("--run-dir", type=Path, required=True)
+    p.add_argument("--n", type=int, default=50)
+    p.add_argument("--model", type=str, default="claude-haiku-4-5-20251001")
+    p.add_argument(
+        "--mock",
+        action="store_true",
+        help="Use a fixed-score stub judge (no API calls; for tests/dry runs).",
+    )
+    args = p.parse_args()
+    client = None
+    if args.mock:
+        client = MockLLMClient(
+            cache=PromptCache(local_dir=args.run_dir / "judge_cache", reference_dir=None),
+            canned={"Rubric": _MOCK_JUDGE_RESPONSE},
+        )
+    result = evaluate_run(args.run_dir, n=args.n, client=client, model=args.model)
+    means = ", ".join(
+        f"{axis}={result['means'][axis]:.2f}"
+        if result["means"][axis] is not None
+        else f"{axis}=n/a"
+        for axis in _AXES
+    )
+    print(
+        f"scored {result['n_scored']}/{result['n_llm_authored']} LLM-authored messages "
+        f"({result['n_templated']} templated excluded) -> {means}"
+    )
+
+
+if __name__ == "__main__":
+    main()

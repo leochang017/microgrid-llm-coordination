@@ -38,6 +38,12 @@ class Message:
     payload: dict[str, Any]
     rationale_nl: str
     correlation_id: str
+    # Phase 3 explainability provenance: True when the rationale is a Python
+    # f-string template (act/emit_informs/emit_requests), False when it was
+    # authored by the LLM (react replies, and any future LLM-written text).
+    # The explanation judge only scores LLM-authored rationales as
+    # "explanations"; templated ones are reported separately.
+    templated: bool = True
 
     def __post_init__(self) -> None:
         if self.performative not in _VALID_PERFORMATIVES:
@@ -69,6 +75,7 @@ class _LogRow:
     rationale_nl: str
     correlation_id: str
     outcome: Literal["delivered", "dropped"]
+    templated: bool = True
     reason: str | None = None
 
 
@@ -122,6 +129,7 @@ class MessageBus:
                         payload=dict(m.payload),
                         rationale_nl=m.rationale_nl,
                         correlation_id=m.correlation_id,
+                        templated=m.templated,
                         outcome="dropped",
                         reason="budget_overflow",
                     )
@@ -138,6 +146,7 @@ class MessageBus:
                     payload=dict(m.payload),
                     rationale_nl=m.rationale_nl,
                     correlation_id=m.correlation_id,
+                    templated=m.templated,
                     outcome="dropped",
                     reason="invalid_recipient",
                 )
@@ -156,6 +165,7 @@ class MessageBus:
                     payload=dict(m.payload),
                     rationale_nl=m.rationale_nl,
                     correlation_id=m.correlation_id,
+                    templated=m.templated,
                     outcome="dropped",
                     reason="comm_drop",
                 )
@@ -179,6 +189,7 @@ class MessageBus:
                         payload=dict(m.payload),
                         rationale_nl=m.rationale_nl,
                         correlation_id=m.correlation_id,
+                        templated=m.templated,
                         outcome="delivered",
                     )
                 )
@@ -198,6 +209,7 @@ class MessageBus:
                 "payload": r.payload,
                 "rationale_nl": r.rationale_nl,
                 "correlation_id": r.correlation_id,
+                "templated": r.templated,
                 "outcome": r.outcome,
                 "reason": r.reason,
             }
