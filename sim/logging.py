@@ -73,7 +73,11 @@ class JsonlLogger:
         self._events_file.close()
 
     def finalize(
-        self, dt_hours: float, *, failure_modes: dict[str, Any] | None = None
+        self,
+        dt_hours: float,
+        *,
+        failure_modes: dict[str, Any] | None = None,
+        critical_frac_by_house: dict[str, float] | None = None,
     ) -> dict[str, Any]:
         """Compute top-level summary metrics from state + events, write summary.json.
 
@@ -121,6 +125,12 @@ class JsonlLogger:
             "gini_welfare": _gini(per_house_served),
             "transfer_count": transfer_count,
         }
+        # Phase 3 needs-aware fairness metrics (additive).
+        summary["min_house_served_fraction"] = min(per_house_served) if per_house_served else 1.0
+        summary["jains_index"] = _jains_index(per_house_served)
+        summary["served_critical_load_fraction"] = _served_critical_fraction(
+            load_by_house, unmet_by_house, critical_frac_by_house or {}
+        )
         # Phase 2 additive fields (zero defaults; Phase 1.x parsers ignore extra keys).
         summary["message_counts"] = phase2_message_counts(self.run_dir / "messages.jsonl")
         summary["llm_call_counts"] = {
@@ -136,6 +146,47 @@ class JsonlLogger:
         with (self.run_dir / "summary.json").open("w") as f:
             json.dump(summary, f, indent=2)
         return summary
+
+
+def _jains_index(values: list[float]) -> float:
+    """Jain's fairness index: (sum x)^2 / (n * sum x^2). 1.0 = perfectly even.
+
+    Complements Gini for the paper's fairness pillar; defined as 1.0 for empty
+    or all-zero inputs (no allocation to be unfair about).
+    """
+    if not values:
+        return 1.0
+    sq = sum(v * v for v in values)
+    if sq <= 0:
+        return 1.0
+    total = sum(values)
+    return (total * total) / (len(values) * sq)
+
+
+def _served_critical_fraction(
+    load_by_house: dict[str, float],
+    unmet_by_house: dict[str, float],
+    critical_frac_by_house: dict[str, float],
+) -> float:
+    """Fraction of CRITICAL load served, under the documented accounting rule:
+    unmet energy hits flexible load first, so per house
+    critical_unmet = max(0, unmet - flexible_load). Returns 1.0 when no house
+    has any critical load configured (pre-Phase-3 scenarios)."""
+    total_critical = 0.0
+    total_critical_served = 0.0
+    for hid, load in load_by_house.items():
+        frac = float(critical_frac_by_house.get(hid, 0.0))
+        if frac <= 0 or load <= 0:
+            continue
+        critical = frac * load
+        flexible = load - critical
+        unmet = unmet_by_house.get(hid, 0.0)
+        critical_unmet = max(0.0, unmet - flexible)
+        total_critical += critical
+        total_critical_served += critical - min(critical, critical_unmet)
+    if total_critical <= 0:
+        return 1.0
+    return total_critical_served / total_critical
 
 
 def phase2_message_counts(messages_jsonl: Path) -> dict[str, int]:

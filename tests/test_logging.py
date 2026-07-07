@@ -121,3 +121,30 @@ class TestGini:
     def test_empty_and_all_zero_return_zero(self) -> None:
         assert _gini([]) == 0.0
         assert _gini([0.0, 0.0]) == 0.0
+
+
+class TestNeedsAwareMetrics:
+    """Phase 3 fairness substrate: Jain's index, Rawlsian floor, critical load."""
+
+    def test_jains_index_hand_cases(self) -> None:
+        from sim.logging import _jains_index
+
+        assert _jains_index([1.0, 1.0, 1.0, 1.0]) == pytest.approx(1.0)
+        assert _jains_index([1.0, 0.0]) == pytest.approx(0.5)
+        # (1.5)^2 / (2 * 1.25) = 0.9
+        assert _jains_index([1.0, 0.5]) == pytest.approx(0.9)
+        assert _jains_index([]) == 1.0
+        assert _jains_index([0.0, 0.0]) == 1.0
+
+    def test_served_critical_fraction_flexible_absorbs_first(self) -> None:
+        from sim.logging import _served_critical_fraction
+
+        # House h1: load 10, critical 40% (4 kWh critical, 6 flexible).
+        # Unmet 5 -> flexible absorbs 5... wait 5 < 6, so critical untouched.
+        assert _served_critical_fraction({"h1": 10.0}, {"h1": 5.0}, {"h1": 0.4}) == 1.0
+        # Unmet 8 -> flexible absorbs 6, critical loses 2 of 4 -> 50% served.
+        assert _served_critical_fraction({"h1": 10.0}, {"h1": 8.0}, {"h1": 0.4}) == pytest.approx(
+            0.5
+        )
+        # No critical load configured anywhere -> defined as 1.0.
+        assert _served_critical_fraction({"h1": 10.0}, {"h1": 8.0}, {}) == 1.0

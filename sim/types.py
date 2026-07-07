@@ -38,6 +38,11 @@ class HouseholdProfile:
 
     description: str
     has_medical: bool = False
+    # Phase 3: fraction of this household's load that is critical (medical
+    # devices, refrigeration, heating minimums). Drives the needs-aware
+    # fairness metrics; 0.0 preserves pre-Phase-3 behavior. Accounting rule
+    # (documented in logging.finalize): unmet energy hits flexible load first.
+    critical_load_frac: float = 0.0
     has_infant: bool = False
     essential_only: bool = False
     tags: tuple[str, ...] = field(default_factory=tuple)

@@ -75,12 +75,18 @@ def sample_households(scenario: Scenario, rng: np.random.Generator) -> dict[str,
             for member in members:
                 house_affil.setdefault(member, {})[atype] = gid
 
+    # Phase 3: per-house critical-load fraction. Sampled ONLY when the
+    # scenario configures it, so pre-Phase-3 scenarios draw an identical RNG
+    # sequence and stay byte-identical.
+    crit_range = sampling.get("critical_load_frac")
+
     households: dict[str, Household] = {}
     for r in range(scenario.rows):
         for c in range(scenario.cols):
             hid = f"r{r}c{c}"
             pv, batt = _draw_pv_batt()
             rate = batt / 5.0  # standard residential ratio: full charge in ~5 h
+            crit = float(rng.uniform(*crit_range)) if crit_range is not None else 0.0
             households[hid] = Household(
                 id=hid,
                 pv_kw_peak=pv,
@@ -89,7 +95,7 @@ def sample_households(scenario: Scenario, rng: np.random.Generator) -> dict[str,
                 rt_efficiency=rt_eff,
                 dod_floor_frac=dod,
                 grid_max_kw=grid_max,
-                profile=HouseholdProfile(description=f"household {hid}"),
+                profile=HouseholdProfile(description=f"household {hid}", critical_load_frac=crit),
                 affiliations=house_affil.get(hid, {}),
             )
     return households
@@ -305,6 +311,7 @@ def run(
     return logger.finalize(
         dt_hours=scenario.dt_hours,
         failure_modes=dataclasses.asdict(scenario.failure_modes),
+        critical_frac_by_house={hid: h.profile.critical_load_frac for hid, h in households.items()},
     )
 
 

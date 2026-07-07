@@ -57,9 +57,9 @@ finished those). New scripts: `sweep.py`, `eval_explanations.py`.
 - [x] Commit `test: failure axes now causally couple to outcomes (P3 T6)`.
 
 ### Task 7: Fairness substrate
-- [ ] `household_sampling.critical_load_frac: [lo, hi]` sampling → `Household.profile` field; accounting rule: unmet hits flexible first.
-- [ ] Summary additions: `served_critical_load_fraction`, `min_house_served_fraction`, `jains_index` (+ unit pins: hand-computed Jain cases).
-- [ ] Commit `feat: needs-aware fairness metrics (critical load, Rawlsian floor, Jain) (P3 T7)`.
+- [x] `household_sampling.critical_load_frac: [lo, hi]` sampling → `Household.profile` field; accounting rule: unmet hits flexible first.
+- [x] Summary additions: `served_critical_load_fraction`, `min_house_served_fraction`, `jains_index` (+ unit pins: hand-computed Jain cases).
+- [x] Commit `feat: needs-aware fairness metrics (critical load, Rawlsian floor, Jain) (P3 T7)`.
 
 ### Task 8: Explainability substrate
 - [ ] messages.jsonl rationale entries flagged `templated: true/false`; llm_agent rationales trace to LLM output.
