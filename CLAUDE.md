@@ -21,7 +21,7 @@ The contribution is on the **CS/ML axis** (natural-language agent coordination, 
 | 1.6 — Pre-Phase-2 hardening | — | **complete** | Ownership/management comm-graph overlays, stress scenarios that break round-robin, centralized LP upper-bound baseline, gap-closed reporting (cold/hot ResStock regions pending data fetch) |
 | 2 — LLM agent layer | 5-8 | **complete** | Per-household LLM agent, natural-language P2P messaging |
 | 2.9 — Correctness hardening | — | **complete** | Review-driven fixes: energy conservation, solar timezone, LP slack/bounds, zero-LLM control, seed sweeps, provenance (18 tasks, 2026-07-07) |
-| 3 — Benchmark & experiments | 9-14 | not started | Scenario suite + baselines + metrics (Gini, served-critical-load, explanation quality) |
+| 3 — Benchmark & experiments | 9-14 | **in progress** (spec/plan 2026-07-07) | Scenario suite + baselines + metrics (Gini, served-critical-load, explanation quality) |
 | 4 — Web demo & paper writeup | 15-20 | not started | SvelteKit/Next.js visualization on Vercel + paper |
 
 > **Phase 1.6 is a hard gate on Phase 2**, inserted by advisor (Yongfeng) on 2026-05-26. Rationale: the current 12h-July-overnight scenario has a 98.5% no-coordination ceiling, leaving only ~0.5% headroom for the LLM layer — Phase 2 would be a null result by construction. Must establish a regime where round-robin visibly fails before building LLM agents.
@@ -35,6 +35,12 @@ Each phase has its own spec + implementation plan in `docs/superpowers/`.
 - **Approved:** 2026-06-13
 - **Execution mode:** Inline (Claude executes tasks in-session, batched ~3-5 at a time with check-ins).
 - **Status:** ✅ **complete; tags `phase2-complete` (2026-06-13), `phase2.5-complete` (2026-06-14), `phase2.6-complete` (2026-06-14), `phase2.7-complete` (2026-06-17), `phase2.8-complete` (2026-06-17)**. 188 tests pass; ruff + mypy --strict clean. **Headline:** live Haiku 0.513 vs round_robin 0.525 (1.2-point gap, down from 6.5 in Phase 2v0). **Phase 2.8 finding:** adding peer state to the plan prompt + LLM-controlled share fraction changed NO macro metric (served/gini/transfers identical) while messages rose 66% — the clean cell has hit this architecture's ceiling; the Phase 3 hypothesis is that the LLM advantage lives in the failure cells. Reference run in `reference_runs/haves_havenots__llm/llm_agent/clean/` is the Phase 2.8 architecture (served=0.513). **Deferred follow-ups:** (a) live reference runs for `__defectors` / `__noise` / `__comm` / `__all` failure cells + a `long_outage_72h__llm` YAML (mock-LLM tests cover the first four; the 72h LLM variant was never created); (b) `defector_realization: prompt` live run (`wrapper` is the shipped-cell default; prompt realization is wired and is the config default); (c) peer state via INFORM-only (currently the engine's ground truth — a validity prerequisite for the noise/defector cells, see Phase 2.9 spec deferred table); (d) prompt engineering to outperform round_robin (Phase 3 work).
+
+## Phase 3 status
+
+- **Spec:** `docs/superpowers/specs/2026-07-07-phase3-benchmark-design.md`
+- **Plan:** `docs/superpowers/plans/2026-07-07-phase3-benchmark.md` (11 tasks, TDD)
+- **Status:** in progress (started 2026-07-07). Part A (information-flow rework) gates all live failure-cell runs. Everything in the plan is mock-LLM only; live runs are budget-gated per spec Part E.
 
 ## Phase 2.9 status
 
@@ -60,6 +66,7 @@ Update this after every committed task. Newest entries on top.
 
 | Date | Task | Commit | Tests | Note |
 |------|------|--------|-------|------|
+| 2026-07-07 | **P3 Task 1 — Phase 3 spec + plan committed** | _(this commit)_ | 243 ✓ | Spec: information-flow rework (INFORM-only beliefs, noised act(), binding negotiation) as the validity gate for failure cells; needs-aware fairness metrics; explanation rubric judge; --set overrides + sweep driver; showcase-tight scenario. 11 tasks. Live runs budget-gated (Part E). [ADVISOR] flags: defector realizations, fairness framing, judge method. |
 | 2026-07-07 | P2.9 follow-up — LP gini is solver-version-dependent (degenerate optima); golden pin loosened | _(this commit)_ | 243 ✓ | First post-2.9 CI run failed: LP gini 0.36198 on CI vs 0.36170 locally — different scipy/HiGHS versions pick different optimal VERTICES with identical objectives. Only objective-derived LP values (served, unmet total) are cross-platform stable; the LP's per-house distribution (hence gini) is not. Golden test now pins served/unmet tightly and bounds gini to [0.30, 0.42] with an explanatory comment. **Paper rule: never quote LP gini beyond ~2 decimals; a fairness tiebreak in the LP objective would pin it properly (Phase 3 candidate).** |
 | 2026-07-07 | **P2.9 Task 18 — wrap-up: corrected real-data numbers + figure + docs + tag** ✅ | _(this commit)_ | 243 ✓ | Clean-install dry-run in fresh venv green (243 tests). **Corrected real-data result (solar-tz + conservation fixes): 24h_resstock_outage no_coord 0.8425 / rr 0.8582 / LP 0.9111 — rr saves a REAL 21.4 kWh (old claim 35.7 was computed on inverted day/night solar) and the LP shows a genuine 5.3-pt coordination gap on real data.** Figure regenerated. README gains a Phase 2.9 section; CLAUDE.md gains a Phase 2.9 status block + corrected-numbers annotations + phase-table row. Tagged `phase2.9-complete`. |
 | 2026-07-07 | P2.9 Task 17 — tool-use path test parity | _(this commit)_ | 243 ✓ | Every e2e mock test exercised the deprecated YAML-fence parse path while live runs use Anthropic tool-use — byte-identical replay determinism was only proven for a branch the paper's runs never take. Replay test now parametrized over text AND tool_input modes; malformed-tool_input unit tests cover the failure branch behind the policy_parse_failures statistic (1 failure keeps policy, 3 strikes → round-robin fallback). Integration test renamed `test_llm_agent_pipeline_integrates_...` — its old name claimed ‘beats round_robin’ while asserting only ≥0.9×rr. |
