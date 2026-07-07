@@ -270,6 +270,61 @@ Deferred (tracked in the Phase 2.9 spec): INFORM-only peer state + binding negot
 explainability instrument, live re-runs under corrected physics.
 
 
+
+## Phase 3 — Benchmark & Experiments (in progress, 2026-07-07)
+
+Infrastructure complete (`phase3-infra-complete`); live LLM runs are budget-gated.
+
+**Information-flow rework (the validity gate).** Agents no longer see engine ground
+truth about peers. All peer knowledge is message-borne: every agent broadcasts its
+*noised* self-view via INFORM each tick, and routing decisions run on the resulting
+`peer_beliefs` (possibly stale, corrupted, or missing — unknown peers are ineligible
+recipients). `act()` decides on the agent's own noised view too, while the engine
+settles against physical truth. Consequences, all test-enforced:
+
+- the three failure axes finally *cause* outcome changes (noise perturbs beliefs →
+  routing; defector INFORM corruption lands on consumers; comm drops destroy the
+  knowledge sharing depends on);
+- `llm: messaging: off` now collapses transfers to zero — communication causally
+  matters (pre-Phase-3 it changed nothing, proving messages were decorative);
+- negotiation is **binding**: REQUESTs carry the genuine estimated shortfall, and an
+  `ACCEPT <kwh>` / `COUNTER <kwh>` reply creates a commitment ledger entry that
+  `act()` serves ahead of discretionary sharing (TTL 2 ticks).
+
+**The solar showcase (`haves_havenots_solar.yaml`).** PV on the haves over a 24 h
+outage makes energy abundant but *misplaced* — the coordination-bound regime:
+
+| strategy | served | note |
+|---|---|---|
+| no_coordination | 0.4280 | hoarding collapses overnight |
+| llm_fallback (zero-LLM control) | 0.6910 | tuned executor, no LLM — the bar any LLM run must beat |
+| round_robin | 0.7666 | myopic sharing strands midday solar |
+| lp_optimal (ceiling) | 0.9711 | pre-positions solar into have-not batteries |
+
+A 20.4-point rr→LP gap (20× the old showcase) and an unsaturated control with 28
+points of headroom above it.
+
+**Fairness + explainability substrate.** `critical_load_frac` sampling with
+served-critical accounting (unmet hits flexible load first), Rawlsian floor
+(`min_house_served_fraction`), Jain's index; message rationales carry
+`templated: true/false` provenance and `scripts/eval_explanations.py` scores
+LLM-authored explanations 1-5 on state-accuracy / actionability / consistency
+against the sender's logged state (LLM-judge method pending advisor sign-off).
+
+**Machinery.** `run.py --set dotted.key=value` overrides (typos hard-fail),
+`scripts/sweep.py` dose-response grids (subprocess-per-cell), and process-stable
+RNG seeding (`sim/agents/seeding.py` — the old `hash()`-based seeds were silently
+PYTHONHASHSEED-dependent across processes).
+
+**Mock dose-response matrix** (fixed canned policies — the floor for live-LLM
+comparisons; round_robin's flat rows demonstrate rule-based baselines are
+structurally immune to information-quality failures): see
+`docs/phase3_mock_sweep.md`.
+
+**Budget-gated next steps** (spec Part E): live clean-cell + failure-cell runs under
+the new architecture, Sonnet capability ablation (~$22 batched), live explanation
+judging, VT/AZ data for winter/heatwave scenarios.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

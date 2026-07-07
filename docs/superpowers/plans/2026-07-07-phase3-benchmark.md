@@ -76,6 +76,6 @@ finished those). New scripts: `sweep.py`, `eval_explanations.py`.
 - [x] Commit `feat: showcase-tight scenario with material rr→LP headroom (P3 T10)`.
 
 ### Task 11: Mock benchmark pass + wrap
-- [ ] Full mock-LLM sweep (all cells × strategies × 5 seeds) via sweep.py; tabulate; record in README Phase 3 section + CLAUDE.md.
-- [ ] Deferred/live items table verbatim from spec Part E; tag `phase3-infra-complete`.
-- [ ] Commit `docs: Phase 3 infrastructure complete — mock benchmark matrix (P3 T11)`.
+- [x] Full mock-LLM sweep (all cells × strategies × 5 seeds) via sweep.py; tabulate; record in README Phase 3 section + CLAUDE.md.
+- [x] Deferred/live items table verbatim from spec Part E; tag `phase3-infra-complete`.
+- [x] Commit `docs: Phase 3 infrastructure complete — mock benchmark matrix (P3 T11)`.

@@ -1,10 +1,13 @@
-# Phase 3 dose-response grid (spec Part D defaults).
-# Each axis is swept independently against the base scenario:
-#   base + {set: value} x strategies x seeds.
+# Phase 3 dose-response grid (spec Part D; base = the solar showcase).
+# Each axis is swept independently: base + {set: value} x strategies x seeds.
+# round_robin rows SHOULD be flat across every axis — rule-based baselines
+# read engine truth and are structurally immune to the information-quality
+# failure modes; the flat row is the paper's evidence for that claim.
+# llm_agent is deliberately absent: live cells are budget-gated (spec Part E).
 # Run:  python -m scripts.sweep --grid configs/sweeps/phase3_grid.yaml
 name: phase3_grid
-scenario: configs/scenarios/haves_havenots__llm.yaml
-strategies: [no_coordination, round_robin, llm_fallback]
+scenario: configs/scenarios/haves_havenots_solar__llm.yaml
+strategies: [round_robin, llm_fallback]
 seeds: [23, 1, 7, 42, 99]
 axes:
   - name: defector_fraction
