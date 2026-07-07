@@ -71,3 +71,47 @@ def test_golden_lp_ceiling() -> None:
     assert metrics["unmet_kwh_total"] == pytest.approx(_GOLDEN_LP_UNMET, abs=5e-4)
     lo, hi = _GOLDEN_LP_GINI_BAND
     assert lo <= metrics["gini_welfare"] <= hi
+
+
+# --- Phase 3 solar showcase (haves_havenots_solar): the coordination-bound
+# regime — energy abundant but misplaced; rr->LP gap ~20.4 points. ---
+
+_SOLAR_SCENARIO = Path("configs/scenarios/haves_havenots_solar.yaml")
+_GOLDEN_SOLAR = {
+    "no_coordination": (0.427998225, 411.841278, 0.538793996),
+    "round_robin": (0.766615062, 168.037156, 0.173723427),
+}
+_GOLDEN_SOLAR_LP_SERVED = 0.971095995
+_GOLDEN_SOLAR_LP_UNMET = 20.810884
+
+
+@pytest.mark.parametrize("strategy", sorted(_GOLDEN_SOLAR))
+def test_golden_solar_engine_strategies(strategy: str, tmp_path: Path) -> None:
+    base = load_scenario(_SOLAR_SCENARIO)
+    sc = dataclasses.replace(base, strategy=strategy)
+    mod = importlib.import_module(f"sim.strategies.{strategy}")
+    logger = JsonlLogger(run_dir=tmp_path / strategy, scenario_id=sc.scenario_id)
+    summary = run(sc, mod.decide_transfers, logger)
+    logger.close()
+    served, unmet, gini = _GOLDEN_SOLAR[strategy]
+    assert summary["served_load_fraction"] == pytest.approx(served, abs=5e-7)
+    assert summary["unmet_kwh_total"] == pytest.approx(unmet, abs=5e-4)
+    assert summary["gini_welfare"] == pytest.approx(gini, abs=5e-7)
+
+
+def test_golden_solar_lp_ceiling() -> None:
+    base = load_scenario(_SOLAR_SCENARIO)
+    hh = sample_households(base, np.random.default_rng(base.seed))
+    nbhd = build_overlay_neighborhood(
+        base.rows,
+        base.cols,
+        base.affiliations,
+        bus_max_kw=base.bus_max_kw,
+        bus_loss_factor=base.bus_loss_factor,
+    )
+    solar, loads = _build_data(base, hh)
+    metrics = lp_optimal.optimal_metrics(base, hh, solar, loads, nbhd)
+    assert metrics["served_load_fraction"] == pytest.approx(_GOLDEN_SOLAR_LP_SERVED, abs=5e-7)
+    assert metrics["unmet_kwh_total"] == pytest.approx(_GOLDEN_SOLAR_LP_UNMET, abs=5e-4)
+    # LP gini is solver-version-dependent (degenerate optima) — band only.
+    assert 0.0 <= metrics["gini_welfare"] <= 0.10

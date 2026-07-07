@@ -72,8 +72,8 @@ finished those). New scripts: `sweep.py`, `eval_explanations.py`.
 - [x] Commit `feat: scenario overrides + sweep driver for dose-response grids (P3 T9)`.
 
 ### Task 10: Showcase-tight scenario
-- [ ] Scan bus_max_kw / bimodal params (free strategies only) for a materially larger rr→LP gap; ship best as `haves_havenots_tight.yaml` + goldens + compare table in docs.
-- [ ] Commit `feat: showcase-tight scenario with material rr→LP headroom (P3 T10)`.
+- [x] Scan bus_max_kw / bimodal params (free strategies only) for a materially larger rr→LP gap; ship best as `haves_havenots_solar.yaml (renamed: the winning lever was solar timing, not bus tightness)` + goldens + compare table in docs.
+- [x] Commit `feat: showcase-tight scenario with material rr→LP headroom (P3 T10)`.
 
 ### Task 11: Mock benchmark pass + wrap
 - [ ] Full mock-LLM sweep (all cells × strategies × 5 seeds) via sweep.py; tabulate; record in README Phase 3 section + CLAUDE.md.

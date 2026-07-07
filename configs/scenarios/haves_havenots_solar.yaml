@@ -1,0 +1,42 @@
+# Phase 3 showcase: bimodal "have" vs "have-not" under a 24 h full outage, with
+# PV on the haves. Energy is ABUNDANT but MISPLACED: the LP pre-positions the
+# haves' midday solar into have-not batteries before nightfall and serves 97%,
+# while myopic geographic round-robin strands it (77%) and hoarding collapses
+# (43%). rr->LP gap ~20 points — coordination quality is the whole game here,
+# which is exactly the regime the advisor asked for ("round-robin visibly
+# fails") and the LLM layer must exploit. Selected by the 2026-07-07 scan in
+# the Phase 3 plan (bus-tightening scans shrank the gap; solar timing opens it).
+
+scenario_id: haves_havenots_solar
+start: "2018-01-01T00:00:00"
+end:   "2018-01-02T00:00:00"
+dt_hours: 0.25
+seed: 23
+rows: 5
+cols: 6
+bus_max_kw: 50.0
+bus_loss_factor: 0.05
+strategy: round_robin
+data_source: synthetic
+household_sampling:
+  mode: bimodal
+  have:    {pv_kw_peak: [5.0, 7.0], battery_kwh: [35.0, 40.0]}
+  havenot: {pv_kw_peak: [0.0, 0.0], battery_kwh: [2.0, 4.0]}
+  have_fraction: 0.4
+  rt_efficiency: 0.9
+  dod_floor_frac: 0.1
+  synthetic_load_kw: 1.0
+affiliations:
+  owner:
+    owner_a: [r0c0, r2c3, r4c5]
+    owner_b: [r0c5, r3c1]
+  dr_aggregator:
+    agg_gridflex: [r0c0, r1c1, r2c2, r3c3, r4c4]
+outages:
+  - start: "2018-01-01T00:00:00"
+    end:   "2018-01-02T00:00:00"
+    affected_houses: [r0c0, r0c1, r0c2, r0c3, r0c4, r0c5,
+                      r1c0, r1c1, r1c2, r1c3, r1c4, r1c5,
+                      r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
+                      r3c0, r3c1, r3c2, r3c3, r3c4, r3c5,
+                      r4c0, r4c1, r4c2, r4c3, r4c4, r4c5]
