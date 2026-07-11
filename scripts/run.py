@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import importlib
+import os
 from collections.abc import Callable
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -87,17 +88,21 @@ def main() -> None:
         scenario = apply_overrides(scenario, args.set)
     decide, prepare = _resolve_strategy(scenario.strategy)
     if args.reference_cell is not None:
-        run_dir = (
-            Path("reference_runs") / scenario.scenario_id / scenario.strategy / args.reference_cell
+        cell = (
+            args.reference_cell if args.seed is None else f"{args.reference_cell}__seed{args.seed}"
         )
+        run_dir = Path("reference_runs") / scenario.scenario_id / scenario.strategy / cell
     else:
-        ts = datetime.now().strftime("%Y%m%dT%H%M%S")
+        # PID suffix: subprocess-per-cell sweeps launch several runs of the same
+        # (scenario, strategy) within one second — bare seconds collide and the
+        # later run TRUNCATES the earlier one's logs (2026-07-12 fix).
+        ts = datetime.now().strftime("%Y%m%dT%H%M%S") + f"-{os.getpid()}"
         run_dir = args.out_dir / scenario.scenario_id / scenario.strategy / ts
     logger = JsonlLogger(run_dir, scenario_id=scenario.scenario_id)
 
     # For llm_agent strategy: wire a MessageBus into the engine so messages.jsonl gets written.
     message_bus = None
-    if scenario.strategy == "llm_agent":
+    if scenario.strategy in ("llm_agent", "llm_fallback"):
         from sim.agents.protocol import MessageBus
         from sim.network import build_overlay_neighborhood
 
@@ -124,8 +129,8 @@ def main() -> None:
     finally:
         logger.close()
 
-    # Fill in LLM call counters from the strategy facade (llm_agent only).
-    if scenario.strategy == "llm_agent":
+    # Fill in LLM call counters from the strategy facade (llm_agent + llm_fallback).
+    if scenario.strategy in ("llm_agent", "llm_fallback"):
         import json as _json
 
         from sim.strategies import llm_agent as _llm_strat

@@ -10,10 +10,14 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import os
+import shutil
+import sys
 from pathlib import Path
 
 import pytest
 
+from scripts.run import main as run_main
 from sim.agents.cache import PromptCache
 from sim.agents.llm import LLMResponse, MockLLMClient
 from sim.engine import run
@@ -24,6 +28,7 @@ from sim.strategies import llm_fallback
 from sim.strategies.llm_agent import _estimate_cost_usd
 
 _SCENARIO = Path("configs/scenarios/haves_havenots__llm.yaml")
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 def test_react_max_per_tick_is_wired_from_scenario_llm_block(tmp_path: Path) -> None:
@@ -75,3 +80,75 @@ def test_estimate_cost_usd_by_model_family() -> None:
     )
     assert _estimate_cost_usd("claude-sonnet-4-6", 1_000_000, 0) == pytest.approx(3.0)
     assert _estimate_cost_usd("mock-model", 1_000_000, 1_000_000) == 0.0
+
+
+def test_llm_fallback_run_writes_message_log_and_counters(tmp_path, monkeypatch):
+    monkeypatch.chdir(REPO_ROOT)  # repo root for configs/
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "run",
+            "--scenario",
+            "configs/scenarios/synthetic_lp_smoke.yaml",
+            "--strategy",
+            "llm_fallback",
+            "--out-dir",
+            str(tmp_path),
+        ],
+    )
+    run_main()
+    run_dir = next((tmp_path / "synthetic_lp_smoke" / "llm_fallback").iterdir())
+    assert (run_dir / "messages.jsonl").exists()
+    summary = json.loads((run_dir / "summary.json").read_text())
+    assert summary["message_counts"]["sent"] > 0
+    assert "llm_call_counts_detailed" in summary
+
+
+def test_reference_cell_dir_gains_seed_suffix(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)  # reference_runs/ is cwd-relative
+    shutil.copytree(REPO_ROOT / "configs", tmp_path / "configs")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "run",
+            "--scenario",
+            "configs/scenarios/synthetic_lp_smoke.yaml",
+            "--strategy",
+            "llm_fallback",
+            "--reference-cell",
+            "clean",
+            "--seed",
+            "7",
+        ],
+    )
+    run_main()
+    assert (
+        tmp_path
+        / "reference_runs"
+        / "synthetic_lp_smoke"
+        / "llm_fallback"
+        / "clean__seed7"
+        / "summary.json"
+    ).exists()
+
+
+def test_timestamp_run_dirs_carry_pid_suffix(tmp_path, monkeypatch):
+    monkeypatch.chdir(REPO_ROOT)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "run",
+            "--scenario",
+            "configs/scenarios/synthetic_lp_smoke.yaml",
+            "--strategy",
+            "llm_fallback",
+            "--out-dir",
+            str(tmp_path),
+        ],
+    )
+    run_main()
+    run_dir = next((tmp_path / "synthetic_lp_smoke" / "llm_fallback").iterdir())
+    assert run_dir.name.endswith(f"-{os.getpid()}")
