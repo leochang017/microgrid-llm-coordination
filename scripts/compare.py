@@ -32,7 +32,8 @@ import argparse
 import dataclasses
 import importlib
 import math
-import tempfile
+import os
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -54,6 +55,8 @@ def gap_closed(*, served: float, rr: float, lp: float) -> float:
     Unclamped: negative means worse than round_robin; NaN means the gap is too
     small to measure against (lp ~= rr).
     """
+    if math.isnan(rr) or math.isnan(lp):
+        return float("nan")
     gap = lp - rr
     if abs(gap) <= 1e-12:
         return float("nan")
@@ -70,8 +73,8 @@ def format_table(metrics: dict[str, dict[str, float]]) -> str:
     The "lp_optimal" entry's served_load_fraction is treated as the ceiling and
     "round_robin" as the reference baseline for gap_closed.
     """
-    rr = metrics.get("round_robin", {}).get("served_load_fraction", 0.0)
-    lp = metrics.get("lp_optimal", {}).get("served_load_fraction", rr)
+    rr = metrics.get("round_robin", {}).get("served_load_fraction", float("nan"))
+    lp = metrics.get("lp_optimal", {}).get("served_load_fraction", float("nan"))
     header = "| strategy | served | unmet_kwh | gini | gap_closed |"
     sep = "|---|---|---|---|---|"
     rows = [header, sep]
@@ -105,8 +108,8 @@ def format_aggregate(per_seed: dict[int, dict[str, dict[str, float]]]) -> str:
         gini = [per_seed[k][s]["gini_welfare"] for k in seeds]
         gcs = []
         for k in seeds:
-            rr = per_seed[k].get("round_robin", {}).get("served_load_fraction", 0.0)
-            lp = per_seed[k].get("lp_optimal", {}).get("served_load_fraction", rr)
+            rr = per_seed[k].get("round_robin", {}).get("served_load_fraction", float("nan"))
+            lp = per_seed[k].get("lp_optimal", {}).get("served_load_fraction", float("nan"))
             gc = gap_closed(served=per_seed[k][s]["served_load_fraction"], rr=rr, lp=lp)
             if not math.isnan(gc):
                 gcs.append(gc)
@@ -119,28 +122,32 @@ def format_aggregate(per_seed: dict[int, dict[str, dict[str, float]]]) -> str:
 
 
 def _collect(
-    scenario_path: Path, *, seed: int | None = None, strategies: list[str] | None = None
+    scenario_path: Path,
+    *,
+    out_root: Path,
+    seed: int | None = None,
+    strategies: list[str] | None = None,
 ) -> dict[str, dict[str, float]]:
     metrics: dict[str, dict[str, float]] = {}
     base = load_scenario(scenario_path)
     if seed is not None:
         base = dataclasses.replace(base, seed=seed)
-    with tempfile.TemporaryDirectory() as td:
-        for strategy in strategies or _HEURISTICS:
-            sc = dataclasses.replace(base, strategy=strategy)
-            mod = importlib.import_module(f"sim.strategies.{strategy}")
-            logger = JsonlLogger(run_dir=f"{td}/{strategy}", scenario_id=sc.scenario_id)
-            summary: dict[str, Any] = run(
-                sc,
-                getattr(mod, "decide_transfers", None),
-                logger,
-                prepare=getattr(mod, "prepare", None),
-            )
-            metrics[strategy] = {
-                "served_load_fraction": summary["served_load_fraction"],
-                "unmet_kwh_total": summary["unmet_kwh_total"],
-                "gini_welfare": summary["gini_welfare"],
-            }
+    for strategy in strategies or _HEURISTICS:
+        sc = dataclasses.replace(base, strategy=strategy)
+        mod = importlib.import_module(f"sim.strategies.{strategy}")
+        logger = JsonlLogger(run_dir=out_root / strategy, scenario_id=sc.scenario_id)
+        summary: dict[str, Any] = run(
+            sc,
+            getattr(mod, "decide_transfers", None),
+            logger,
+            prepare=getattr(mod, "prepare", None),
+        )
+        logger.close()
+        metrics[strategy] = {
+            "served_load_fraction": summary["served_load_fraction"],
+            "unmet_kwh_total": summary["unmet_kwh_total"],
+            "gini_welfare": summary["gini_welfare"],
+        }
 
     # LP ceiling: the objective, computed directly (not an engine run).
     households = sample_households(base, np.random.default_rng(base.seed))
@@ -175,20 +182,43 @@ def main() -> None:
         help=f"Comma-separated engine strategies (default: {','.join(_HEURISTICS)}). "
         "lp_optimal is always added as the ceiling row.",
     )
+    p.add_argument(
+        "--out-dir",
+        type=Path,
+        default=None,
+        help="Persist per-strategy run dirs (default runs/compare/<ts>-<pid>). "
+        "Never auto-deleted: llm_agent cells cache PAID API responses here.",
+    )
     args = p.parse_args()
+    out_root = args.out_dir or Path("runs/compare") / (
+        datetime.now().strftime("%Y%m%dT%H%M%S") + f"-{os.getpid()}"
+    )
     strategies = args.strategies.split(",") if args.strategies else None
     if args.seeds is None:
-        print(format_table(_collect(args.scenario, strategies=strategies)))
+        base_seed = load_scenario(args.scenario).seed
+        print(
+            format_table(
+                _collect(
+                    args.scenario,
+                    out_root=out_root / f"seed{base_seed}",
+                    strategies=strategies,
+                )
+            )
+        )
+        print(f"\n(run artifacts kept in {out_root})")
         return
     seeds = [int(s) for s in args.seeds.split(",")]
     per_seed: dict[int, dict[str, dict[str, float]]] = {}
     for seed in seeds:
-        per_seed[seed] = _collect(args.scenario, seed=seed, strategies=strategies)
+        per_seed[seed] = _collect(
+            args.scenario, out_root=out_root / f"seed{seed}", seed=seed, strategies=strategies
+        )
         print(f"\n### seed {seed}\n")
         print(format_table(per_seed[seed]))
     if len(seeds) > 1:
         print(f"\n### aggregate over seeds {seeds}\n")
         print(format_aggregate(per_seed))
+    print(f"\n(run artifacts kept in {out_root})")
 
 
 if __name__ == "__main__":

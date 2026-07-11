@@ -1,10 +1,14 @@
 """Tests for the cross-strategy gap-closed comparison."""
 
 import math
+import sys
+from pathlib import Path
 
 import pytest
 
 from scripts.compare import format_aggregate, format_table, gap_closed
+from scripts.compare import main as compare_main
+from sim.scenario import load_scenario
 
 
 def test_gap_closed_fraction() -> None:
@@ -100,3 +104,42 @@ def test_format_table_has_rows_for_each_strategy() -> None:
     for s in metrics:
         assert s in table
     assert "gap_closed" in table
+
+
+def test_gap_closed_is_na_without_round_robin() -> None:
+    table = format_table(
+        {
+            "llm_fallback": {
+                "served_load_fraction": 0.69,
+                "unmet_kwh_total": 10.0,
+                "gini_welfare": 0.2,
+            },
+            "lp_optimal": {
+                "served_load_fraction": 0.97,
+                "unmet_kwh_total": 2.0,
+                "gini_welfare": 0.1,
+            },
+        }
+    )
+    for line in table.splitlines()[2:]:
+        assert line.rstrip().endswith("| n/a |")
+
+
+def test_compare_persists_run_dirs(tmp_path, monkeypatch):
+    monkeypatch.chdir(Path(__file__).resolve().parent.parent)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "compare",
+            "--scenario",
+            "configs/scenarios/synthetic_lp_smoke.yaml",
+            "--strategies",
+            "round_robin",
+            "--out-dir",
+            str(tmp_path),
+        ],
+    )
+    compare_main()
+    seed = load_scenario("configs/scenarios/synthetic_lp_smoke.yaml").seed
+    assert (tmp_path / f"seed{seed}" / "round_robin" / "summary.json").exists()
