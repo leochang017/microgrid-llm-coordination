@@ -929,8 +929,19 @@ class LLMAgent:
         if need_kwh <= 1e-9:
             return []
         candidates = self._candidate_recipients(neighborhood)
-        candidates.sort(key=lambda x: x[2], reverse=True)
-        top = candidates[:3]
+        # One ask per peer: a peer reachable through several circles keeps its
+        # highest-weight edge (deterministic tiebreak by weight desc, id asc).
+        best_by_target: dict[str, tuple[str, str, float]] = {}
+        for tgt, circle, w in candidates:
+            cur = best_by_target.get(tgt)
+            if cur is None or w > cur[2]:
+                best_by_target[tgt] = (tgt, circle, w)
+        top = sorted(best_by_target.values(), key=lambda x: (-x[2], x[0]))[:3]
+        if not top:
+            return []
+        # Split the need across recipients — asking everyone for everything
+        # invited ~6x over-commitment (2026-07-12 fix).
+        per_peer_kwh = need_kwh / len(top)
         out: list[Message] = []
         urgency = self.policy.request_urgency
         for target, circle, _w in top:
@@ -941,13 +952,14 @@ class LLMAgent:
                     recipient=target,
                     performative="REQUEST",
                     payload={
-                        "kwh": need_kwh,
+                        "kwh": per_peer_kwh,
                         "deficit_estimate": need_kwh,
                         "urgency": urgency,
                     },
                     rationale_nl=(
                         f"SoC frac {soc_frac:.2f} below share threshold; next-tick "
-                        f"shortfall ~{need_kwh:.2f} kWh; requesting via {circle} circle."
+                        f"shortfall ~{need_kwh:.2f} kWh; asking {per_peer_kwh:.2f} kWh "
+                        f"(need split across {len(top)} peers) via {circle} circle."
                     ),
                     correlation_id=new_correlation_id(rng=self.rng),
                 )

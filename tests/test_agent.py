@@ -1107,3 +1107,59 @@ def test_offers_do_not_enter_react_queue_but_requests_do(tmp_path) -> None:
     assert any(
         e.kind == "msg_recv" and e.content["performative"] == "OFFER" for e in agent.memory.entries
     )
+
+
+def test_request_need_is_split_across_recipients(tmp_path) -> None:
+    from sim.network import build_grid_neighborhood
+
+    agent = _bare_agent(tmp_path)  # house r0c0
+    nb = build_grid_neighborhood(rows=2, cols=2, bus_max_kw=50.0)
+    agent.household_context = {"battery_max_rate_kw": 0.0, "rt_efficiency": 0.9}
+    agent.last_visible_own = {
+        "soc_kwh": 0.0,
+        "soc_capacity": 2.0,
+        "load_kw": 2.0,
+        "solar_kw": 0.0,
+        "grid_islanded": True,
+        "dod_floor_frac": 0.1,
+    }
+    out = agent._emit_requests(datetime(2018, 1, 1), nb, soc_frac=0.0, dt_hours=0.25)
+    # need = (2.0 - 0.0) * 0.25 - 0 = 0.5 kWh, split over 2 peers -> 0.25 each
+    assert len(out) == 2
+    assert all(m.payload["kwh"] == pytest.approx(0.25) for m in out)
+    assert sum(m.payload["kwh"] for m in out) == pytest.approx(0.5)
+
+
+def test_request_recipients_deduped_across_circles(tmp_path) -> None:
+    import dataclasses
+
+    from sim.network import build_overlay_neighborhood
+
+    nb = build_overlay_neighborhood(
+        rows=1,
+        cols=2,
+        affiliations={"owner": {"o1": ("r0c0", "r0c1")}},
+        bus_max_kw=50.0,
+        bus_loss_factor=0.05,
+    )
+    agent = _bare_agent(tmp_path)  # r0c0; r0c1 reachable via BOTH geographic and owner
+    agent.policy = dataclasses.replace(
+        agent.policy,
+        recipient_priority=(
+            RecipientPriority(circle="owner", weight=2.0),
+            RecipientPriority(circle="geographic", weight=1.0),
+        ),
+    )
+    agent.household_context = {"battery_max_rate_kw": 0.0, "rt_efficiency": 0.9}
+    agent.last_visible_own = {
+        "soc_kwh": 0.0,
+        "soc_capacity": 2.0,
+        "load_kw": 2.0,
+        "solar_kw": 0.0,
+        "grid_islanded": True,
+        "dod_floor_frac": 0.1,
+    }
+    out = agent._emit_requests(datetime(2018, 1, 1), nb, soc_frac=0.0, dt_hours=0.25)
+    assert len(out) == 1  # ONE ask, not one per circle
+    assert out[0].payload["kwh"] == pytest.approx(0.5)  # full need to the single peer
+    assert "owner" in out[0].rationale_nl  # highest-weight circle won the dedup
