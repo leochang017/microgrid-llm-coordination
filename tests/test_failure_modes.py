@@ -177,3 +177,12 @@ def test_defector_enums_validated() -> None:
         {"defector_assignment": "manual", "defector_realization": "both"}
     )
     assert cfg.defector_assignment == "manual"
+
+
+def test_unknown_failure_mode_keys_hard_error() -> None:
+    with pytest.raises(ValueError, match="defectors_fraction"):
+        FailureModeConfig.from_dict({"defectors_fraction": 0.2})
+    with pytest.raises(ValueError, match="soc_std"):
+        FailureModeConfig.from_dict({"obs_noise": {"soc_std": 0.1}})
+    with pytest.raises(ValueError, match="budget"):
+        FailureModeConfig.from_dict({"comm": {"budget": 2}})

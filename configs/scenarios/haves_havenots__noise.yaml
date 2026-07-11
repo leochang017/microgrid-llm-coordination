@@ -1,4 +1,4 @@
-# Failure-cell: noisy own-state observations (Gaussian on SoC + load + solar forecast).
+# Failure-cell: noisy own-state observations (Gaussian on SoC + load).
 
 scenario_id: haves_havenots__noise
 start: "2018-01-01T00:00:00"
@@ -40,5 +40,3 @@ failure_modes:
   obs_noise:
     soc_std_frac: 0.10
     load_std_frac: 0.15
-    solar_forecast_horizon_ticks: 4
-    solar_forecast_std_frac: 0.20

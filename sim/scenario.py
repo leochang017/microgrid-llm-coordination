@@ -12,6 +12,32 @@ import yaml
 
 from sim.agents.failure_modes import FailureModeConfig
 
+_KNOWN_TOP_KEYS = frozenset(
+    {
+        "scenario_id",
+        "start",
+        "end",
+        "dt_hours",
+        "seed",
+        "rows",
+        "cols",
+        "bus_max_kw",
+        "bus_loss_factor",
+        "strategy",
+        "data_source",
+        "household_sampling",
+        "outages",
+        "data_paths",
+        "house_dataids",
+        "house_building_files",
+        "affiliations",
+        "failure_modes",
+        "llm",
+        "solar_tz_offset_hours",
+    }
+)
+_KNOWN_LLM_KEYS = frozenset({"model", "react_max_per_tick", "messaging"})
+
 
 @dataclass(frozen=True, slots=True)
 class OutageWindow:
@@ -88,6 +114,18 @@ def load_scenario(path: Path | str) -> Scenario:
     p = Path(path)
     with p.open() as f:
         raw = yaml.safe_load(f)
+
+    unknown = set(raw) - _KNOWN_TOP_KEYS
+    if unknown:
+        raise ValueError(
+            f"unknown scenario key(s) {sorted(unknown)} in {p} — every key must be "
+            "consumed; a typo here silently runs the wrong experiment"
+        )
+    unknown_llm = set(raw.get("llm") or {}) - _KNOWN_LLM_KEYS
+    if unknown_llm:
+        raise ValueError(f"unknown llm key(s) {sorted(unknown_llm)} in {p}")
+    # household_sampling is deliberately NOT strict-checked: its keys are
+    # mode-dependent (uniform vs bimodal); sample_households is the consumer.
 
     start = datetime.fromisoformat(raw["start"])
     end = datetime.fromisoformat(raw["end"])

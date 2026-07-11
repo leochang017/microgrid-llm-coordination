@@ -215,9 +215,7 @@ failure_modes:
       geographic: 0.1
 llm:
   model: claude-haiku-4-5-20251001
-  policy_refresh_every_ticks: 4
   react_max_per_tick: 3
-  require_rationale: true
 """
     )
     s = load_scenario(_write_affil(tmp_path, body))
@@ -226,7 +224,7 @@ llm:
     assert s.failure_modes.comm.per_tick_budget == 5
     assert s.failure_modes.comm.drop_prob_by_circle["geographic"] == 0.1
     assert s.llm["model"] == "claude-haiku-4-5-20251001"
-    assert s.llm["policy_refresh_every_ticks"] == 4
+    assert s.llm["react_max_per_tick"] == 3
 
 
 def test_scenario_omitting_failure_modes_block_uses_defaults(tmp_path: Path) -> None:
@@ -283,3 +281,23 @@ def test_bus_params_range_validated() -> None:
         dataclasses.replace(base, bus_loss_factor=-0.1)
     with pytest.raises(ValueError, match="bus_max_kw"):
         dataclasses.replace(base, bus_max_kw=0.0)
+
+
+def test_unknown_yaml_keys_hard_error(tmp_path: Path) -> None:
+    src = Path("configs/scenarios/synthetic_smoke.yaml").read_text()
+    bad = tmp_path / "bad.yaml"
+    bad.write_text(src + "\nfailure_mode: {}\n")  # singular typo
+    with pytest.raises(ValueError, match="failure_mode"):
+        load_scenario(bad)
+    bad.write_text(src + "\nllm:\n  modle: claude-haiku-4-5-20251001\n")
+    with pytest.raises(ValueError, match="modle"):
+        load_scenario(bad)
+
+
+@pytest.mark.parametrize(
+    "path",
+    sorted(Path("configs/scenarios").glob("*.yaml")),
+    ids=lambda p: p.stem,
+)
+def test_all_shipped_scenarios_load(path: Path) -> None:
+    load_scenario(path)

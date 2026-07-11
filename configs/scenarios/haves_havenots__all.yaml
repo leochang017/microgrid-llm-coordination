@@ -43,8 +43,6 @@ failure_modes:
   obs_noise:
     soc_std_frac: 0.10
     load_std_frac: 0.15
-    solar_forecast_horizon_ticks: 4
-    solar_forecast_std_frac: 0.20
   comm:
     per_tick_budget: 2
     drop_prob_by_circle:

@@ -22,8 +22,6 @@ from sim.agents.seeding import stable_seed
 class ObsNoiseConfig:
     soc_std_frac: float = 0.0
     load_std_frac: float = 0.0
-    solar_forecast_horizon_ticks: int = 0
-    solar_forecast_std_frac: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -56,8 +54,25 @@ class FailureModeConfig:
             raise ValueError(
                 f"defector_realization must be prompt|wrapper|both, got {realization!r}"
             )
+        _known = {
+            "defector_fraction",
+            "defector_assignment",
+            "defector_house_ids",
+            "defector_realization",
+            "obs_noise",
+            "comm",
+        }
+        unknown = set(d) - _known
+        if unknown:
+            raise ValueError(f"unknown failure_modes key(s): {sorted(unknown)}")
         obs_d = d.get("obs_noise", {}) or {}
+        unknown = set(obs_d) - {"soc_std_frac", "load_std_frac"}
+        if unknown:
+            raise ValueError(f"unknown failure_modes.obs_noise key(s): {sorted(unknown)}")
         comm_d = d.get("comm", {}) or {}
+        unknown = set(comm_d) - {"drop_prob_by_circle", "per_tick_budget"}
+        if unknown:
+            raise ValueError(f"unknown failure_modes.comm key(s): {sorted(unknown)}")
         return FailureModeConfig(
             defector_fraction=float(d.get("defector_fraction", 0.0)),
             defector_assignment=assignment,
@@ -66,8 +81,6 @@ class FailureModeConfig:
             obs_noise=ObsNoiseConfig(
                 soc_std_frac=float(obs_d.get("soc_std_frac", 0.0)),
                 load_std_frac=float(obs_d.get("load_std_frac", 0.0)),
-                solar_forecast_horizon_ticks=int(obs_d.get("solar_forecast_horizon_ticks", 0)),
-                solar_forecast_std_frac=float(obs_d.get("solar_forecast_std_frac", 0.0)),
             ),
             comm=CommConfig(
                 drop_prob_by_circle=dict(comm_d.get("drop_prob_by_circle", {}) or {}),
