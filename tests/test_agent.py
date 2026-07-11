@@ -1079,3 +1079,31 @@ def test_react_prompt_contains_own_state_and_open_commitments(tmp_path) -> None:
     assert "Your state (as you see it): SoC 8.00/10 kWh" in last_user
     assert "open commitments): 1.50 kWh" in last_user
     assert "3 serviceable ticks" in last_user
+
+
+def test_offers_do_not_enter_react_queue_but_requests_do(tmp_path) -> None:
+    agent = _bare_agent(tmp_path)
+    offer = Message(
+        t_sent=datetime(2018, 1, 1),
+        sender="r0c1",
+        recipient=agent.house_id,
+        performative="OFFER",
+        payload={"kwh": 0.5},
+        rationale_nl="sharing",
+        correlation_id="c3",
+    )
+    req = Message(
+        t_sent=datetime(2018, 1, 1),
+        sender="r0c2",
+        recipient=agent.house_id,
+        performative="REQUEST",
+        payload={"kwh": 0.4},
+        rationale_nl="need",
+        correlation_id="c4",
+    )
+    agent.observe(t=datetime(2018, 1, 1), own_state=_own_state(8.0), inbox=[offer, req], t_idx=0)
+    assert [m.performative for _, m in agent.pending_react] == ["REQUEST"]
+    # The OFFER still reaches memory (importance 6.0 msg_recv entry).
+    assert any(
+        e.kind == "msg_recv" and e.content["performative"] == "OFFER" for e in agent.memory.entries
+    )

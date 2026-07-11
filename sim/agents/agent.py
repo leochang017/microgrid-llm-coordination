@@ -221,7 +221,9 @@ class LLMAgent:
     # Trigger / cadence state
     policy_age_ticks: int = 0
     last_plan_t: datetime | None = None
-    # (arrival_t_idx, message) pairs — REQUEST/OFFERs awaiting a react call.
+    # (arrival_t_idx, message) pairs — REQUESTs awaiting a react call. OFFERs are
+    # informational (they announce already-settled transfers) and are memory-only
+    # since 2026-07-12.
     pending_react: list[tuple[int, Message]] = field(default_factory=list)
     last_soc_frac: float | None = None
     last_grid_islanded: bool = False
@@ -369,7 +371,7 @@ class LLMAgent:
                 self.n_react_dropped_stale += 1
             else:
                 kept.append((arrival_idx, pending))
-        kept.extend((t_idx, m) for m in inbox if m.performative in ("REQUEST", "OFFER"))
+        kept.extend((t_idx, m) for m in inbox if m.performative == "REQUEST")
         self.pending_react = kept
         # Trigger-tracking
         self._prev_soc_frac = self.last_soc_frac
@@ -596,7 +598,7 @@ class LLMAgent:
     # react_to_pending (LLM)
     # ------------------------------------------------------------------
     def react_to_pending(self, t: datetime) -> list[Message]:
-        """Handle up to react_max_per_tick pending REQUEST/OFFER this tick.
+        """Handle up to react_max_per_tick pending REQUESTs this tick.
 
         Excess genuinely stays queued (oldest first) and is retried on later
         ticks until it ages out via react_stale_after_ticks in observe().
