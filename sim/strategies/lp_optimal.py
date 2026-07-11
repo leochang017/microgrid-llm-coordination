@@ -128,7 +128,10 @@ def _solve_lp(
         se = math.sqrt(h.rt_efficiency)
         for k in range(nT):
             bounds[col[("ch", hid, k)]] = (0.0, rate)
-            bounds[col[("dis", hid, k)]] = (0.0, rate)
+            # bus-side max: the engine's cell-side rate delivers only
+            # rate*sqrt(eta) (household.step:104-106); pure tightening, still
+            # contains every engine dispatch.
+            bounds[col[("dis", hid, k)]] = (0.0, rate * se)
             connected = grid_at[(hid, k)]
             bounds[col[("imp", hid, k)]] = (0.0, gmax if connected else 0.0)
             bounds[col[("exp", hid, k)]] = (0.0, gmax if connected else 0.0)
@@ -285,7 +288,7 @@ def optimal_metrics(
     total_served = sum(served_by_house.values())
     total_load = sum(load_by_house.values())
     per_house_frac = [
-        served_by_house[hid] / load_by_house[hid] for hid in ids if load_by_house[hid] > 0
+        served_by_house[hid] / load_by_house[hid] if load_by_house[hid] > 0 else 1.0 for hid in ids
     ]
     return {
         "served_load_fraction": total_served / total_load if total_load > 0 else 1.0,

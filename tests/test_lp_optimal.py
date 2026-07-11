@@ -5,9 +5,10 @@ import importlib
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import numpy as np
 import pytest
 
-from sim.engine import run
+from sim.engine import _build_data, run, sample_households
 from sim.household import Household
 from sim.logging import JsonlLogger
 from sim.network import build_overlay_neighborhood
@@ -218,3 +219,56 @@ def test_schedule_conserves_gross_when_house_both_sends_and_receives() -> None:
     assert all(t.from_id == "a" and t.to_id == "b" for t in transfers)
     # b's own 0.5 kW send must be re-normalized onto a, conserving 1.5 kW gross.
     assert sum(t.kw for t in transfers) == pytest.approx(1.5, abs=1e-9)
+
+
+def test_lp_solves_partial_island_and_dominates_round_robin(tmp_path: Path) -> None:
+    base = load_scenario("configs/scenarios/synthetic_lp_smoke.yaml")
+    for n_islanded in (3, 5):  # 3: two >=2-member groups; 5: a 1-member connected group
+        w = base.outages[0]
+        partial = dataclasses.replace(
+            base,
+            outages=(dataclasses.replace(w, affected_houses=w.affected_houses[:n_islanded]),),
+        )
+        hh = sample_households(partial, np.random.default_rng(partial.seed))
+        nbhd = build_overlay_neighborhood(
+            partial.rows,
+            partial.cols,
+            partial.affiliations,
+            bus_max_kw=partial.bus_max_kw,
+            bus_loss_factor=partial.bus_loss_factor,
+        )
+        solar, loads = _build_data(partial, hh)
+        lp = lp_optimal.optimal_metrics(partial, hh, solar, loads, nbhd)
+        rr_sc = dataclasses.replace(partial, strategy="round_robin")
+        logger = JsonlLogger(run_dir=tmp_path / f"rr{n_islanded}", scenario_id=rr_sc.scenario_id)
+        rr = run(
+            rr_sc,
+            importlib.import_module("sim.strategies.round_robin").decide_transfers,
+            logger,
+        )
+        logger.close()
+        assert 0.0 < lp["served_load_fraction"] <= 1.0
+        assert lp["served_load_fraction"] >= rr["served_load_fraction"] - 1e-9
+
+
+def test_lp_gini_counts_zero_load_houses_as_fully_served(tmp_path: Path) -> None:
+    from sim.logging import _gini
+
+    base = load_scenario("configs/scenarios/synthetic_lp_smoke.yaml")
+    zero_load = dataclasses.replace(
+        base, household_sampling={**base.household_sampling, "synthetic_load_kw": 0.0}
+    )
+    hh = sample_households(zero_load, np.random.default_rng(zero_load.seed))
+    nbhd = build_overlay_neighborhood(
+        zero_load.rows,
+        zero_load.cols,
+        zero_load.affiliations,
+        bus_max_kw=zero_load.bus_max_kw,
+        bus_loss_factor=zero_load.bus_loss_factor,
+    )
+    solar, loads = _build_data(zero_load, hh)
+    lp = lp_optimal.optimal_metrics(zero_load, hh, solar, loads, nbhd)
+    # Every house has zero load -> engine rule scores each 1.0 -> gini 0 (parity
+    # with sim/logging.py, which counts zero-load houses at served-fraction 1.0).
+    assert lp["gini_welfare"] == pytest.approx(_gini([1.0] * len(hh)))
+    assert lp["served_load_fraction"] == pytest.approx(1.0)
