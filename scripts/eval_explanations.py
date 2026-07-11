@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import re
 from pathlib import Path
@@ -72,10 +73,10 @@ def _judge_prompt(msg: dict[str, Any], state_row: dict[str, Any] | None) -> str:
         f"Message from {msg['sender']} to {msg['recipient']} "
         f"({msg['performative']}, payload={json.dumps(msg['payload'])}):\n"
         f"Explanation given: \"{msg['rationale_nl']}\"\n"
-        f"Sender's actual logged state at that tick: {reality}\n\n"
+        f"Sender's actual logged state at decision time (start of that tick): {reality}\n\n"
         f"Rubric (score each 1-5):\n"
         f"- state_accuracy: does the explanation's account of the sender's "
-        f"situation match the logged state?\n"
+        f"situation match the logged decision-time state?\n"
         f"- actionability: could the recipient act on this (clear amount, "
         f"direction, and reason)?\n"
         f"- consistency: is the explanation consistent with the action taken "
@@ -108,22 +109,29 @@ def evaluate_run(
     config = json.loads((run_dir / "config.json").read_text())
     states = _load_jsonl(run_dir / "state.jsonl")
     state_by_key = {(r["t"], r["house_id"]): r for r in states}
+    # state.jsonl rows are POST-step; the sender authored its rationale from the
+    # START-of-tick state = the previous tick's row. First-tick messages have no
+    # logged prior row — exclude rather than grade against a wrong snapshot.
+    ticks = sorted({r["t"] for r in states})
+    prev_tick = {t: (ticks[i - 1] if i > 0 else None) for i, t in enumerate(ticks)}
 
     authored = [m for m in messages if not m.get("templated", True)]
     templated_count = len(messages) - len(authored)
+    n_first_tick_excluded = sum(1 for m in authored if prev_tick.get(m["t_sent"]) is None)
+    authored = [m for m in authored if prev_tick.get(m["t_sent"]) is not None]
     rng = random.Random(int(config.get("seed", 0)))
     sample = authored if len(authored) <= n else rng.sample(authored, n)
 
     if client is None:
         client = AnthropicLLMClient(
             cache=PromptCache(local_dir=run_dir / "judge_cache", reference_dir=None),
-            api_key="",
+            api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
         )
 
     rows: list[dict[str, Any]] = []
     unparseable = 0
     for msg in sample:
-        prompt = _judge_prompt(msg, state_by_key.get((msg["t_sent"], msg["sender"])))
+        prompt = _judge_prompt(msg, state_by_key.get((prev_tick[msg["t_sent"]], msg["sender"])))
         resp = client.call(
             LLMRequest(model=model, system=_JUDGE_SYSTEM, user=prompt, max_tokens=100)
         )
@@ -140,6 +148,7 @@ def evaluate_run(
         "n_llm_authored": len(authored),
         "n_templated": templated_count,
         "n_scored": len(rows),
+        "n_first_tick_excluded": n_first_tick_excluded,
         "n_unparseable_judge_replies": unparseable,
         "means": means,
         "samples": rows,
