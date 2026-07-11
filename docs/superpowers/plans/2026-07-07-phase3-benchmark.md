@@ -34,7 +34,7 @@ finished those). New scripts: `sweep.py`, `eval_explanations.py`.
 - [x] Commit `feat: message-borne peer beliefs (INFORM emission + belief store) (P3 T2)`.
 
 ### Task 3: Cut the ground-truth feed
-- [x] Facade `observe()` call no longer receives `peer_states` built from engine states; plan-prompt peers section renders `peer_beliefs` with age ("reported N ticks ago"); `act()` recipient filter consumes beliefs; unknown peers ineligible.
+- [x] Facade `observe()` call no longer receives `peer_states` built from engine states; plan-prompt peers section renders `peer_beliefs` with age ("reported N ticks ago"); `act()` recipient filter consumes beliefs; unknown peers ineligible. _[CORRECTION 2026-07-12: the age annotation did NOT ship in this task — implemented in Phase 3.1 T6.]_
 - [x] Update `test_llm_agent_failure_axes.py`: noise and comm cells must now produce measurable outcome deltas vs clean (the assertions the old architecture couldn't satisfy).
 - [x] Replay determinism (both parse paths) still byte-identical; golden clean-cell mock numbers re-derived if moved (same commit).
 - [x] Commit `feat!: agents decide on message-borne beliefs, never engine ground truth (P3 T3)`.
@@ -77,5 +77,5 @@ finished those). New scripts: `sweep.py`, `eval_explanations.py`.
 
 ### Task 11: Mock benchmark pass + wrap
 - [x] Full mock-LLM sweep (all cells × strategies × 5 seeds) via sweep.py; tabulate; record in README Phase 3 section + CLAUDE.md.
-- [x] Deferred/live items table verbatim from spec Part E; tag `phase3-infra-complete`.
+- [x] Deferred/live items table verbatim from spec Part E; tag `phase3-infra-complete`. _[CORRECTION 2026-07-12: the table was never copied out of the spec; the full honest budget now lives in docs/superpowers/plans/2026-07-12-phase3.2-live-runs.md.]_
 - [x] Commit `docs: Phase 3 infrastructure complete — mock benchmark matrix (P3 T11)`.

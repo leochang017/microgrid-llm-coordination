@@ -20,6 +20,8 @@ The paper's evidence. Three pillars, each currently unsupported:
 Plus the experimental machinery: multi-seed sweeps, dose-response grids, and controls
 (`llm_fallback` 0.518 is the number to beat; messaging-off isolates the NL channel).
 
+> **[CORRECTED 2026-07-12]** The benchmark scenario became `haves_havenots_solar` (T10); the zero-LLM control there was 0.6910 pre-Phase-3.1 and is re-pinned in `tests/test_golden_numbers.py` after the Phase 3.1 behavior fixes — trust the pin, not this line. 0.518 was the old 12 h `haves_havenots__llm` control.
+
 ## Part A — Information-flow rework (validity prerequisite; blocks ALL live failure-cell runs)
 
 ### A1. Message-borne peer beliefs (INFORM-only)
@@ -53,7 +55,7 @@ robustness experiment.
   from the noised view (replaces the hardcoded 0.5).
 - **ACCEPT creates a commitment:** an ACCEPT (or COUNTER, which commits at the countered
   amount — v1 simplification, logged) from A to B's REQUEST enters A's
-  `commitments: list[(recipient, kwh_remaining, expires_t_idx)]` (TTL 2 ticks).
+  `commitments: list[(recipient, kwh_remaining, expires_t_idx)]` (TTL: 3 serviceable act() windows — the creation tick + the following 2; wording corrected 2026-07-12, behavior unchanged).
 - **`act()` serves commitments first** (bounded by policy caps and physics), then shares
   residual headroom via the existing policy-driven executor. The executor path is what
   `llm_fallback` still exercises — no LLM ⇒ no reacts ⇒ no commitments ⇒ pure executor,
@@ -106,7 +108,7 @@ The spec §7 assertions the old architecture could not satisfy must now hold:
   noise soc_std_frac {0, 0.05, 0.1, 0.2}; comm per_tick_budget {∞, 4, 2, 1}.
 - Seeds: {23, 1, 7, 42, 99} everywhere; paired per-seed comparisons.
 - Showcase-tight scenario: scan `bus_max_kw` / bimodal params for a materially larger
-  rr→LP gap; ship the best as `haves_havenots_tight.yaml` with goldens.
+  rr→LP gap; ship the best as `haves_havenots_tight.yaml` with goldens. _[Shipped as `haves_havenots_solar.yaml` — plan T10; annotated 2026-07-12.]_
 
 ## Part E — Budget-gated (NOT in this implementation pass; needs user's key + $)
 
@@ -114,7 +116,7 @@ The spec §7 assertions the old architecture could not satisfy must now hold:
 |---|---|
 | Live clean-cell re-run under new physics+architecture (Haiku, batched) | ~$5-15 |
 | Live failure cells × 3 seeds (after Part A) | ~$50-150 |
-| Sonnet capability ablation, clean cell | ~$22 batched |
+| Sonnet capability ablation, clean cell | ~$22 batched _[CORRECTED 2026-07-12: no Batch-API support exists in this codebase; realistic sync cost ~$27-35 — see the Phase 3.2 playbook]_ |
 | Live explanation judging (~200 samples) | ~$2-5 |
 | VT/AZ ResStock + NSRDB fetches (winter/heatwave scenarios) | free, needs NREL_API_KEY + network |
 
