@@ -162,3 +162,29 @@ def test_wrapper_corruption_gated_on_realization(tmp_path) -> None:
             assert wrapped  # 1 defector of 3 at fraction 0.2 — non-empty
         else:
             assert wrapped == set()
+
+
+def test_negotiation_counters_reach_summary(tmp_path) -> None:
+    import json
+
+    from sim.strategies import llm_agent as llm_strat
+
+    counts = llm_strat.current_call_counts(registry=None)  # zero-dict shape
+    for key in (
+        "react_unparsed",
+        "commitments_made",
+        "commitments_expired",
+        "react_amount_defaulted",
+    ):
+        assert key in counts and counts[key] == 0
+    # and update_summary_with_counts writes the detailed dict through:
+    (tmp_path / "summary.json").write_text("{}")
+    llm_strat.update_summary_with_counts(tmp_path)  # module-global registry from last prepare
+    detailed = json.loads((tmp_path / "summary.json").read_text())["llm_call_counts_detailed"]
+    for key in (
+        "react_unparsed",
+        "commitments_made",
+        "commitments_expired",
+        "react_amount_defaulted",
+    ):
+        assert key in detailed

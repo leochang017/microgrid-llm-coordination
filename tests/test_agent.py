@@ -1163,3 +1163,58 @@ def test_request_recipients_deduped_across_circles(tmp_path) -> None:
     assert len(out) == 1  # ONE ask, not one per circle
     assert out[0].payload["kwh"] == pytest.approx(0.5)  # full need to the single peer
     assert "owner" in out[0].rationale_nl  # highest-weight circle won the dedup
+
+
+def test_react_skipped_counts_each_message_once(tmp_path) -> None:
+    agent = _bare_agent(tmp_path)
+    agent.llm_client = MockLLMClient(
+        cache=PromptCache(local_dir=tmp_path / "cache"),
+        canned={
+            "reacting to a REQUEST": LLMResponse(
+                text="ACCEPT 0.1\nrationale: ok", tokens_in=0, tokens_out=0
+            )
+        },
+    )
+    agent.react_max_per_tick = 1
+    reqs = [
+        Message(
+            t_sent=datetime(2018, 1, 1),
+            sender=f"r0c{i}",
+            recipient=agent.house_id,
+            performative="REQUEST",
+            payload={"kwh": 0.1},
+            rationale_nl="n",
+            correlation_id=f"c{i}",
+        )
+        for i in (1, 2)
+    ]
+    agent.observe(t=datetime(2018, 1, 1), own_state=_own_state(8.0), inbox=reqs, t_idx=0)
+    agent.react_to_pending(t=datetime(2018, 1, 1))
+    assert agent.n_react_skipped == 1  # the deferred one, counted at arrival
+    agent.observe(t=datetime(2018, 1, 1, 0, 15), own_state=_own_state(8.0), inbox=[], t_idx=1)
+    agent.react_to_pending(t=datetime(2018, 1, 1, 0, 15))
+    assert agent.n_react_skipped == 1  # NOT recounted while it waited
+
+
+def test_unparseable_react_reply_is_counted(tmp_path) -> None:
+    agent = _bare_agent(tmp_path)
+    agent.llm_client = MockLLMClient(
+        cache=PromptCache(local_dir=tmp_path / "cache"),
+        canned={
+            "reacting to a REQUEST": LLMResponse(
+                text="Sure thing, happy to help!", tokens_in=0, tokens_out=0
+            )
+        },
+    )
+    req = Message(
+        t_sent=datetime(2018, 1, 1),
+        sender="r0c1",
+        recipient=agent.house_id,
+        performative="REQUEST",
+        payload={"kwh": 0.1},
+        rationale_nl="n",
+        correlation_id="c9",
+    )
+    agent.observe(t=datetime(2018, 1, 1), own_state=_own_state(8.0), inbox=[req], t_idx=0)
+    assert agent.react_to_pending(t=datetime(2018, 1, 1)) == []
+    assert agent.n_react_unparsed == 1

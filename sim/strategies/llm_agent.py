@@ -364,6 +364,10 @@ def current_call_counts(registry: _AgentRegistry | None = None) -> dict[str, int
             "plan_parse_failures": 0,
             "plan_fallbacks": 0,
             "react_refusals": 0,
+            "react_unparsed": 0,
+            "commitments_made": 0,
+            "commitments_expired": 0,
+            "react_amount_defaulted": 0,
             "cache_hits": 0,
             "cache_misses": 0,
         }
@@ -374,6 +378,10 @@ def current_call_counts(registry: _AgentRegistry | None = None) -> dict[str, int
     parse_fails = sum(a.n_plan_parse_failures for a in registry.agents.values())
     fallbacks = sum(a.n_plan_fallbacks for a in registry.agents.values())
     refusals = sum(a.n_react_refusals for a in registry.agents.values())
+    react_unparsed = sum(a.n_react_unparsed for a in registry.agents.values())
+    commitments_made = sum(a.n_commitments_made for a in registry.agents.values())
+    commitments_expired = sum(a.n_commitments_expired for a in registry.agents.values())
+    react_amount_defaulted = sum(a.n_react_amount_defaulted for a in registry.agents.values())
     # Cache hits/misses come from the shared LLM client (all agents share one).
     # The client lives on each agent; pick any (zeros for a degenerate
     # zero-household run).
@@ -386,6 +394,10 @@ def current_call_counts(registry: _AgentRegistry | None = None) -> dict[str, int
         "plan_parse_failures": parse_fails,
         "plan_fallbacks": fallbacks,
         "react_refusals": refusals,
+        "react_unparsed": react_unparsed,
+        "commitments_made": commitments_made,
+        "commitments_expired": commitments_expired,
+        "react_amount_defaulted": react_amount_defaulted,
         "cache_hits": getattr(cache, "n_hits", 0),
         "cache_misses": getattr(cache, "n_misses", 0),
     }

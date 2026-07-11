@@ -255,6 +255,7 @@ class LLMAgent:
     n_plan_parse_failures: int = 0
     n_plan_fallbacks: int = 0
     n_react_refusals: int = 0  # how many times the LLM refused selfish-prompt instructions
+    n_react_unparsed: int = 0  # react replies whose first line parsed to no performative
     n_commitments_made: int = 0
     n_commitments_expired: int = 0
     n_react_amount_defaulted: int = 0  # ACCEPT/COUNTER without a parseable kwh
@@ -611,7 +612,11 @@ class LLMAgent:
         handled = self.pending_react[:n]
         skipped = self.pending_react[n:]
         self.pending_react = skipped
-        self.n_react_skipped += len(skipped)
+        # Count each deferred message once (at its arrival tick) — the old
+        # per-tick recount inflated the statistic for every tick a message waited.
+        self.n_react_skipped += sum(
+            1 for arrival_idx, _ in skipped if arrival_idx == self.last_t_idx
+        )
         for _arrival_idx, incoming in handled:
             resp = self._react_to_message(t, incoming)
             if resp is not None:
@@ -666,6 +671,7 @@ class LLMAgent:
         tokens = text.split("\n", 1)[0].strip().upper().split()
         first_line = tokens[0] if tokens else ""
         if first_line not in ("ACCEPT", "REJECT", "COUNTER"):
+            self.n_react_unparsed += 1
             # Selfish-prompted models often refuse adversarial instructions
             # entirely. We count this and return None so the bus doesn't
             # receive a malformed message.
