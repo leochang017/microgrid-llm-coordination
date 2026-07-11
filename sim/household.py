@@ -31,7 +31,7 @@ class HouseholdState:
     last_solar_kw: float
     last_load_kw: float
     grid_connected: bool
-    wasted_kwh: float = 0.0  # surplus that couldn't fit (curtailed solar or over-rate charge)
+    wasted_kwh: float = 0.0  # curtailed surplus PLUS battery conversion losses, both legs (spec Known Limitations §2)
     unmet_kwh: float = 0.0  # deficit that couldn't be served (DoD-floor or under-rate discharge)
     grid_import_kwh: float = 0.0
     grid_export_kwh: float = 0.0

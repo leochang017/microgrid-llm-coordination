@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 
 from sim.engine import _transfer_caps, run
-from sim.household import Household, HouseholdState
+from sim.household import Household, HouseholdState, step
 from sim.logging import JsonlLogger
 from sim.scenario import OutageWindow, Scenario
 from sim.types import HouseholdProfile, Transfer
@@ -176,3 +176,52 @@ def test_system_net_export_never_negative(tmp_path: Path) -> None:
         by_tick[r["t"]] = by_tick.get(r["t"], 0.0) + r["achieved_net_export_kw"]
     for t, net in by_tick.items():
         assert net >= -1e-9, f"phantom energy at {t}: system net export {net}"
+
+
+def _solar_receiver_house() -> Household:
+    return Household(
+        id="rx",
+        pv_kw_peak=4.0,
+        battery_kwh=10.0,
+        battery_max_rate_kw=2.0,
+        rt_efficiency=0.9,
+        dod_floor_frac=0.0,
+        grid_max_kw=10.0,
+        profile=HouseholdProfile(description="t", critical_load_frac=0.0),
+    )
+
+
+def test_receiver_cap_subtracts_own_solar_surplus() -> None:
+    """Own PV surplus competes for the same battery intake (household.step
+    nets solar-load-transfers before storing), so the cap must exclude it."""
+    h = _solar_receiver_house()
+    s = HouseholdState(soc_kwh=5.0, last_solar_kw=0.0, last_load_kw=0.0, grid_connected=False)
+    # surplus 3 kW > 2 kW intake: nothing a peer sends can be used.
+    _, recv = _transfer_caps(h, s, solar_kw=4.0, load_kw=1.0, connected=False, dt_hours=0.25)
+    assert recv == pytest.approx(0.0)
+    # surplus 0.5 kW leaves 1.5 kW of the 2 kW intake for peer energy.
+    _, recv2 = _transfer_caps(h, s, solar_kw=1.5, load_kw=1.0, connected=False, dt_hours=0.25)
+    assert recv2 == pytest.approx(1.5)
+
+
+def test_solar_surplus_receiver_stores_exactly_what_the_cap_admits() -> None:
+    """Receiving exactly the fixed cap wastes ONLY the sqrt(eta) conversion
+    loss — zero curtailment. Under the old cap (2.0 kW) part of the delivered
+    energy was silently curtailed."""
+    h = _solar_receiver_house()
+    s = HouseholdState(soc_kwh=5.0, last_solar_kw=0.0, last_load_kw=0.0, grid_connected=False)
+    _, recv = _transfer_caps(h, s, solar_kw=1.5, load_kw=1.0, connected=False, dt_hours=0.25)
+    new_s = step(
+        h,
+        s,
+        solar_kw=1.5,
+        load_kw=1.0,
+        desired_net_export_kw=-recv,
+        grid_status=False,
+        dt_hours=0.25,
+    )
+    # surplus_kwh = (1.5 - 1.0 + 1.5) * 0.25 = 0.5; gross_in = 0.5 (rate-capped);
+    # stored = 0.5 * sqrt(0.9) = 0.474342; waste = conversion loss only.
+    assert new_s.soc_kwh == pytest.approx(5.0 + 0.5 * math.sqrt(0.9))
+    assert new_s.wasted_kwh == pytest.approx(0.5 * (1 - math.sqrt(0.9)))
+    assert new_s.unmet_kwh == 0.0

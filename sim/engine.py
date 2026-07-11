@@ -137,7 +137,12 @@ def _transfer_caps(
     absorb_batt_kw = (
         min(h.battery_max_rate_kw, headroom_kwh / (sqrt_eff * dt_hours)) if sqrt_eff > 0 else 0.0
     )
-    receiver_cap = max(0.0, load_kw - solar_kw) + absorb_batt_kw
+    # The receiver's own solar surplus is already charging the battery this
+    # tick and competes for the same gross intake (step() nets solar, load,
+    # and transfers before storing), so peer imports only help up to the
+    # intake capacity that surplus leaves free (2026-07-12 fix).
+    own_surplus_kw = max(0.0, solar_kw - load_kw)
+    receiver_cap = max(0.0, load_kw - solar_kw) + max(0.0, absorb_batt_kw - own_surplus_kw)
     return max(0.0, sender_cap), max(0.0, receiver_cap)
 
 
