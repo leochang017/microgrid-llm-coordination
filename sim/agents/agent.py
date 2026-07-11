@@ -617,9 +617,30 @@ class LLMAgent:
         return out
 
     def _react_to_message(self, t: datetime, m: Message) -> Message | None:
+        # A binding ACCEPT/COUNTER must be grounded in what the household can
+        # actually deliver: its noised self-view minus energy already promised.
+        # Without this the reply measures prompt blindness, not reasoning (F1).
+        view = self.last_visible_own
+        open_kwh = sum(c.kwh_remaining for c in self.commitments)
+        if view:
+            cap = float(view.get("soc_capacity", 0.0))
+            floor = float(view.get("dod_floor_frac", 0.1)) * cap
+            headroom = max(0.0, float(view["soc_kwh"]) - floor)
+            rate = float(self.household_context.get("battery_max_rate_kw", 0.0))
+            own_state_str = (
+                f"Your state (as you see it): SoC {float(view['soc_kwh']):.2f}/{cap:.0f} kWh "
+                f"({headroom:.2f} kWh above your DoD floor), "
+                f"load {float(view.get('load_kw', 0.0)):.2f} kW, "
+                f"solar {float(view.get('solar_kw', 0.0)):.2f} kW, "
+                f"max discharge {rate:.1f} kW. "
+                f"Energy you already promised others (open commitments): {open_kwh:.2f} kWh."
+            )
+        else:
+            own_state_str = "Your state: (no observation yet)."
         prompt = (
             f"You are reacting to a {m.performative} from {m.sender}. "
             f"Payload: {m.payload}. Their rationale: {m.rationale_nl}.\n"
+            f"{own_state_str}\n"
             f"Your current policy: sharing_intent={self.policy.sharing_intent}, "
             f"share_min_soc_frac={self.policy.share_min_soc_frac}, "
             f"distrusted_peers={list(self.policy.distrusted_peers)}.\n"
@@ -627,7 +648,8 @@ class LLMAgent:
             f"Reply on the first line with `ACCEPT <kwh>` (commit to deliver that "
             f"much), `COUNTER <kwh>` (commit to a smaller amount), or `REJECT` — "
             f"then `rationale: <one sentence>`. Your commitment is binding for "
-            f"the next 2 ticks."
+            f"3 serviceable ticks (this one and the next two). Never commit more "
+            f"than your headroom minus what you already promised."
         )
         resp = self.llm_client.call(
             LLMRequest(

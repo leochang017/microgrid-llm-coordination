@@ -1038,3 +1038,44 @@ def test_beliefs_ingested_in_same_observe_call_and_age_rendered(tmp_path) -> Non
     agent.observe(t=datetime(2018, 1, 1, 0, 45), own_state=_own_state(8.0), inbox=[], t_idx=5)
     assert agent.last_peer_states["r0c1"]["age_ticks"] == 3
     assert "reported 3 tick(s) ago" in agent._peers_summary()
+
+
+def test_react_prompt_contains_own_state_and_open_commitments(tmp_path) -> None:
+    from dataclasses import dataclass
+
+    from sim.agents.agent import Commitment
+    from sim.agents.llm import LLMRequest
+
+    @dataclass
+    class _RecordingMock(MockLLMClient):
+        last_user: str = ""
+
+        def _call_provider(self, req: LLMRequest) -> LLMResponse:
+            self.last_user = req.user
+            return super()._call_provider(req)
+
+    agent = _bare_agent(tmp_path)
+    agent.llm_client = _RecordingMock(
+        cache=PromptCache(local_dir=tmp_path / "cache"),
+        canned={
+            "reacting to a REQUEST": LLMResponse(
+                text="ACCEPT 0.4\nrationale: fine", tokens_in=0, tokens_out=0
+            )
+        },
+    )
+    agent.observe(t=datetime(2018, 1, 1), own_state=_own_state(8.0), inbox=[], t_idx=0)
+    agent.commitments.append(Commitment(recipient="r9c9", kwh_remaining=1.5, expires_t_idx=2))
+    req = Message(
+        t_sent=datetime(2018, 1, 1),
+        sender="r0c1",
+        recipient=agent.house_id,
+        performative="REQUEST",
+        payload={"kwh": 0.4},
+        rationale_nl="need",
+        correlation_id="c2",
+    )
+    agent._react_to_message(datetime(2018, 1, 1), req)
+    last_user = agent.llm_client.last_user  # type: ignore[attr-defined]
+    assert "Your state (as you see it): SoC 8.00/10 kWh" in last_user
+    assert "open commitments): 1.50 kWh" in last_user
+    assert "3 serviceable ticks" in last_user
