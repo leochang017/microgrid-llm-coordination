@@ -188,3 +188,23 @@ def test_negotiation_counters_reach_summary(tmp_path) -> None:
         "react_amount_defaulted",
     ):
         assert key in detailed
+
+
+def test_reference_cache_dir_resolves_for_both_real_layouts(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from sim.strategies.llm_agent import _reference_cache_dir
+
+    cache = tmp_path / "reference_runs" / "scenA" / "llm_agent" / "clean" / "llm_cache"
+    cache.mkdir(parents=True)
+    assert (
+        _reference_cache_dir(tmp_path / "runs" / "scenA" / "llm_agent" / "20260712T120000-42")
+        == cache
+    )
+    assert (
+        _reference_cache_dir(tmp_path / "reference_runs" / "scenA" / "llm_agent" / "clean__seed7")
+        == cache
+    )
+    monkeypatch.setenv("MICROGRID_REFERENCE_CELL", "does_not_exist")
+    assert _reference_cache_dir(tmp_path / "runs" / "scenA" / "llm_agent" / "x") is None
+    assert _reference_cache_dir(Path("/")) is None  # shallow path: no crash, None

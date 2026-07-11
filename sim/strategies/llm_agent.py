@@ -78,15 +78,22 @@ def _make_llm_client(model: str, run_dir: Path) -> LLMClient:
 
 
 def _reference_cache_dir(run_dir: Path) -> Path | None:
-    """Walk up from runs/<scenario>/<strategy>/<ts>/ to find reference_runs/."""
+    """Resolve <repo_root>/reference_runs/<scenario>/<strategy>/<cell>/llm_cache.
+
+    Both real layouts sit exactly three levels below the repo root —
+    runs/<scen>/<strategy>/<ts> and reference_runs/<scen>/<strategy>/<cell> —
+    so the repo root is parents[3] of the RESOLVED run dir. Cell defaults to
+    "clean"; override with MICROGRID_REFERENCE_CELL. (Fixed 2026-07-12: the
+    old walk stopped one parent short and never resolved for ANY real run.)"""
     try:
-        repo_root = run_dir.parent.parent.parent
-        scen = run_dir.parent.parent.name
-        strat = run_dir.parent.name
-    except Exception:
+        resolved = run_dir.resolve()
+        root = resolved.parents[3]
+        scen = resolved.parent.parent.name
+        strat = resolved.parent.name
+    except (IndexError, OSError):
         return None
     cell = os.environ.get("MICROGRID_REFERENCE_CELL", "clean")
-    candidate = repo_root / "reference_runs" / scen / strat / cell / "llm_cache"
+    candidate = root / "reference_runs" / scen / strat / cell / "llm_cache"
     return candidate if candidate.exists() else None
 
 
