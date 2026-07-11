@@ -81,3 +81,84 @@ def test_prepare_returns_decide_callable(tmp_path) -> None:
         neighborhood=nb,
     )
     assert callable(decide)
+
+
+def _prepare_with_failure(tmp_path, fm):  # type: ignore[no-untyped-def]
+    """Prepare the minimal 3-house llm_agent cell under a FailureModeConfig and
+    return (decide, scenario, households). Injects a mock client via the factory
+    param (no module-global monkeypatch)."""
+    from datetime import datetime
+
+    from sim.agents.cache import PromptCache
+    from sim.agents.llm import LLMResponse, MockLLMClient
+    from sim.household import Household
+    from sim.network import build_overlay_neighborhood
+    from sim.scenario import Scenario
+    from sim.strategies import llm_agent as llm_strat
+    from sim.types import HouseholdProfile
+
+    scenario = Scenario(
+        scenario_id="t",
+        start=datetime(2026, 1, 1, 8, 0),
+        end=datetime(2026, 1, 1, 8, 30),
+        dt_hours=0.25,
+        seed=42,
+        rows=1,
+        cols=3,
+        bus_max_kw=50.0,
+        bus_loss_factor=0.05,
+        strategy="llm_agent",
+        data_source="synthetic",
+        household_sampling={
+            "pv_kw_peak": [4.0, 4.0],
+            "battery_kwh": [10.0, 10.0],
+            "rt_efficiency": 0.9,
+            "dod_floor_frac": 0.1,
+        },
+        failure_modes=fm,
+    )
+    households = {
+        f"r0c{c}": Household(
+            id=f"r0c{c}",
+            pv_kw_peak=4.0,
+            battery_kwh=10.0,
+            battery_max_rate_kw=2.0,
+            rt_efficiency=0.9,
+            dod_floor_frac=0.1,
+            grid_max_kw=10.0,
+            profile=HouseholdProfile(description="t"),
+        )
+        for c in range(3)
+    }
+    nb = build_overlay_neighborhood(
+        rows=1, cols=3, affiliations={}, bus_max_kw=50.0, bus_loss_factor=0.05
+    )
+    mock = MockLLMClient(
+        cache=PromptCache(local_dir=tmp_path / "cache"),
+        canned={"": LLMResponse(text="", tokens_in=0, tokens_out=0)},
+    )
+    decide = llm_strat.prepare(
+        scenario=scenario,
+        households=households,
+        solar=None,
+        loads=None,
+        neighborhood=nb,
+        llm_client_factory=lambda model, run_dir: mock,
+    )
+    return decide, scenario, households
+
+
+def test_wrapper_corruption_gated_on_realization(tmp_path) -> None:
+    """`prompt` realization must leave the DefectorWrapper inert (empty defector
+    set → maybe_corrupt is identity); only `wrapper`/`both` corrupt the channel."""
+    from sim.agents.failure_modes import FailureModeConfig, assign_defectors
+
+    for realization, expect_active in (("prompt", False), ("wrapper", True), ("both", True)):
+        fm = FailureModeConfig(defector_fraction=0.2, defector_realization=realization)
+        decide, scenario, households = _prepare_with_failure(tmp_path, fm)
+        wrapped = decide.registry.defector_wrapper.defectors
+        if expect_active:
+            assert wrapped == assign_defectors(list(households), fm, scenario.seed)
+            assert wrapped  # 1 defector of 3 at fraction 0.2 — non-empty
+        else:
+            assert wrapped == set()

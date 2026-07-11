@@ -124,7 +124,14 @@ def prepare(
         per_tick_budget=fm.comm.per_tick_budget,
     )
     noise = NoiseSource(cfg=fm.obs_noise, scenario_seed=scenario.seed)
-    wrapper = DefectorWrapper(defectors=defectors, scenario_seed=scenario.seed)
+    # Spec A3: `wrapper` (and `both`) = channel corruption; `prompt` = selfish
+    # system prompt ONLY. An empty defector set makes maybe_corrupt the identity,
+    # so prompt-realization cells measure LLM-driven defection, not line noise.
+    use_wrapper = fm.defector_realization in ("wrapper", "both")
+    wrapper = DefectorWrapper(
+        defectors=defectors if use_wrapper else set(),
+        scenario_seed=scenario.seed,
+    )
 
     model = scenario.llm.get("model", "claude-haiku-4-5-20251001")
     react_max = int(scenario.llm.get("react_max_per_tick", 3))

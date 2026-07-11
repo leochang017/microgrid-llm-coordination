@@ -7,6 +7,7 @@ from pathlib import Path
 
 from sim.engine import run
 from sim.logging import JsonlLogger
+from sim.overrides import apply_overrides
 from sim.scenario import load_scenario
 from sim.strategies import llm_agent as llm_strat
 from sim.strategies import llm_fallback
@@ -81,3 +82,17 @@ def test_prepared_closures_keep_their_own_registries(tmp_path: Path) -> None:
     assert llm_strat._REGISTRY is reg_b  # global tracks the LAST prepare
     counts_a = llm_strat.current_call_counts(reg_a)
     assert counts_a["reflect_plan"] == 0
+
+
+def test_prompt_realization_defectors_are_inert_for_the_zero_llm_control(tmp_path: Path) -> None:
+    """Zero-LLM control, prompt-realization defectors: selfish prompts are inert
+    (LLM disabled) and (post-P3.1-T5) the wrapper no longer fires either, so the
+    defector cell must be byte-identical to clean."""
+    base = load_scenario("configs/scenarios/haves_havenots_solar__llm.yaml")
+    treated = apply_overrides(
+        base, ["failure_modes.defector_fraction=0.2"]
+    )  # realization -> prompt
+    clean = _run(base, tmp_path, "clean")
+    defector_prompt = _run(treated, tmp_path, "defector_prompt")
+    assert clean["served_load_fraction"] == defector_prompt["served_load_fraction"]
+    assert clean["transfer_count"] == defector_prompt["transfer_count"]
