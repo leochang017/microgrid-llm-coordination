@@ -35,7 +35,7 @@ class CommConfig:
 @dataclass(frozen=True)
 class FailureModeConfig:
     defector_fraction: float = 0.0
-    defector_assignment: Literal["random", "by_circle", "manual"] = "random"
+    defector_assignment: Literal["random", "manual"] = "random"
     defector_house_ids: tuple[str, ...] = ()
     defector_realization: Literal["prompt", "wrapper", "both"] = "prompt"
     obs_noise: ObsNoiseConfig = field(default_factory=ObsNoiseConfig)
@@ -45,13 +45,24 @@ class FailureModeConfig:
     def from_dict(d: dict[str, Any] | None) -> FailureModeConfig:
         if not d:
             return FailureModeConfig()
+        assignment = d.get("defector_assignment", "random")
+        if assignment not in ("random", "manual"):
+            raise ValueError(
+                f"defector_assignment must be 'random' or 'manual', got {assignment!r}"
+                " ('by_circle' was never implemented and is not accepted)"
+            )
+        realization = d.get("defector_realization", "prompt")
+        if realization not in ("prompt", "wrapper", "both"):
+            raise ValueError(
+                f"defector_realization must be prompt|wrapper|both, got {realization!r}"
+            )
         obs_d = d.get("obs_noise", {}) or {}
         comm_d = d.get("comm", {}) or {}
         return FailureModeConfig(
             defector_fraction=float(d.get("defector_fraction", 0.0)),
-            defector_assignment=d.get("defector_assignment", "random"),
+            defector_assignment=assignment,
             defector_house_ids=tuple(d.get("defector_house_ids", ())),
-            defector_realization=d.get("defector_realization", "prompt"),
+            defector_realization=realization,
             obs_noise=ObsNoiseConfig(
                 soc_std_frac=float(obs_d.get("soc_std_frac", 0.0)),
                 load_std_frac=float(obs_d.get("load_std_frac", 0.0)),

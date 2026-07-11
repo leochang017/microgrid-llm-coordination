@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
+import pytest
+
 from sim.agents.failure_modes import (
     DefectorWrapper,
     FailureModeConfig,
@@ -161,3 +163,17 @@ def test_rng_seeding_is_stable_across_processes() -> None:
         )
         outs.add(r.stdout.strip())
     assert len(outs) == 1, f"seeding varies with PYTHONHASHSEED: {outs}"
+
+
+def test_defector_enums_validated() -> None:
+    with pytest.raises(ValueError, match="defector_assignment"):
+        FailureModeConfig.from_dict({"defector_assignment": "by_circle"})
+    with pytest.raises(ValueError, match="defector_assignment"):
+        FailureModeConfig.from_dict({"defector_assignment": "wandom"})
+    with pytest.raises(ValueError, match="defector_realization"):
+        FailureModeConfig.from_dict({"defector_realization": "wraper"})
+    # valid values still load
+    cfg = FailureModeConfig.from_dict(
+        {"defector_assignment": "manual", "defector_realization": "both"}
+    )
+    assert cfg.defector_assignment == "manual"

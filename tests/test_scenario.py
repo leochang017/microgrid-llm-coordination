@@ -1,5 +1,6 @@
 """Tests for scenario config loading and validation."""
 
+import dataclasses
 import textwrap
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -272,3 +273,13 @@ def test_load_rejects_outage_outside_horizon(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="outside the scenario horizon"):
         load_scenario(p)
+
+
+def test_bus_params_range_validated() -> None:
+    base = load_scenario("configs/scenarios/synthetic_smoke.yaml")
+    with pytest.raises(ValueError, match="bus_loss_factor"):
+        dataclasses.replace(base, bus_loss_factor=1.2)
+    with pytest.raises(ValueError, match="bus_loss_factor"):
+        dataclasses.replace(base, bus_loss_factor=-0.1)
+    with pytest.raises(ValueError, match="bus_max_kw"):
+        dataclasses.replace(base, bus_max_kw=0.0)

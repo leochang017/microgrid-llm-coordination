@@ -63,6 +63,10 @@ class Scenario:
             raise ValueError(f"end before start: {self.start} -> {self.end}")
         if self.rows <= 0 or self.cols <= 0:
             raise ValueError(f"rows and cols must be positive: rows={self.rows} cols={self.cols}")
+        if not (0.0 <= self.bus_loss_factor < 1.0):
+            raise ValueError(f"bus_loss_factor must be in [0, 1), got {self.bus_loss_factor}")
+        if self.bus_max_kw <= 0:
+            raise ValueError(f"bus_max_kw must be positive, got {self.bus_max_kw}")
 
     def timesteps(self) -> Iterator[datetime]:
         t = self.start
