@@ -15,7 +15,7 @@ from __future__ import annotations
 import os
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -118,7 +118,11 @@ def prepare(
     fm = scenario.failure_modes
     house_ids = list(households)
     defectors = assign_defectors(house_ids, fm, scenario.seed)
-    bus = message_bus or MessageBus(neighborhood=neighborhood, seed=scenario.seed)
+    bus = message_bus or MessageBus(
+        neighborhood=neighborhood,
+        seed=scenario.seed,
+        dt=timedelta(hours=scenario.dt_hours),
+    )
     bus.configure_failure_modes(
         drop_prob_by_circle=fm.comm.drop_prob_by_circle,
         per_tick_budget=fm.comm.per_tick_budget,

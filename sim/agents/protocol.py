@@ -74,7 +74,7 @@ class _LogRow:
     payload: dict[str, Any]
     rationale_nl: str
     correlation_id: str
-    outcome: Literal["delivered", "dropped"]
+    outcome: Literal["delivered", "dropped", "pending_at_end"]
     templated: bool = True
     reason: str | None = None
 
@@ -94,6 +94,8 @@ class MessageBus:
 
     neighborhood: Neighborhood
     seed: int = 0
+    # One tick — pass timedelta(hours=scenario.dt_hours); the 15-min default only
+    # matches dt_hours=0.25 scenarios.
     dt: timedelta = field(default_factory=lambda: timedelta(minutes=15))
 
     _queue: list[Message] = field(default_factory=list)
@@ -216,7 +218,28 @@ class MessageBus:
             for r in self._log
         ]
 
+    def flush_undelivered(self) -> None:
+        """Log messages still queued when the run ends. Without this the final
+        tick's accepted traffic appears in NO output (2026-07-12 fix)."""
+        for m in self._queue:
+            self._log.append(
+                _LogRow(
+                    t_sent=m.t_sent,
+                    t_decided=m.t_sent,
+                    sender=m.sender,
+                    recipient=m.recipient,
+                    performative=m.performative,
+                    payload=dict(m.payload),
+                    rationale_nl=m.rationale_nl,
+                    correlation_id=m.correlation_id,
+                    templated=m.templated,
+                    outcome="pending_at_end",
+                )
+            )
+        self._queue = []
+
     def write_jsonl(self, path: Path) -> None:
+        self.flush_undelivered()
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w", encoding="utf-8") as f:

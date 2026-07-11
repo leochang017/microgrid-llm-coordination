@@ -10,7 +10,7 @@ import argparse
 import dataclasses
 import importlib
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -108,7 +108,9 @@ def main() -> None:
             bus_max_kw=scenario.bus_max_kw,
             bus_loss_factor=scenario.bus_loss_factor,
         )
-        message_bus = MessageBus(neighborhood=nb, seed=scenario.seed)
+        message_bus = MessageBus(
+            neighborhood=nb, seed=scenario.seed, dt=timedelta(hours=scenario.dt_hours)
+        )
 
     try:
         summary = run(

@@ -100,3 +100,17 @@ def test_phase2_message_counts_categorizes_drops(tmp_path: Path) -> None:
     assert counts["sent"] == 1
     assert counts["dropped_invalid_recipient"] == 1
     assert counts["delivered"] == 0
+
+
+def test_message_counts_include_pending_at_end(tmp_path: Path) -> None:
+    from sim.logging import phase2_message_counts
+
+    p = tmp_path / "messages.jsonl"
+    p.write_text(
+        json.dumps({"outcome": "pending_at_end"})
+        + "\n"
+        + json.dumps({"outcome": "delivered"})
+        + "\n"
+    )
+    counts = phase2_message_counts(p)
+    assert counts["sent"] == 2 and counts["delivered"] == 1 and counts["pending_at_end"] == 1

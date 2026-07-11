@@ -51,14 +51,29 @@ def test_engine_round_robin_byte_identical_without_message_bus(tmp_path: Path) -
         decide_transfers=round_robin.decide_transfers,
         logger=JsonlLogger(run_dir=out_a, scenario_id=s.scenario_id),
     )
+    from sim.agents.protocol import MessageBus
+    from sim.network import build_overlay_neighborhood
+
+    bus_b = MessageBus(
+        neighborhood=build_overlay_neighborhood(
+            rows=s.rows,
+            cols=s.cols,
+            affiliations=s.affiliations,
+            bus_max_kw=s.bus_max_kw,
+            bus_loss_factor=s.bus_loss_factor,
+        ),
+        seed=s.seed,
+    )
     run(
         scenario=s,
         decide_transfers=round_robin.decide_transfers,
         logger=JsonlLogger(run_dir=out_b, scenario_id=s.scenario_id),
+        message_bus=bus_b,
     )
 
     assert (out_a / "state.jsonl").read_bytes() == (out_b / "state.jsonl").read_bytes()
     assert (out_a / "events.jsonl").read_bytes() == (out_b / "events.jsonl").read_bytes()
+    assert (out_b / "messages.jsonl").exists()
 
 
 def test_engine_writes_messages_jsonl_when_bus_supplied(tmp_path: Path) -> None:

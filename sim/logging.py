@@ -200,6 +200,7 @@ def phase2_message_counts(messages_jsonl: Path) -> dict[str, int]:
         "dropped_invalid_recipient": 0,
         "dropped_comm": 0,
         "dropped_budget": 0,
+        "pending_at_end": 0,
     }
     p = Path(messages_jsonl)
     if not p.exists():
@@ -219,6 +220,8 @@ def phase2_message_counts(messages_jsonl: Path) -> dict[str, int]:
                 counts["dropped_comm"] += 1
             elif reason == "budget_overflow":
                 counts["dropped_budget"] += 1
+        elif row["outcome"] == "pending_at_end":
+            counts["pending_at_end"] += 1
     return counts
 
 

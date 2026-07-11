@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import pytest
 
 from sim.agents.protocol import Message, MessageBus, new_correlation_id
-from sim.network import Neighborhood
+from sim.network import Neighborhood, build_grid_neighborhood
 
 
 def test_message_is_frozen() -> None:
@@ -205,3 +206,40 @@ def test_bus_dropout_is_deterministic_given_seed() -> None:
     # drop_prob=0.5 over 20 trials, the chance of two independent seeds
     # producing exactly the same dropped subset is 2^-20 ~ 1e-6.
     assert a != c, "different seeds must produce different drop patterns"
+
+
+def test_bus_latency_follows_dt() -> None:
+    nb = build_grid_neighborhood(rows=1, cols=2, bus_max_kw=50.0)
+    bus = MessageBus(neighborhood=nb, seed=0, dt=timedelta(hours=0.05))
+    t0 = datetime(2018, 1, 1)
+    bus.send(
+        Message(
+            t_sent=t0,
+            sender="r0c0",
+            recipient="r0c1",
+            performative="INFORM",
+            payload={"soc_kwh": 1.0},
+            rationale_nl="s",
+            correlation_id="c1",
+        )
+    )
+    assert bus.deliver_pending(t0 + timedelta(hours=0.05)) != {}  # one tick later
+
+
+def test_end_of_run_queue_is_flushed_to_log(tmp_path: Path) -> None:
+    nb = build_grid_neighborhood(rows=1, cols=2, bus_max_kw=50.0)
+    bus = MessageBus(neighborhood=nb, seed=0)
+    bus.send(
+        Message(
+            t_sent=datetime(2018, 1, 1),
+            sender="r0c0",
+            recipient="r0c1",
+            performative="INFORM",
+            payload={"soc_kwh": 1.0},
+            rationale_nl="s",
+            correlation_id="c2",
+        )
+    )
+    bus.write_jsonl(tmp_path / "messages.jsonl")
+    rows = [json.loads(line) for line in (tmp_path / "messages.jsonl").read_text().splitlines()]
+    assert [r["outcome"] for r in rows] == ["pending_at_end"]
