@@ -50,7 +50,6 @@ def test_agent_observe_appends_to_memory(tmp_path) -> None:
             "load_kw": 1.0,
             "solar_kw": 0.0,
         },
-        peer_states={"r0c1": {"soc_kwh": 4.0, "soc_capacity": 10.0}},
         inbox=[],
         t_idx=0,
     )
@@ -82,7 +81,6 @@ def test_agent_observe_appends_inbox_as_msg_recv(tmp_path) -> None:
             "load_kw": 1.0,
             "solar_kw": 0.0,
         },
-        peer_states={},
         inbox=inbox,
         t_idx=0,
     )
@@ -122,7 +120,6 @@ def test_agent_pending_react_queued(tmp_path) -> None:
             "load_kw": 1.0,
             "solar_kw": 0.0,
         },
-        peer_states={},
         inbox=inbox,
         t_idx=0,
     )
@@ -184,7 +181,6 @@ def test_act_emits_offers_to_neighbors_when_soc_above_threshold(tmp_path) -> Non
     a.observe(
         t=t0,
         own_state=_own_state(8.0),
-        peer_states={},
         inbox=[
             _inform("r0c1", 2.0, 10.0, t0, "b1"),  # geo neighbor, below mean
             _inform("r1c0", 3.0, 10.0, t0, "b2"),  # owner neighbor, below mean
@@ -219,7 +215,6 @@ def test_act_filters_recipients_by_below_mean_soc(tmp_path) -> None:
     a.observe(
         t=t0,
         own_state=_own_state(8.0),
-        peer_states={},
         inbox=[
             _inform("r0c1", 1.0, 10.0, t0, "c1"),
             _inform("r1c0", 9.0, 10.0, t0, "c2"),
@@ -237,7 +232,7 @@ def test_act_skips_when_soc_below_threshold(tmp_path) -> None:
     a.policy = _generous_policy()
     nb = _three_house_neighborhood()
     t0 = datetime(2026, 1, 1, 8, 0)
-    a.observe(t=t0, own_state=_own_state(3.0), peer_states={}, inbox=[], t_idx=0)
+    a.observe(t=t0, own_state=_own_state(3.0), inbox=[], t_idx=0)
     transfers, outbox = a.act(t=t0, own_state=_own_state(3.0), neighborhood=nb, dt_hours=0.25)
     assert transfers == []
     assert all(m.performative == "REQUEST" for m in outbox)
@@ -258,7 +253,7 @@ def test_act_excludes_distrusted_peers(tmp_path) -> None:
     )
     nb = _three_house_neighborhood()
     t0 = datetime(2026, 1, 1, 8, 0)
-    a.observe(t=t0, own_state=_own_state(8.0), peer_states={}, inbox=[], t_idx=0)
+    a.observe(t=t0, own_state=_own_state(8.0), inbox=[], t_idx=0)
     transfers, _ = a.act(t=t0, own_state=_own_state(8.0), neighborhood=nb, dt_hours=0.25)
     assert all(tr.to_id != "r1c0" for tr in transfers)
 
@@ -277,7 +272,7 @@ def test_act_respects_headroom_cap(tmp_path) -> None:
         "solar_kw": 0.0,
         "dod_floor_frac": 0.5,
     }
-    a.observe(t=t0, own_state=own, peer_states={}, inbox=[], t_idx=0)
+    a.observe(t=t0, own_state=own, inbox=[], t_idx=0)
     transfers, _ = a.act(t=t0, own_state=own, neighborhood=nb, dt_hours=0.25)
     total_kw = sum(tr.kw for tr in transfers)
     headroom_kwh = 5.5 - 0.5 * 10.0
@@ -327,7 +322,6 @@ Policy:
             "load_kw": 1.0,
             "solar_kw": 0.0,
         },
-        peer_states={},
         inbox=[],
         t_idx=0,
     )
@@ -355,7 +349,6 @@ def test_plan_falls_back_on_unparseable_response(tmp_path) -> None:
             "load_kw": 1.0,
             "solar_kw": 0.0,
         },
-        peer_states={},
         inbox=[],
         t_idx=0,
     )
@@ -389,7 +382,6 @@ def test_plan_prompt_contains_trust_circles_and_state(tmp_path) -> None:
             "load_kw": 1.0,
             "solar_kw": 0.0,
         },
-        peer_states={},
         inbox=[],
         t_idx=0,
     )
@@ -435,7 +427,6 @@ def test_react_produces_accept_or_reject_per_message(tmp_path) -> None:
             "load_kw": 1.0,
             "solar_kw": 0.0,
         },
-        peer_states={},
         inbox=inbox,
         t_idx=0,
     )
@@ -482,7 +473,6 @@ def test_react_caps_at_max_per_tick(tmp_path) -> None:
             "load_kw": 1.0,
             "solar_kw": 0.0,
         },
-        peer_states={},
         inbox=inbox,
         t_idx=0,
     )
@@ -566,7 +556,6 @@ def test_plan_consumes_tool_input_when_present(tmp_path) -> None:
             "load_kw": 1.0,
             "solar_kw": 0.0,
         },
-        peer_states={},
         inbox=[],
         t_idx=0,
     )
@@ -617,12 +606,12 @@ def test_react_queue_survives_across_ticks_and_gets_answered(tmp_path) -> None:
         )
         for i in range(2)
     ]
-    a.observe(t=t0, own_state=own, peer_states={}, inbox=inbox, t_idx=0)
+    a.observe(t=t0, own_state=own, inbox=inbox, t_idx=0)
     first = a.react_to_pending(t=t0)
     assert len(first) == 1 and first[0].correlation_id == "id0"
     # Next tick, empty inbox: the deferred id1 must still be there and get answered.
     t1 = datetime(2026, 1, 1, 8, 15)
-    a.observe(t=t1, own_state=own, peer_states={}, inbox=[], t_idx=1)
+    a.observe(t=t1, own_state=own, inbox=[], t_idx=1)
     second = a.react_to_pending(t=t1)
     assert len(second) == 1 and second[0].correlation_id == "id1"
     assert a.n_react_dropped_stale == 0
@@ -650,10 +639,10 @@ def test_react_queue_ages_out_stale_entries_with_counter(tmp_path) -> None:
             correlation_id="stale",
         )
     ]
-    a.observe(t=t0, own_state=own, peer_states={}, inbox=inbox, t_idx=0)
-    a.observe(t=t0, own_state=own, peer_states={}, inbox=[], t_idx=1)
+    a.observe(t=t0, own_state=own, inbox=inbox, t_idx=0)
+    a.observe(t=t0, own_state=own, inbox=[], t_idx=1)
     assert len(a.pending_react) == 1  # age 1 < react_stale_after_ticks
-    a.observe(t=t0, own_state=own, peer_states={}, inbox=[], t_idx=2)
+    a.observe(t=t0, own_state=own, inbox=[], t_idx=2)
     assert a.pending_react == []
     assert a.n_react_dropped_stale == 1
 
@@ -730,7 +719,6 @@ def test_observe_updates_peer_beliefs_from_inform(tmp_path) -> None:
     a.observe(
         t=t0,
         own_state=_own(),
-        peer_states={},
         inbox=[_inform("r0c1", 3.2, 10.0, t0, "i1")],
         t_idx=4,
     )
@@ -740,7 +728,6 @@ def test_observe_updates_peer_beliefs_from_inform(tmp_path) -> None:
     a.observe(
         t=t0,
         own_state=_own(),
-        peer_states={},
         inbox=[_inform("r0c1", 2.0, 10.0, t0, "i2")],
         t_idx=5,
     )
@@ -758,7 +745,7 @@ def test_emit_informs_carry_the_noised_self_view(tmp_path) -> None:
     a = _bare_agent(tmp_path)
     a.noise = NoiseSource(cfg=noisy_cfg.obs_noise, scenario_seed=42)
     t0 = datetime(2026, 1, 1, 8, 0)
-    a.observe(t=t0, own_state=_own(soc=5.0), peer_states={}, inbox=[], t_idx=0)
+    a.observe(t=t0, own_state=_own(soc=5.0), inbox=[], t_idx=0)
     visible = a.last_visible_own["soc_kwh"]
     assert visible != 5.0  # noise actually applied at this std
 
@@ -797,7 +784,6 @@ def test_act_decides_on_noised_view_not_raw_state(tmp_path) -> None:
     a.observe(
         t=t0,
         own_state=_own(soc=true_soc),
-        peer_states={},
         inbox=[
             _inform("r0c1", 1.0, 10.0, t0, "n1"),
             _inform("r0c2", 9.0, 10.0, t0, "n2"),
@@ -862,7 +848,6 @@ def test_request_kwh_sized_by_estimated_deficit(tmp_path) -> None:
     a.observe(
         t=t0,
         own_state=own,
-        peer_states={},
         inbox=[
             _inform("r0c1", 9.0, 10.0, t0, "q1"),
         ],
@@ -896,7 +881,6 @@ def test_no_request_when_battery_covers_the_load(tmp_path) -> None:
     a.observe(
         t=t0,
         own_state=own,
-        peer_states={},
         inbox=[
             _inform("r0c1", 9.0, 10.0, t0, "q2"),
         ],
@@ -930,9 +914,7 @@ def _react_agent(tmp_path, reply_text: str) -> LLMAgent:
 def test_accept_with_amount_creates_commitment(tmp_path) -> None:
     a = _react_agent(tmp_path, "ACCEPT 0.4\nrationale: can spare that much")
     t0 = datetime(2026, 1, 1, 8, 0)
-    a.observe(
-        t=t0, own_state=_own(8.0), peer_states={}, inbox=[_request("r0c1", 0.9, t0, "r1")], t_idx=0
-    )
+    a.observe(t=t0, own_state=_own(8.0), inbox=[_request("r0c1", 0.9, t0, "r1")], t_idx=0)
     out = a.react_to_pending(t=t0)
     assert out[0].performative == "ACCEPT"
     assert out[0].payload["kwh"] == pytest.approx(0.4)
@@ -945,9 +927,7 @@ def test_accept_with_amount_creates_commitment(tmp_path) -> None:
 def test_bare_accept_defaults_to_requested_amount(tmp_path) -> None:
     a = _react_agent(tmp_path, "ACCEPT\nrationale: ok")
     t0 = datetime(2026, 1, 1, 8, 0)
-    a.observe(
-        t=t0, own_state=_own(8.0), peer_states={}, inbox=[_request("r0c1", 0.9, t0, "r2")], t_idx=0
-    )
+    a.observe(t=t0, own_state=_own(8.0), inbox=[_request("r0c1", 0.9, t0, "r2")], t_idx=0)
     a.react_to_pending(t=t0)
     assert a.commitments[0].kwh_remaining == pytest.approx(0.9)
     assert a.n_react_amount_defaulted == 1
@@ -956,9 +936,7 @@ def test_bare_accept_defaults_to_requested_amount(tmp_path) -> None:
 def test_counter_commits_at_countered_amount(tmp_path) -> None:
     a = _react_agent(tmp_path, "COUNTER 0.2\nrationale: only a little")
     t0 = datetime(2026, 1, 1, 8, 0)
-    a.observe(
-        t=t0, own_state=_own(8.0), peer_states={}, inbox=[_request("r0c1", 0.9, t0, "r3")], t_idx=0
-    )
+    a.observe(t=t0, own_state=_own(8.0), inbox=[_request("r0c1", 0.9, t0, "r3")], t_idx=0)
     out = a.react_to_pending(t=t0)
     assert out[0].performative == "COUNTER"
     assert a.commitments[0].kwh_remaining == pytest.approx(0.2)
@@ -967,9 +945,7 @@ def test_counter_commits_at_countered_amount(tmp_path) -> None:
 def test_reject_creates_no_commitment(tmp_path) -> None:
     a = _react_agent(tmp_path, "REJECT\nrationale: no headroom")
     t0 = datetime(2026, 1, 1, 8, 0)
-    a.observe(
-        t=t0, own_state=_own(8.0), peer_states={}, inbox=[_request("r0c1", 0.9, t0, "r4")], t_idx=0
-    )
+    a.observe(t=t0, own_state=_own(8.0), inbox=[_request("r0c1", 0.9, t0, "r4")], t_idx=0)
     a.react_to_pending(t=t0)
     assert a.commitments == []
 
@@ -983,7 +959,7 @@ def test_commitment_produces_transfer_bypassing_belief_filter(tmp_path) -> None:
     a = _bare_agent(tmp_path)
     nb = build_grid_neighborhood(rows=1, cols=3, bus_max_kw=50.0)
     t0 = datetime(2026, 1, 1, 8, 0)
-    a.observe(t=t0, own_state=_own(8.0), peer_states={}, inbox=[], t_idx=0)
+    a.observe(t=t0, own_state=_own(8.0), inbox=[], t_idx=0)
     a.commitments.append(Commitment(recipient="r0c1", kwh_remaining=0.4, expires_t_idx=2))
     transfers, outbox = a.act(t=t0, own_state=_own(8.0), neighborhood=nb, dt_hours=0.25)
     by_target = {tr.to_id: tr.kw for tr in transfers}
@@ -1000,7 +976,7 @@ def test_commitment_expires_after_ttl_with_counter(tmp_path) -> None:
     nb = build_grid_neighborhood(rows=1, cols=3, bus_max_kw=50.0)
     t0 = datetime(2026, 1, 1, 8, 0)
     a.commitments.append(Commitment(recipient="r0c1", kwh_remaining=0.4, expires_t_idx=1))
-    a.observe(t=t0, own_state=_own(8.0), peer_states={}, inbox=[], t_idx=3)  # past TTL
+    a.observe(t=t0, own_state=_own(8.0), inbox=[], t_idx=3)  # past TTL
     a.act(t=t0, own_state=_own(8.0), neighborhood=nb, dt_hours=0.25)
     assert a.commitments == []
     assert a.n_commitments_expired == 1
@@ -1036,7 +1012,6 @@ def test_out_of_range_tool_policy_is_a_parse_failure(tmp_path) -> None:
             "load_kw": 1.0,
             "solar_kw": 0.0,
         },
-        peer_states={},
         inbox=[],
         t_idx=0,
     )
@@ -1044,3 +1019,22 @@ def test_out_of_range_tool_policy_is_a_parse_failure(tmp_path) -> None:
     a.plan(t=t0)
     assert a.policy == before
     assert a.n_plan_parse_failures == 1
+
+
+def test_beliefs_ingested_in_same_observe_call_and_age_rendered(tmp_path) -> None:
+    agent = _bare_agent(tmp_path)
+    inform = Message(
+        t_sent=datetime(2018, 1, 1),
+        sender="r0c1",
+        recipient=agent.house_id,
+        performative="INFORM",
+        payload={"soc_kwh": 2.0, "soc_capacity": 10.0},
+        rationale_nl="status",
+        correlation_id="c1",
+    )
+    agent.observe(t=datetime(2018, 1, 1), own_state=_own_state(8.0), inbox=[inform], t_idx=2)
+    # Post-ingestion: the INFORM delivered THIS tick is already in the snapshot.
+    assert agent.last_peer_states["r0c1"]["age_ticks"] == 0
+    agent.observe(t=datetime(2018, 1, 1, 0, 45), own_state=_own_state(8.0), inbox=[], t_idx=5)
+    assert agent.last_peer_states["r0c1"]["age_ticks"] == 3
+    assert "reported 3 tick(s) ago" in agent._peers_summary()

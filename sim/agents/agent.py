@@ -271,7 +271,6 @@ class LLMAgent:
         self,
         t: datetime,
         own_state: dict[str, Any],
-        peer_states: dict[str, dict[str, Any]],
         inbox: list[Message],
         t_idx: int,
     ) -> None:
@@ -287,6 +286,31 @@ class LLMAgent:
             true_load=float(own_state["load_kw"]),
         )
         capacity = float(own_state["soc_capacity"])
+        # Phase 3: fold INFORM messages into peer beliefs (newest report wins).
+        # This runs BEFORE the belief snapshot so THIS tick's INFORMs are visible
+        # to plan()/act() this tick — previously the snapshot lagged one tick
+        # behind act() (F16/F49).
+        for m in inbox:
+            if m.performative == "INFORM" and "soc_kwh" in m.payload:
+                prev = self.peer_beliefs.get(m.sender)
+                if prev is None or t_idx >= prev.t_idx_reported:
+                    self.peer_beliefs[m.sender] = PeerBelief(
+                        soc_kwh=float(m.payload["soc_kwh"]),
+                        soc_capacity=float(m.payload.get("soc_capacity", 0.0)),
+                        t_idx_reported=t_idx,
+                    )
+        # Post-ingestion belief snapshot: THIS tick's INFORMs are already folded
+        # in, and each entry carries its age so the plan prompt can render
+        # staleness (spec A1).
+        self.last_t_idx = t_idx
+        self.last_peer_states = {
+            p: {
+                "soc_kwh": b.soc_kwh,
+                "soc_capacity": b.soc_capacity,
+                "age_ticks": t_idx - b.t_idx_reported,
+            }
+            for p, b in self.peer_beliefs.items()
+        }
         self.memory.append(
             MemoryEntry(
                 t=t,
@@ -297,7 +321,7 @@ class LLMAgent:
                     "grid_islanded": bool(own_state["grid_islanded"]),
                     "own_load_kw": visible_load,
                     "own_solar_kw": float(own_state.get("solar_kw", 0.0)),
-                    "peer_states": peer_states,
+                    "peer_states": self.last_peer_states,
                 },
                 nl=(
                     f"SoC={visible_soc:.2f}/{capacity:.0f} kWh; "
@@ -322,17 +346,6 @@ class LLMAgent:
                     importance=6.0 if m.performative in ("REQUEST", "OFFER", "REJECT") else 4.0,
                 )
             )
-        # Phase 3: fold INFORM messages into peer beliefs (newest report wins).
-        for m in inbox:
-            if m.performative == "INFORM" and "soc_kwh" in m.payload:
-                prev = self.peer_beliefs.get(m.sender)
-                if prev is None or t_idx >= prev.t_idx_reported:
-                    self.peer_beliefs[m.sender] = PeerBelief(
-                        soc_kwh=float(m.payload["soc_kwh"]),
-                        soc_capacity=float(m.payload.get("soc_capacity", 0.0)),
-                        t_idx_reported=t_idx,
-                    )
-        self.last_t_idx = t_idx
         # Stash the noised self-view for act()/emit_informs (Phase 3: agents
         # decide and report from what they SEE, not engine truth).
         self.last_visible_own = {
@@ -358,8 +371,6 @@ class LLMAgent:
                 kept.append((arrival_idx, pending))
         kept.extend((t_idx, m) for m in inbox if m.performative in ("REQUEST", "OFFER"))
         self.pending_react = kept
-        # Stash peer state snapshot for use by act()
-        self.last_peer_states = dict(peer_states)
         # Trigger-tracking
         self._prev_soc_frac = self.last_soc_frac
         self.last_soc_frac = visible_soc / max(1e-9, capacity)
@@ -514,17 +525,20 @@ class LLMAgent:
         """
         if not self.last_peer_states:
             return "Visible peers: (none known yet)."
-        rows: list[tuple[str, float, float]] = []
+        rows: list[tuple[str, float, float, int]] = []
         for hid, st in self.last_peer_states.items():
             cap = float(st.get("soc_capacity", 0.0))
             if cap <= 0:
                 continue
             soc = float(st.get("soc_kwh", 0.0))
-            rows.append((hid, soc / cap, soc))
+            rows.append((hid, soc / cap, soc, int(st.get("age_ticks", 0))))
         if not rows:
             return "Visible peers: (none known yet)."
         rows.sort(key=lambda r: r[1])  # most-needy first
-        peers_lines = [f"  - {hid}: SoC {frac:.2f} ({soc:.1f} kWh)" for hid, frac, soc in rows]
+        peers_lines = [
+            f"  - {hid}: SoC {frac:.2f} ({soc:.1f} kWh) — reported {age} tick(s) ago"
+            for hid, frac, soc, age in rows
+        ]
         return "Visible peers (most-needy first):\n" + "\n".join(peers_lines)
 
     def _physics_summary(self, t: datetime) -> str:
