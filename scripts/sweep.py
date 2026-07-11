@@ -21,8 +21,9 @@ counters (see scripts/compare.py docstring).
 
 Output: per-axis markdown dose-response tables (rows = axis values, one
 column per strategy, cell = served mean over seeds with min-max range, plus
-gini mean), printed and saved to <out-dir>/<name>/report.md alongside every
-cell's summary.json copy.
+gini mean), printed and saved to <out-dir>/<name>/report.md (rewritten after
+each axis; FAILED cells are recorded in-place and the sweep continues; per-cell
+artifacts live under <out-dir>/<name>/cells/).
 
 Costs nothing with mock/no-LLM strategies. Do NOT put `llm_agent` in a grid
 without budgeting: every (value x seed) cell is a cold prompt cache.
@@ -101,14 +102,20 @@ def run_grid(grid_path: Path, out_root: Path) -> str:
             set_spec = f"{axis['set']}={json.dumps(value)}"
             row = [str(value)]
             for strategy in strategies:
-                cell = [
-                    _run_cell(scenario, strategy, seed, set_spec, out_dir / "cells")
-                    for seed in seeds
-                ]
-                row.append(_fmt_cell(cell))
+                try:
+                    cell = [
+                        _run_cell(scenario, strategy, seed, set_spec, out_dir / "cells")
+                        for seed in seeds
+                    ]
+                    row.append(_fmt_cell(cell))
+                except (RuntimeError, IndexError, OSError) as e:
+                    # Record the failure in-place and keep sweeping — one bad
+                    # cell must not discard a night of completed cells.
+                    row.append("FAILED: " + str(e).splitlines()[0][:60].replace("|", "/"))
             lines.append("| " + " | ".join(row) + " |")
             print(lines[-1], flush=True)
         lines.append("")
+        (out_dir / "report.md").write_text("\n".join(lines))
     report = "\n".join(lines)
     (out_dir / "report.md").write_text(report)
     return report

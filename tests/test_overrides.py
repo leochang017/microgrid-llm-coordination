@@ -77,3 +77,21 @@ def test_sweep_driver_end_to_end_smoke(tmp_path: Path) -> None:
     assert "axis: bus" in report
     assert "no_coordination" in report and "round_robin" in report
     assert (tmp_path / "out" / "smoke" / "report.md").exists()
+
+
+def test_sweep_records_failed_cells_and_keeps_going(tmp_path: Path) -> None:
+    from scripts.sweep import run_grid
+
+    grid = tmp_path / "grid.yaml"
+    grid.write_text(
+        "name: failgrid\n"
+        "scenario: configs/scenarios/synthetic_lp_smoke.yaml\n"
+        "strategies: [round_robin, no_such_strategy]\n"
+        "seeds: [23]\n"
+        "axes:\n"
+        "  - name: dt\n    set: seed\n    values: [23]\n"
+    )
+    report = run_grid(grid, tmp_path / "out")
+    assert "FAILED" in report  # bad strategy recorded in-place
+    assert "0." in report.split("FAILED")[0]  # round_robin cell still tabulated
+    assert (tmp_path / "out" / "failgrid" / "report.md").exists()
