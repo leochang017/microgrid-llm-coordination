@@ -154,7 +154,10 @@ def _validate(d: dict[str, Any]) -> None:
     if ttl < 1:
         raise PolicyValidationError(f"ttl_ticks must be >= 1, got {ttl}")
 
-    for k in ("share_min_soc_frac", "max_share_kw_per_tick"):
+    for k, hi in (("share_min_soc_frac", 1.0), ("max_share_kw_per_tick", 100.0)):
         v = float(d[k])
-        if v < 0:
-            raise PolicyValidationError(f"{k} must be >= 0, got {v}")
+        if not (0.0 <= v <= hi):
+            raise PolicyValidationError(f"{k} must be in [0.0, {hi}], got {v}")
+    sf = float(d.get("share_fraction_per_tick", 0.05))
+    if not (0.0 <= sf <= 1.0):
+        raise PolicyValidationError(f"share_fraction_per_tick must be in [0.0, 1.0], got {sf}")

@@ -73,3 +73,37 @@ def test_policy_is_frozen() -> None:
     p = Policy.from_dict(_valid_policy_dict())
     with pytest.raises((AttributeError, TypeError)):
         p.share_min_soc_frac = 0.9  # type: ignore[misc]
+
+
+def _valid() -> dict:
+    return {
+        "sharing_intent": "balanced",
+        "share_min_soc_frac": 0.3,
+        "max_share_kw_per_tick": 4.0,
+        "recipient_priority": [{"circle": "geographic", "weight": 1.0}],
+    }
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("share_min_soc_frac", 30),
+        ("share_min_soc_frac", 1.01),
+        ("max_share_kw_per_tick", 101.0),
+        ("max_share_kw_per_tick", -1.0),
+        ("share_fraction_per_tick", -0.5),
+        ("share_fraction_per_tick", 5.0),
+    ],
+)
+def test_policy_bounds_rejected(field: str, value: float) -> None:
+    d = _valid()
+    d[field] = value
+    with pytest.raises(PolicyValidationError, match=field):
+        Policy.from_dict(d)
+
+
+def test_policy_boundary_values_accepted() -> None:
+    d = _valid()
+    d["share_min_soc_frac"] = 1.0
+    d["share_fraction_per_tick"] = 1.0
+    Policy.from_dict(d)

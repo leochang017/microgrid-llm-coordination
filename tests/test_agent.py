@@ -1004,3 +1004,43 @@ def test_commitment_expires_after_ttl_with_counter(tmp_path) -> None:
     a.act(t=t0, own_state=_own(8.0), neighborhood=nb, dt_hours=0.25)
     assert a.commitments == []
     assert a.n_commitments_expired == 1
+
+
+def test_out_of_range_tool_policy_is_a_parse_failure(tmp_path) -> None:
+    """A live policy that violates the tool schema's advisory bounds
+    (share_min_soc_frac=30 — percent confusion) takes the parse-failure path:
+    the agent keeps its prior policy and increments the failure counter."""
+    from sim.agents.llm import LLMRequest
+
+    structured = {
+        "reflection": "r",
+        "sharing_intent": "balanced",
+        "share_min_soc_frac": 30,
+        "max_share_kw_per_tick": 4.0,
+        "recipient_priority": [{"circle": "geographic", "weight": 1.0}],
+    }
+
+    class _ToolReturning(MockLLMClient):
+        def call(self, req: LLMRequest) -> LLMResponse:  # type: ignore[override]
+            return LLMResponse(text="", tokens_in=10, tokens_out=20, tool_input=structured)
+
+    a = _bare_agent(tmp_path)
+    a.llm_client = _ToolReturning(cache=PromptCache(local_dir=tmp_path), canned={})
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.observe(
+        t=t0,
+        own_state={
+            "soc_kwh": 8.0,
+            "soc_capacity": 10.0,
+            "grid_islanded": True,
+            "load_kw": 1.0,
+            "solar_kw": 0.0,
+        },
+        peer_states={},
+        inbox=[],
+        t_idx=0,
+    )
+    before = a.policy
+    a.plan(t=t0)
+    assert a.policy == before
+    assert a.n_plan_parse_failures == 1
