@@ -59,7 +59,7 @@ def _canned_mock(tmp_path: Path, mode: str = "text") -> MockLLMClient:
 
 
 @pytest.mark.parametrize("mode", ["text", "tool"])
-def test_two_runs_with_same_mock_are_byte_identical(tmp_path: Path, mode: str) -> None:
+def test_two_runs_with_same_mock_are_byte_identical(tmp_path: Path, mode: str, monkeypatch) -> None:
     from sim.agents.protocol import MessageBus
     from sim.engine import run
     from sim.logging import JsonlLogger
@@ -80,7 +80,7 @@ def test_two_runs_with_same_mock_are_byte_identical(tmp_path: Path, mode: str) -
         out = tmp_path / label
         out.mkdir()
         mock = _canned_mock(tmp_path / f"mock_{label}", mode)
-        llm_strat._make_llm_client = lambda model, run_dir: mock  # type: ignore[attr-defined]
+        monkeypatch.setattr(llm_strat, "_make_llm_client", lambda model, run_dir: mock)
         bus = MessageBus(neighborhood=nb, seed=s.seed)
         run(
             scenario=s,

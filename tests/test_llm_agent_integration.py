@@ -44,7 +44,7 @@ def _canned_mock(tmp_path: Path) -> MockLLMClient:
     )
 
 
-def test_llm_agent_pipeline_integrates_on_haves_havenots(tmp_path: Path) -> None:
+def test_llm_agent_pipeline_integrates_on_haves_havenots(tmp_path: Path, monkeypatch) -> None:
     from sim.agents.protocol import MessageBus
     from sim.engine import run
     from sim.logging import JsonlLogger
@@ -67,7 +67,7 @@ def test_llm_agent_pipeline_integrates_on_haves_havenots(tmp_path: Path) -> None
     # LLM strategy on haves_havenots__llm
     s_llm = load_scenario(SCEN_DIR / "haves_havenots__llm.yaml")
     mock = _canned_mock(tmp_path)
-    llm_strat._make_llm_client = lambda model, run_dir: mock  # type: ignore[attr-defined]
+    monkeypatch.setattr(llm_strat, "_make_llm_client", lambda model, run_dir: mock)
     out_llm = tmp_path / "llm"
     out_llm.mkdir()
     nb = build_overlay_neighborhood(

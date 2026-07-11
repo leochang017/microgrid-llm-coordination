@@ -13,7 +13,7 @@ def test_module_has_prepare_and_decide_transfers() -> None:
     assert callable(llm_agent.decide_transfers)
 
 
-def test_prepare_returns_decide_callable(tmp_path) -> None:
+def test_prepare_returns_decide_callable(tmp_path, monkeypatch) -> None:
     """prepare() should instantiate per-household agents and return a callable
     matching the engine's decide_transfers signature."""
     # Minimal hand-built Scenario (3 houses, no outages, llm strategy)
@@ -71,7 +71,7 @@ def test_prepare_returns_decide_callable(tmp_path) -> None:
         cache=PromptCache(local_dir=tmp_path / "cache"),
         canned={"": LLMResponse(text="", tokens_in=0, tokens_out=0)},
     )
-    llm_strat._make_llm_client = lambda model, run_dir: mock  # type: ignore[attr-defined]
+    monkeypatch.setattr(llm_strat, "_make_llm_client", lambda model, run_dir: mock)
 
     decide = llm_strat.prepare(
         scenario=scenario,

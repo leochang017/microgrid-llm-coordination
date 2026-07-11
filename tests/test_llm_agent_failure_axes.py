@@ -43,7 +43,7 @@ def _canned_mock(tmp_path: Path) -> MockLLMClient:
     )
 
 
-def _run(scenario_file: str, tmp_path: Path) -> dict:
+def _run(scenario_file: str, tmp_path: Path, monkeypatch) -> dict:
     from sim.agents.protocol import MessageBus
     from sim.engine import run
     from sim.logging import JsonlLogger
@@ -53,7 +53,7 @@ def _run(scenario_file: str, tmp_path: Path) -> dict:
 
     s = load_scenario(SCEN_DIR / scenario_file)
     mock = _canned_mock(tmp_path / scenario_file.replace(".yaml", ""))
-    llm_strat._make_llm_client = lambda model, run_dir: mock  # type: ignore[attr-defined]
+    monkeypatch.setattr(llm_strat, "_make_llm_client", lambda model, run_dir: mock)
     nb = build_overlay_neighborhood(
         rows=s.rows,
         cols=s.cols,
@@ -74,12 +74,12 @@ def _run(scenario_file: str, tmp_path: Path) -> dict:
     return json.loads((out / "summary.json").read_text())  # type: ignore[no-any-return]
 
 
-def test_defector_wrapper_corruption_changes_outcomes(tmp_path: Path) -> None:
+def test_defector_wrapper_corruption_changes_outcomes(tmp_path: Path, monkeypatch) -> None:
     """Phase 3: the wrapper corrupts defectors' INFORM soc_kwh in transit, and
     receivers now ROUTE ON those corrupted beliefs (below-mean filter), so the
     defector cell must produce a different settled outcome than clean."""
-    clean = _run("haves_havenots__llm.yaml", tmp_path)
-    dirty = _run("haves_havenots__defectors.yaml", tmp_path)
+    clean = _run("haves_havenots__llm.yaml", tmp_path, monkeypatch)
+    dirty = _run("haves_havenots__defectors.yaml", tmp_path, monkeypatch)
     assert dirty["message_counts"]["sent"] > 0, dirty
     assert (
         dirty["served_load_fraction"] != clean["served_load_fraction"]
@@ -87,14 +87,14 @@ def test_defector_wrapper_corruption_changes_outcomes(tmp_path: Path) -> None:
     ), f"defector corruption had no settled effect: clean={clean['served_load_fraction']:.6f}/{clean['transfer_count']}, dirty={dirty['served_load_fraction']:.6f}/{dirty['transfer_count']}"
 
 
-def test_noise_changes_outcomes_vs_clean(tmp_path: Path) -> None:
+def test_noise_changes_outcomes_vs_clean(tmp_path: Path, monkeypatch) -> None:
     """Phase 3: observation noise flows into INFORM payloads, hence into every
     receiver's beliefs, hence into routing — the noise cell must differ from
     clean on settled outcomes. (Pre-Phase-3 this test could only assert 'runs
     end-to-end' because act() read engine truth and the assertion was
     impossible by construction.)"""
-    clean = _run("haves_havenots__llm.yaml", tmp_path)
-    noisy = _run("haves_havenots__noise.yaml", tmp_path)
+    clean = _run("haves_havenots__llm.yaml", tmp_path, monkeypatch)
+    noisy = _run("haves_havenots__noise.yaml", tmp_path, monkeypatch)
     assert noisy["served_load_fraction"] > 0.0, noisy
     assert (
         noisy["served_load_fraction"] != clean["served_load_fraction"]
@@ -102,12 +102,12 @@ def test_noise_changes_outcomes_vs_clean(tmp_path: Path) -> None:
     ), f"noise had no settled effect: clean={clean['served_load_fraction']:.6f}/{clean['transfer_count']}, noisy={noisy['served_load_fraction']:.6f}/{noisy['transfer_count']}"
 
 
-def test_comm_constraint_reduces_delivery_AND_changes_outcomes(tmp_path: Path) -> None:
+def test_comm_constraint_reduces_delivery_AND_changes_outcomes(tmp_path: Path, monkeypatch) -> None:
     """Phase 3: dropped/budgeted messages destroy the beliefs sharing depends
     on, so comm constraints must both cut the delivery ratio AND move settled
     outcomes vs clean."""
-    clean = _run("haves_havenots__llm.yaml", tmp_path)
-    constrained = _run("haves_havenots__comm.yaml", tmp_path)
+    clean = _run("haves_havenots__llm.yaml", tmp_path, monkeypatch)
+    constrained = _run("haves_havenots__comm.yaml", tmp_path, monkeypatch)
     clean_ratio = clean["message_counts"]["delivered"] / max(1, clean["message_counts"]["sent"])
     cons_ratio = constrained["message_counts"]["delivered"] / max(
         1, constrained["message_counts"]["sent"]

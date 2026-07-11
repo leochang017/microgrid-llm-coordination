@@ -7,7 +7,7 @@ from datetime import datetime
 import pytest
 import yaml
 
-from sim.agents.agent import LLMAgent
+from sim.agents.agent import Commitment, LLMAgent
 from sim.agents.cache import PromptCache
 from sim.agents.failure_modes import FailureModeConfig, NoiseSource
 from sim.agents.llm import LLMResponse, MockLLMClient
@@ -953,7 +953,6 @@ def test_reject_creates_no_commitment(tmp_path) -> None:
 def test_commitment_produces_transfer_bypassing_belief_filter(tmp_path) -> None:
     """A promise is a promise: committed energy flows next act() even though
     the recipient's believed SoC would fail the below-mean filter."""
-    from sim.agents.agent import Commitment
     from sim.network import build_grid_neighborhood
 
     a = _bare_agent(tmp_path)
@@ -969,7 +968,6 @@ def test_commitment_produces_transfer_bypassing_belief_filter(tmp_path) -> None:
 
 
 def test_commitment_expires_after_ttl_with_counter(tmp_path) -> None:
-    from sim.agents.agent import Commitment
     from sim.network import build_grid_neighborhood
 
     a = _bare_agent(tmp_path)
@@ -1043,7 +1041,6 @@ def test_beliefs_ingested_in_same_observe_call_and_age_rendered(tmp_path) -> Non
 def test_react_prompt_contains_own_state_and_open_commitments(tmp_path) -> None:
     from dataclasses import dataclass
 
-    from sim.agents.agent import Commitment
     from sim.agents.llm import LLMRequest
 
     @dataclass
@@ -1218,3 +1215,68 @@ def test_unparseable_react_reply_is_counted(tmp_path) -> None:
     agent.observe(t=datetime(2018, 1, 1), own_state=_own_state(8.0), inbox=[req], t_idx=0)
     assert agent.react_to_pending(t=datetime(2018, 1, 1)) == []
     assert agent.n_react_unparsed == 1
+
+
+def _acting_agent(tmp_path) -> tuple[LLMAgent, Neighborhood]:
+    from sim.network import build_grid_neighborhood
+
+    agent = _bare_agent(tmp_path)  # default policy: max_share_kw_per_tick=4.0, min_soc_frac=0.30
+    nb = build_grid_neighborhood(rows=1, cols=2, bus_max_kw=50.0)
+    agent.household_context = {"battery_max_rate_kw": 8.0, "rt_efficiency": 0.9}
+    return agent, nb
+
+
+def _obs(agent: LLMAgent, t_idx: int, soc_kwh: float = 9.0) -> dict:
+    own = {
+        "soc_kwh": soc_kwh,
+        "soc_capacity": 10.0,
+        "grid_islanded": True,
+        "load_kw": 0.0,
+        "solar_kw": 0.0,
+        "dod_floor_frac": 0.1,
+    }
+    agent.observe(t=datetime(2018, 1, 1, 0, 15 * t_idx), own_state=own, inbox=[], t_idx=t_idx)
+    return own
+
+
+def test_commitment_partial_fulfillment_carries_across_ticks(tmp_path) -> None:
+    agent, nb = _acting_agent(tmp_path)
+    own = _obs(agent, 0)
+    agent.commitments.append(Commitment(recipient="r0c1", kwh_remaining=3.0, expires_t_idx=2))
+    served = []
+    for t_idx in (0, 1, 2):
+        if t_idx:
+            own = _obs(agent, t_idx)
+        transfers, _ = agent.act(
+            t=datetime(2018, 1, 1, 0, 15 * t_idx), own_state=own, neighborhood=nb, dt_hours=0.25
+        )
+        served.append(sum(tr.kw * 0.25 for tr in transfers if tr.to_id == "r0c1"))
+    # budget = min(4.0 kW, headroom/dt) -> 1.0 kWh per tick: 1.0 + 1.0 + 1.0
+    assert served == [pytest.approx(1.0)] * 3
+    assert agent.commitments == []  # exactly consumed, nothing lingers
+
+
+def test_commitments_compete_in_list_order_for_one_budget(tmp_path) -> None:
+    agent, nb = _acting_agent(tmp_path)
+    own = _obs(agent, 0)
+    agent.commitments.append(Commitment(recipient="r0c1", kwh_remaining=3.0, expires_t_idx=2))
+    agent.commitments.append(Commitment(recipient="r0c0", kwh_remaining=3.0, expires_t_idx=2))
+    transfers, _ = agent.act(t=datetime(2018, 1, 1), own_state=own, neighborhood=nb, dt_hours=0.25)
+    committed = [tr for tr in transfers if tr.kw > 0]
+    assert len(committed) == 1 and committed[0].to_id == "r0c1"  # first-listed wins the budget
+
+
+def test_partial_serve_then_expiry_counts_and_drops_residual(tmp_path) -> None:
+    agent, nb = _acting_agent(tmp_path)
+    own = _obs(agent, 0)
+    agent.commitments.append(Commitment(recipient="r0c1", kwh_remaining=3.0, expires_t_idx=1))
+    for t_idx in (0, 1):
+        if t_idx:
+            own = _obs(agent, t_idx)
+        agent.act(
+            t=datetime(2018, 1, 1, 0, 15 * t_idx), own_state=own, neighborhood=nb, dt_hours=0.25
+        )
+    _obs(agent, 2)
+    agent.act(t=datetime(2018, 1, 1, 0, 30), own_state=own, neighborhood=nb, dt_hours=0.25)
+    assert agent.n_commitments_expired == 1
+    assert agent.commitments == []  # 1.0 kWh of promised energy silently expired
