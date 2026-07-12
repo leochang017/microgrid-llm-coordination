@@ -6,7 +6,6 @@ Modules:
 - ``protocol`` — speech-act Message + MessageBus (queue / routing / dropout / budget)
 - ``cache``    — content-addressed PromptCache (sha256, atomic, two-tier lookup)
 - ``llm``      — abstract LLMClient + AnthropicLLMClient + MockLLMClient
-- ``reflection`` — Park-adapted reflection LLM call wrapper
 - ``failure_modes`` — FailureModeConfig + NoiseSource + DefectorWrapper
 - ``agent``    — LLMAgent (observe / remember / plan / react / act)
 

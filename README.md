@@ -4,9 +4,9 @@ A research project asking: can a population of LLM agents — one per household 
 
 The contribution is on the CS/ML axis (natural-language coordination, robustness, explainability), not power systems. Classical optimization handles fairness under strong assumptions, struggles with robustness, and doesn't attempt explainability. That gap is what this project explores.
 
-**Status:** Phase 1 + 1.6 + **Phase 2 LLM agent layer (through 2.8)** + **Phase 2.9 correctness hardening** — ✅ **complete.** 243 tests pass (mock-LLM only), ruff + mypy --strict clean. The shipped live-Haiku reference run predates the Phase 2.9 physics fixes (see the Phase 2.9 section).
+**Status:** Phases 1–2.9 complete; **Phase 3 infrastructure complete** (`phase3-infra-complete`) and **Phase 3.1 pre-live hardening complete** (`phase3.1-complete`). Run `pytest` for the current test count; ruff + mypy --strict clean. Live LLM runs are the next step (Phase 3.2 playbook in `docs/superpowers/plans/`).
 
-📐 [Phase 1 spec](docs/superpowers/specs/2026-05-14-phase1-simulator-design.md) · [Phase 1.6 spec](docs/superpowers/specs/2026-05-29-phase1.6-hardening-design.md) · [Phase 2 spec](docs/superpowers/specs/2026-06-13-phase2-llm-agent-design.md) · 📋 [Phase 1 plan](docs/superpowers/plans/2026-05-14-phase1-simulator.md) · [Phase 1.6 plan](docs/superpowers/plans/2026-05-29-phase1.6-hardening.md) · [Phase 2 plan](docs/superpowers/plans/2026-06-13-phase2-llm-agent.md) · 🧠 [Project context (CLAUDE.md)](CLAUDE.md)
+📐 [Phase 1 spec](docs/superpowers/specs/2026-05-14-phase1-simulator-design.md) · [Phase 1.6 spec](docs/superpowers/specs/2026-05-29-phase1.6-hardening-design.md) · [Phase 2 spec](docs/superpowers/specs/2026-06-13-phase2-llm-agent-design.md) · [Phase 3 spec](docs/superpowers/specs/2026-07-07-phase3-benchmark-design.md) · [Phase 3.1 spec](docs/superpowers/specs/2026-07-12-phase3.1-prelive-hardening.md) · 📋 [Phase 1 plan](docs/superpowers/plans/2026-05-14-phase1-simulator.md) · [Phase 1.6 plan](docs/superpowers/plans/2026-05-29-phase1.6-hardening.md) · [Phase 2 plan](docs/superpowers/plans/2026-06-13-phase2-llm-agent.md) · 🧠 [Project context (CLAUDE.md)](CLAUDE.md)
 
 ## Install
 
@@ -24,7 +24,7 @@ Requires Python ≥ 3.12.
 python -m scripts.run --scenario configs/scenarios/24h_uniform.yaml
 ```
 
-Output goes to `runs/<scenario_id>/<timestamp>/`:
+Output goes to `runs/<scenario_id>/<strategy>/<timestamp>-<pid>/`:
 
 | File           | Contents                                                    |
 |----------------|-------------------------------------------------------------|
@@ -32,13 +32,14 @@ Output goes to `runs/<scenario_id>/<timestamp>/`:
 | `state.jsonl`  | One row per (house, tick): SoC, solar, load, grid status…   |
 | `events.jsonl` | Discrete events: outage start/end, transfers, clip reasons  |
 | `summary.json` | Top-level metrics: served fraction, Gini, wasted, unmet     |
+| `messages.jsonl` | Every message decision (llm_agent / llm_fallback runs): delivered, dropped+reason, pending_at_end |
 
 Add `--no-strict` to disable the SoC-bound assertions while hacking on physics.
 
 ## Run the tests
 
 ```bash
-pytest                  # 243 tests
+pytest                  # full suite; see CI badge/logs for the current count
 ruff check sim tests scripts
 mypy
 ```
@@ -58,7 +59,7 @@ cols: 6                         # 30 houses on a 5x6 grid
 bus_max_kw: 50.0                # neighborhood transformer cap
 bus_loss_factor: 0.05           # 5% transit loss
 strategy: round_robin           # name of file under sim/strategies/
-data_source: synthetic          # 'synthetic' in Phase 1; real adapters land in Task 23
+data_source: synthetic          # real-data adapters live in sim/adapters/ (NREL NSRDB solar, ResStock loads, Pecan Street)
 household_sampling:
   pv_kw_peak: [4.0, 12.0]       # uniform sample range (kW)
   battery_kwh: [10.0, 27.0]     # uniform sample range (kWh)
@@ -74,20 +75,14 @@ outages:
 ## Architecture
 
 ```
-sim/
-├── types.py         Transfer, HouseholdProfile, Event, SettlementResult
-├── data.py          LoadProfile/SolarProfile protocols + synthetic adapter
-├── household.py     Pure physics: step(h, s, solar, load, …) -> new state
-├── network.py       Comm graph + settle_transfers (bus, no-wheeling, caps)
-├── scenario.py      YAML config + Scenario / OutageWindow dataclasses
-├── engine.py        Main simulation loop (run + sample_households)
-├── logging.py       JSONL writers + summary metrics (Gini, served-fraction)
-└── strategies/      Pluggable coordination strategies
-    ├── no_coordination.py
-    └── round_robin.py
+sim/            engine.py · household.py · network.py · scenario.py · logging.py · overrides.py · data.py · types.py
+sim/agents/     agent.py · policy.py · memory.py · protocol.py · cache.py · llm.py · failure_modes.py · seeding.py
+sim/adapters/   nrel_solar.py · resstock.py · pecan_street.py
+sim/strategies/ no_coordination.py · round_robin.py · round_robin_overlay.py · lp_optimal.py · llm_agent.py · llm_fallback.py
+scripts/        run.py · compare.py · sweep.py · eval_explanations.py · fetch_data.py · plot_phase1_results.py
 ```
 
-The **coordination strategy is an injected callback** — `decide_transfers(t, states, households, solar, load, grid, neighborhood, dt) -> list[Transfer]`. Phase 2 will add `sim/strategies/llm_agents.py` without touching the engine.
+The **coordination strategy is an injected callback** — `decide_transfers(t, states, households, solar, load, grid, neighborhood, dt) -> list[Transfer]`. Phase 2 added `sim/strategies/llm_agent.py` (the LLM strategy facade) and Phase 2.9 added `llm_fallback.py` (the zero-LLM control).
 
 ## Phase 1 status
 
@@ -143,10 +138,12 @@ Advisor-gated work establishing that the Phase 2 LLM layer has real room to add 
 
   | strategy | served | unmet_kwh | gini | gap_closed |
   |---|---|---|---|---|
-  | no_coordination | 0.4560 | 195.8 | 0.4851 | 0.00% |
+  | no_coordination | 0.4560 | 195.8 | 0.4851 | -639.62% |
   | round_robin | 0.5194 | 173.0 | 0.2244 | 0.00% |
   | round_robin_overlay | 0.5194 | 173.0 | 0.2217 | 0.00% |
   | lp_optimal | 0.5294 | 169.4 | 0.3617 | 100.00% |
+
+  *gap_closed is unclamped (P2.9 T12): negative = below the round_robin baseline.*
 
   *(Numbers re-derived 2026-07-06 after the Phase 2.9 energy-conservation fix — the
   old round_robin figure of 0.5250 included ~0.56 points of phantom energy from a
@@ -188,18 +185,20 @@ macro metric unchanged (served 0.513, gini 0.399, transfers 259) while message t
 The Phase 3 hypothesis is therefore that the LLM advantage, if any, lives in the
 failure-mode cells (defectors / noise / comm), which so far have only mock-LLM coverage.
 
-### Quickstart
+### Replaying the Phase 2.8 reference run (historical — pinned to its tag)
 
-```bash
-# Replay the reference run (cache-warm, no API calls):
-python -m scripts.run \
-    --scenario configs/scenarios/haves_havenots__llm.yaml \
-    --reference-cell clean
-```
+The shipped reference cache was recorded under Phase 2.8 prompts. At HEAD the
+prompts differ, so this replay MISSES the cache and either crashes (no key) or
+silently spends money — and it truncates the git-tracked reference artifacts
+first. Replay only at the matching tag:
 
-To run live, set `ANTHROPIC_API_KEY` and use `--out-dir runs` (instead of
-`--reference-cell`). Default model is Claude Haiku 4.5; configure via the
-`llm.model` block of the scenario YAML.
+    git checkout phase2.9-complete
+    python -m scripts.run --scenario configs/scenarios/haves_havenots__llm.yaml --reference-cell clean
+
+Fresh Phase 3 reference cells ship with the live runs — see
+`docs/superpowers/plans/2026-07-12-phase3.2-live-runs.md`.
+
+To run live, follow the Phase 3.2 playbook (`docs/superpowers/plans/2026-07-12-phase3.2-live-runs.md`) — it covers credentials, crash-resume, per-cell commands, and budget.
 
 ### Phase 2 known limitations
 
