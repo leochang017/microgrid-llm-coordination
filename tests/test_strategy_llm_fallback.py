@@ -96,3 +96,15 @@ def test_prompt_realization_defectors_are_inert_for_the_zero_llm_control(tmp_pat
     defector_prompt = _run(treated, tmp_path, "defector_prompt")
     assert clean["served_load_fraction"] == defector_prompt["served_load_fraction"]
     assert clean["transfer_count"] == defector_prompt["transfer_count"]
+
+
+def test_live_yaml_critical_fraction_is_not_vacuous(tmp_path: Path) -> None:
+    sc = dataclasses.replace(
+        load_scenario("configs/scenarios/haves_havenots_solar__llm.yaml"),
+        strategy="llm_fallback",
+    )
+    assert sc.household_sampling.get("critical_load_frac") == [0.2, 0.6]
+    logger = JsonlLogger(run_dir=tmp_path / "c", scenario_id=sc.scenario_id)
+    summary = run(sc, None, logger, prepare=llm_fallback.prepare)
+    logger.close()
+    assert 0.0 < summary["served_critical_load_fraction"] < 1.0  # not the 1.0 sentinel

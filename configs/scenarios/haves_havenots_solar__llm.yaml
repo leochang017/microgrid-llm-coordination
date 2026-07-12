@@ -26,6 +26,8 @@ household_sampling:
   rt_efficiency: 0.9
   dod_floor_frac: 0.1
   synthetic_load_kw: 1.0
+  # live-run family only — inserting this draw changes the whole household sequence, so golden-pinned base scenarios must NOT gain it
+  critical_load_frac: [0.2, 0.6]
 affiliations:
   owner:
     owner_a: [r0c0, r2c3, r4c5]

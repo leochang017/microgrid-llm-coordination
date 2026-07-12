@@ -1,13 +1,16 @@
 """Tests for run logging."""
 
+import importlib
 import json
 from datetime import datetime
 from pathlib import Path
 
 import pytest
 
+from sim.engine import run
 from sim.household import HouseholdState
 from sim.logging import JsonlLogger, _gini
+from sim.scenario import load_scenario
 from sim.types import Event, EventKind
 
 
@@ -148,3 +151,23 @@ class TestNeedsAwareMetrics:
         )
         # No critical load configured anywhere -> defined as 1.0.
         assert _served_critical_fraction({"h1": 10.0}, {"h1": 8.0}, {}) == 1.0
+
+
+def test_min_house_served_fraction_matches_state_log(tmp_path: Path) -> None:
+    sc = load_scenario("configs/scenarios/synthetic_lp_smoke.yaml")
+    mod = importlib.import_module(f"sim.strategies.{sc.strategy}")
+    logger = JsonlLogger(run_dir=tmp_path / "r", scenario_id=sc.scenario_id)
+    summary = run(
+        sc,
+        getattr(mod, "decide_transfers", None),
+        logger,
+        prepare=getattr(mod, "prepare", None),
+    )
+    logger.close()
+    load, unmet = {}, {}
+    for line in (tmp_path / "r" / "state.jsonl").read_text().splitlines():
+        row = json.loads(line)
+        load[row["house_id"]] = load.get(row["house_id"], 0.0) + row["load_kw"] * sc.dt_hours
+        unmet[row["house_id"]] = unmet.get(row["house_id"], 0.0) + row["unmet_kwh"]
+    expected = min((load[h] - unmet[h]) / load[h] if load[h] > 0 else 1.0 for h in load)
+    assert summary["min_house_served_fraction"] == pytest.approx(expected)

@@ -79,6 +79,12 @@ def sample_households(scenario: Scenario, rng: np.random.Generator) -> dict[str,
     # scenario configures it, so pre-Phase-3 scenarios draw an identical RNG
     # sequence and stay byte-identical.
     crit_range = sampling.get("critical_load_frac")
+    if crit_range is not None and (
+        not isinstance(crit_range, list | tuple) or len(crit_range) != 2
+    ):
+        raise ValueError(
+            f"household_sampling.critical_load_frac must be [lo, hi], got {crit_range!r}"
+        )
 
     households: dict[str, Household] = {}
     for r in range(scenario.rows):

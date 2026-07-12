@@ -4,9 +4,10 @@ from dataclasses import replace
 from datetime import datetime, timedelta
 
 import numpy as np
+import pytest
 
 from sim.engine import sample_households
-from sim.scenario import Scenario
+from sim.scenario import Scenario, load_scenario
 
 
 def make_scenario(seed: int = 42) -> Scenario:
@@ -332,3 +333,26 @@ def test_outage_active_at_t0_emits_started_event(tmp_path) -> None:
     started = [e for e in events if e["kind"] == "outage_started"]
     assert started, "no OUTAGE_STARTED emitted for an outage active at t=0"
     assert started[0]["t"] == s.start.isoformat()
+
+
+def test_critical_load_frac_sampled_within_range_and_deterministic() -> None:
+    base = load_scenario("configs/scenarios/synthetic_smoke.yaml")
+    sc = replace(
+        base,
+        household_sampling={**base.household_sampling, "critical_load_frac": [0.2, 0.6]},
+    )
+    a = sample_households(sc, np.random.default_rng(sc.seed))
+    b = sample_households(sc, np.random.default_rng(sc.seed))
+    fracs = [h.profile.critical_load_frac for h in a.values()]
+    assert all(0.2 <= f <= 0.6 for f in fracs)
+    assert fracs == [h.profile.critical_load_frac for h in b.values()]
+
+
+def test_critical_load_frac_malformed_shape_rejected() -> None:
+    base = load_scenario("configs/scenarios/synthetic_smoke.yaml")
+    sc = replace(
+        base,
+        household_sampling={**base.household_sampling, "critical_load_frac": 0.4},
+    )  # scalar, not [lo, hi]
+    with pytest.raises(ValueError, match="critical_load_frac"):
+        sample_households(sc, np.random.default_rng(sc.seed))
