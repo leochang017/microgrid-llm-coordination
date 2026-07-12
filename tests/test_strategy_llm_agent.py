@@ -208,3 +208,13 @@ def test_reference_cache_dir_resolves_for_both_real_layouts(tmp_path, monkeypatc
     monkeypatch.setenv("MICROGRID_REFERENCE_CELL", "does_not_exist")
     assert _reference_cache_dir(tmp_path / "runs" / "scenA" / "llm_agent" / "x") is None
     assert _reference_cache_dir(Path("/")) is None  # shallow path: no crash, None
+
+
+def test_opus_price_row_is_current() -> None:
+    import pytest
+
+    from sim.strategies import llm_agent
+
+    assert llm_agent._estimate_cost_usd("claude-opus-4-8", 1_000_000, 1_000_000) == pytest.approx(
+        30.0
+    )

@@ -344,7 +344,7 @@ def _decide_with_registry(
 _PRICE_PER_MTOK: dict[str, tuple[float, float]] = {
     "haiku": (1.0, 5.0),
     "sonnet": (3.0, 15.0),
-    "opus": (15.0, 75.0),
+    "opus": (5.0, 25.0),  # Opus >= 4.5 pricing; the 4.1-era row was $15/$75
 }
 
 
