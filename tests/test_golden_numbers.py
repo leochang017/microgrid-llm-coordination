@@ -115,3 +115,30 @@ def test_golden_solar_lp_ceiling() -> None:
     assert metrics["unmet_kwh_total"] == pytest.approx(_GOLDEN_SOLAR_LP_UNMET, abs=5e-4)
     # LP gini is solver-version-dependent (degenerate optima) — band only.
     assert 0.0 <= metrics["gini_welfare"] <= 0.10
+
+
+# --- Zero-LLM control (llm_fallback): the bar every live LLM cell must beat.
+# Pinned P3.1 T21 (2026-07-12) after the Phase 3.1 behavior fixes (T1 receiver
+# cap, T5 defector gating, T7-T9 negotiation, T19 critical_load_frac draw).
+_GOLDEN_LLM_FALLBACK = {
+    "configs/scenarios/haves_havenots__llm.yaml": (0.5196124446654724, 0.31851161610533363, 263),
+    "configs/scenarios/haves_havenots_solar__llm.yaml": (
+        0.6268723111989367,
+        0.2870158834669121,
+        966,
+    ),
+}
+
+
+@pytest.mark.parametrize("scenario_path", sorted(_GOLDEN_LLM_FALLBACK))
+def test_golden_llm_fallback_control(scenario_path: str, tmp_path: Path) -> None:
+    from sim.strategies import llm_fallback
+
+    sc = dataclasses.replace(load_scenario(scenario_path), strategy="llm_fallback")
+    logger = JsonlLogger(run_dir=tmp_path / "ctl", scenario_id=sc.scenario_id)
+    summary = run(sc, None, logger, prepare=llm_fallback.prepare)
+    logger.close()
+    served, gini, transfers = _GOLDEN_LLM_FALLBACK[scenario_path]
+    assert summary["served_load_fraction"] == pytest.approx(served, abs=5e-7)
+    assert summary["gini_welfare"] == pytest.approx(gini, abs=5e-7)
+    assert summary["transfer_count"] == transfers

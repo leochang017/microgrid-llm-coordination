@@ -297,11 +297,11 @@ outage makes energy abundant but *misplaced* — the coordination-bound regime:
 | strategy | served | note |
 |---|---|---|
 | no_coordination | 0.4280 | hoarding collapses overnight |
-| llm_fallback (zero-LLM control) | 0.6910 | tuned executor, no LLM — the bar any LLM run must beat |
+| llm_fallback (zero-LLM control) | 0.6269 | tuned executor, no LLM — the bar any LLM run must beat (live `__llm` cell, seed 23) |
 | round_robin | 0.7666 | myopic sharing strands midday solar |
 | lp_optimal (ceiling) | 0.9711 | pre-positions solar into have-not batteries |
 
-A 20.4-point rr→LP gap (20× the old showcase) and an unsaturated control with 28
+A 20.4-point rr→LP gap (20× the old showcase) and an unsaturated control with 34
 points of headroom above it.
 
 **Fairness + explainability substrate.** `critical_load_frac` sampling with
