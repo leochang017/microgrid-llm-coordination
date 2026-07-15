@@ -62,7 +62,9 @@ robustness experiment.
   so the control stays meaningful.
 - React replies must carry a parseable committed amount (`ACCEPT 0.4` / `COUNTER 0.2`);
   unparseable amount ⇒ treat as the requested amount (logged counter).
-- **[ADVISOR]** Defector realizations under the new flow: `wrapper` = channel corruption
+- **[ADVISOR — confirmed 2026-07-15:** prompt-driven selfishness is the right implementation
+  of strategic agents; wrapper corruption correctly kept as a separate failure mode.**]**
+  Defector realizations under the new flow: `wrapper` = channel corruption
   (control condition); `prompt` = LLM briefed selfish (hoarding + reject-happy). True
   LLM-authored *misreporting* (agent lies in its own INFORM) is a stretch goal — v1 ships
   a `misreport_soc_frac` policy field only if time permits.
@@ -81,7 +83,9 @@ The spec §7 assertions the old architecture could not satisfy must now hold:
   critical unmet = `max(0, unmet - flexible_load)` per house-tick.
 - New summary metrics (additive): `served_critical_load_fraction`,
   `min_house_served_fraction` (Rawlsian floor), `jains_index`.
-- **[ADVISOR]** Read Sovacool before writing the fairness section; Gini stays reported
+- **[ADVISOR — confirmed 2026-07-15:** metric selection approved; complementary metrics over
+  Gini-alone endorsed; give the efficiency-vs-equity tradeoff its own figure + discussion.**]**
+  Read Sovacool before writing the fairness section; Gini stays reported
   but never alone. LP gini quoted max 2 dp (degenerate optima).
 
 ## Part C — Explainability substrate
@@ -93,7 +97,10 @@ The spec §7 assertions the old architecture could not satisfy must now hold:
   each 1-5 on a 3-axis rubric (state-accuracy vs logged reality, actionability,
   consistency with the sender's actual behavior that tick) via an LLM judge with the
   standard PromptCache (mock-tested; live judging is budget-gated).
-- **[ADVISOR]** Rubric + LLM-judge (vs human study, infeasible pre-college) needs
+- **[ADVISOR — confirmed 2026-07-15:** LLM-judge approved as practical; rubric must be fully
+  transparent and the protocol must report inter-prompt / repeated-evaluation consistency
+  (playbook Stage 4 sub-step); explanation quality stays secondary to coordination performance.**]**
+  Rubric + LLM-judge (vs human study, infeasible pre-college) needed
   sign-off before paper claims.
 
 ## Part D — Experiment machinery

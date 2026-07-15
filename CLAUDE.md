@@ -11,7 +11,7 @@ The contribution is on the **CS/ML axis** (natural-language agent coordination, 
 ## Timeline + venue
 
 - Started: 2026-05-14. Runway: summer + potentially the following school year (no fixed deadline).
-- Target venues (refined per advisor 2026-05-26): Climate Change AI workshop @ NeurIPS, multi-agent LLM workshops, AAMAS COIN-style venues, or AAAI Student Abstracts (good fit for career stage). **Not** main NeurIPS — contribution isn't ML-methodological in the way they care about.
+- Target venues (per advisor 2026-07-15, supersedes the 2026-05-26 list): **CHI, ICLR, or WWW — main conference or a workshop under it** (workshop deadlines ~3–4 months after main); track via mlciv.com AI-conference-deadlines. Decision after Phase 3 results, with the advisor.
 
 ## Four-phase plan
 
@@ -42,7 +42,7 @@ Each phase has its own spec + implementation plan in `docs/superpowers/`.
 - **Spec:** `docs/superpowers/specs/2026-07-07-phase3-benchmark-design.md`
 - **Plan:** `docs/superpowers/plans/2026-07-07-phase3-benchmark.md` (11 tasks, TDD)
 - **Status:** ✅ **infrastructure complete; tag `phase3-infra-complete` (2026-07-07)**. 267 tests (the previously recorded '274' was a miscount — verified 2026-07-12). Shipped: message-borne peer beliefs (INFORM-only) + noised act() + binding negotiation (commitments); failure axes causally couple (test-enforced); needs-aware fairness metrics; explanation provenance + rubric judge; --set overrides + sweep driver; process-stable RNG seeding; **solar showcase `haves_havenots_solar` (no_coord 0.4280 / control 0.6269 / rr 0.7666 / LP 0.9711 — 20.4-pt rr→LP gap; control re-pinned P3.1 T21, was 0.6910 pre-hardening)**; mock dose-response matrix in `docs/phase3_mock_sweep.md` (regenerated P3.1 T21: rr flat on every axis = structural immunity; comm budget 1 collapses belief-driven coordination to 0.440/gini 0.524; noise mildly HELPS served while defector rows are now FLAT after the T5 gating fix — the honest floor for live runs).
-- **Remaining:** gated behind **Phase 3.1** (below), then live runs per the **Phase 3.2 playbook** (`docs/superpowers/plans/2026-07-12-phase3.2-live-runs.md`): clean + failure cells + Sonnet ablation + live judging — honest program budget ~$92-220 sync (the spec's "$22 batched" Sonnet figure assumed a Batch-API discount the codebase cannot deliver); then VT/AZ data + analysis (Phase 3.3, see roadmap); advisor sign-off items batched in the playbook preflight; venue decision.
+- **Remaining:** gated behind **Phase 3.1** (below), then live runs per the **Phase 3.2 playbook** (`docs/superpowers/plans/2026-07-12-phase3.2-live-runs.md`): clean + failure cells + Sonnet ablation + live judging — honest program budget ~$92-220 sync (the spec's "$22 batched" Sonnet figure assumed a Batch-API discount the codebase cannot deliver); then VT/AZ data + analysis (Phase 3.3, see roadmap); **advisor sign-off received 2026-07-15 (see "Advisor sign-off 2026-07-15" below) — failure cells + judging unblocked; budget gates remain**; venue decision at 3.3 exit.
 
 ## Phase 3.1 status
 
@@ -76,6 +76,7 @@ Update this after every committed task. Newest entries on top.
 
 | Date | Task | Commit | Tests | Note |
 |------|------|--------|-------|------|
+| 2026-07-15 | **Advisor Phase-3 sign-off recorded (docs only)** ✅ | _(this commit)_ | 333 ✓ (unchanged) | Yongfeng answered the 3.2 preflight items: defector realization, fairness metrics, and LLM-judge all approved as shipped → **Stages 2+4 unblocked (budget gates remain)**. Doc updates: playbook (gate checked; Stage 3 Sonnet ablation now optional/last; Stage 4 gains a rubric-variant consistency sub-step, judging budget ~$3–7; $0 reasoning-advantage mock pass added to preflight); roadmap (3.3 efficiency-vs-equity tradeoff figure; venues → CHI/ICLR/WWW main-or-workshop via mlciv.com, supersedes 2026-05-26 list); Phase 3 spec [ADVISOR] flags annotated confirmed; CLAUDE.md venue + sign-off section. Repo-public flag not acknowledged in the reply — confirm with advisor; non-blocking. |
 | 2026-07-12 | **P3.1 Task 23 — wrap-up: full verify, clean-install dry-run, security pass; tagged `phase3.1-complete`** ✅ | _(this commit)_ | 333 ✓ | **Phase 3.1 pre-live hardening COMPLETE (23/23 tasks; 3 criticals fixed).** 333 tests; ruff + mypy --strict clean; **clean-install dry-run in a fresh venv green** (packaging clean after the reflection deletion). Headline 3-seed comparison for the record: **haves_havenots_solar** no_coord 0.4604 / rr 0.8090 / rr_overlay 0.8160 / LP 0.9870 (~18-pt rr→LP gap); **haves_havenots** no_coord 0.4875 / rr 0.5582 / LP 0.5692. Security pass clean (no secrets in the phase diff; `yaml.safe_load`, argv-list subprocess, user-controlled local paths). Live spend unblocked → Phase 3.2. |
 | 2026-07-12 | **P3.1 Task 22 — README reflects the Phase 3 codebase; dead Reflection module removed** ✅ | _(this commit)_ | 333 ✓ | `Reflection` was dead production code (only its own test imported it; the real reflection lives in `LLMAgent.plan()`) — deleted `sim/agents/reflection.py` + `tests/test_reflection.py` + the `__init__` docstring entry (F46). README overhauled: status → Phases 1–3.1 complete; real `sim/`/`sim/agents/`/`sim/adapters/`/`sim/strategies/`/`scripts/` architecture tree; output path `<strategy>/<ts>-<pid>/` + `messages.jsonl` row; unclamped gap_closed table (no_coord −639.62%); replay quickstart replaced with the tag-pinned, non-destructive version; "run live" now points at the Phase 3.2 playbook (F29/F30/F5). |
 | 2026-07-12 | **P3.1 Task 21 — golden pins for the zero-LLM control; mock dose-response matrix regenerated under gated defectors** ✅ | _(this commit)_ | 336 ✓ | The mandatory control baseline had no pin (tests asserted only `0<served<1`); the mock matrix was stale (F25/F32/F3-fallout). Pinned `llm_fallback` control to 6-dp: **haves_havenots__llm 0.519612 / gini 0.318512 / 263 transfers; haves_havenots_solar__llm 0.626872 (was 0.6910 pre-hardening) / gini 0.287016 / 966 transfers** — the drop is the T1/T7–T9/T19 behavior changes, within the [0.60,0.74] sanity band. Regenerated `docs/phase3_mock_sweep.md`: **defector rows now FLAT (T5 fix confirmed — the old moving rows were the ungated-wrapper artifact)**, rr flat everywhere, comm still devastating (0.699→0.440). Updated README + CLAUDE.md control number 0.6910 → 0.6269. |
@@ -159,6 +160,16 @@ These are advisor-mandated and gate Phase 2. Do NOT skip or re-scope without re-
   2. *Noisy / faulty observations* — imperfect knowledge of own SoC or load forecast. Memory + reflection should help in ways a rule-based protocol can't.
   3. *Communication constraints* — limited message budget, partial link failures. Agents must reason about which trust circle to route through (ties back to the ownership/management overlays).
 - **Park et al., "Generative Agents" (arXiv:2304.03442):** advisor-recommended. Decision: do NOT fork the codebase (their world is a 2D social town, fundamentally different from a physics-based microgrid). Treat as a Phase 2 reference for agent architecture patterns (memory stream, reflection, natural-language messaging) which we reimplement adapted to microgrid coordination and cite prominently.
+
+## Advisor sign-off 2026-07-15 (Phase 3)
+
+Yongfeng's email answering the five Phase 3.2 preflight items. Approves the Phase 3 direction and the shipped choices; four adjustments recorded in the docs on 2026-07-15:
+
+- **Defectors:** prompt-driven selfishness confirmed correct; wrapper corruption stays a separate failure mode (matches P3.1 T5/T20 as shipped).
+- **Fairness:** metric selection approved; NEW — efficiency-vs-equity tradeoff gets its own 3.3 figure + discussion ("may ultimately be more interesting than the absolute performance numbers").
+- **Explanation judging:** LLM-judge approved; NEW — transparent rubric + inter-prompt/repeated-evaluation consistency reporting (playbook Stage 4 sub-step); explanation quality stays secondary.
+- **Scenario design > model comparison:** find operating conditions where richer reasoning measurably helps; Sonnet ablation (playbook Stage 3) now explicitly optional/last; $0 mock pass on a "reasoning-advantage" cell added to the playbook preflight.
+- **Venues:** CHI / ICLR / WWW main-or-workshop (see Timeline). **Caveat:** the reply did not acknowledge the repo-public flag (item 4) — Leo should confirm it was communicated; non-blocking.
 
 ## User context
 
