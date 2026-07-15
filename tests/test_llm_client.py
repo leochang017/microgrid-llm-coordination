@@ -277,3 +277,25 @@ def test_tool_input_round_trips_through_cache(tmp_path) -> None:
 
     assert resp.tool_input == {"sharing_intent": "conservative"}
     fake_client.messages.create.assert_not_called()
+
+
+def test_anthropic_client_pins_an_explicit_request_timeout(tmp_path) -> None:
+    """A hung HTTPS read must not stall a live run for ten minutes.
+
+    The SDK default is read=600 s with its own max_retries=2, so a single wedged
+    connection costs 30 min before our own retry loop even sees an exception —
+    and this class then retries up to 5 more times on top. Measured in the Phase
+    3.2 Stage 1 live cell (2026-07-15): 3 hung reads cost 35 min of a 213 min
+    run (16%), one of them 23 min on its own (600 s x 3 attempts).
+
+    Pin an explicit timeout so a hang costs ~1 min instead of ~10. 60 s is ~10x
+    the observed p99 for an 800-token Haiku call, so it cannot abandon a healthy
+    request (a client-side abort still bills server-side, so erring long is the
+    safe direction).
+    """
+    with patch("sim.agents.llm.anthropic.Anthropic") as ctor:
+        AnthropicLLMClient(cache=PromptCache(local_dir=tmp_path), api_key="sk-ant-api-x")
+    timeout = ctor.call_args.kwargs.get("timeout")
+    assert timeout is not None, "SDK client built with the 600 s default read timeout"
+    assert timeout.read == 60.0
+    assert timeout.connect == 5.0
