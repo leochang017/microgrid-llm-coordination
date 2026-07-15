@@ -24,6 +24,9 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
-        # 5 MB accommodates Phase 2 reference_runs/ messages.jsonl traces;
-        # 500 KB was too small for whole-run message logs.
-        args: [--maxkb=5000]
+        # 15 MB accommodates Phase 3.2 reference_runs/ messages.jsonl traces.
+        # History: 500 KB was too small for whole-run message logs; 5 MB fit
+        # Phase 2's 12 h cells (2.2 MB) but NOT the 24 h solar showcase, whose
+        # $0 control trace already measures 6.4 MB (17,696 rows) — live cells
+        # are larger still (LLM rationales are longer than templated ones).
+        args: [--maxkb=15000]
