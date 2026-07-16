@@ -1,0 +1,61 @@
+{
+  "scenario_id": "haves_havenots_solar__comm",
+  "served_load_fraction": 0.45647965855980976,
+  "unmet_kwh_total": 391.334645836937,
+  "wasted_kwh_total": 63.06390397737513,
+  "gini_welfare": 0.4803115156467819,
+  "transfer_count": 518,
+  "min_house_served_fraction": 0.035690864168377225,
+  "jains_index": 0.5665267918028896,
+  "served_critical_load_fraction": 0.6528464139392556,
+  "message_counts": {
+    "sent": 17647,
+    "delivered": 4260,
+    "dropped_invalid_recipient": 0,
+    "dropped_comm": 1462,
+    "dropped_budget": 11887,
+    "pending_at_end": 38
+  },
+  "llm_call_counts": {
+    "reflect_plan": 625,
+    "react_msg": 1196,
+    "cache_hits": 159,
+    "cache_misses": 1662
+  },
+  "llm_cost_usd_estimated": 4.034517,
+  "failure_modes_active": {
+    "defector_fraction": 0.0,
+    "defector_assignment": "random",
+    "defector_house_ids": [],
+    "defector_realization": "prompt",
+    "obs_noise": {
+      "soc_std_frac": 0.0,
+      "load_std_frac": 0.0
+    },
+    "comm": {
+      "drop_prob_by_circle": {
+        "geographic": 0.3,
+        "owner": 0.05,
+        "dr_aggregator": 0.1
+      },
+      "per_tick_budget": 2
+    }
+  },
+  "policy_parse_failures": 25,
+  "policy_fallbacks_to_round_robin": 0,
+  "llm_call_counts_detailed": {
+    "reflect_plan": 625,
+    "react_msg": 1196,
+    "react_skipped": 167,
+    "react_dropped_stale": 27,
+    "plan_parse_failures": 25,
+    "plan_fallbacks": 0,
+    "react_refusals": 0,
+    "react_unparsed": 0,
+    "commitments_made": 920,
+    "commitments_expired": 324,
+    "react_amount_defaulted": 0,
+    "cache_hits": 159,
+    "cache_misses": 1662
+  }
+}
