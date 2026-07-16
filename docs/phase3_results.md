@@ -100,12 +100,36 @@ defectors reneging (the engine ships commitments before the discretionary
 filter). The comm cell delivered only 4,260 of 17,647 messages (11,887
 budget-dropped); every other run had zero comm/budget drops.
 
-## 5. Explanation quality — pending Stage 4
+## 5. Explanation quality (Stage 4, live Sonnet judge)
 
-Money-gated live Sonnet judging has not been authorized/run. The
-`--rubric-variant` consistency instrument (three paraphrases of one rubric) is
-shipped and mock-tested. `docs/phase3_tables.md` carries a "pending Stage 4"
-stub that auto-populates once `explanations_eval*.json` artifacts are committed.
+Live judging by **`claude-sonnet-5`** (judge ≠ author family, per the advisor;
+authors are Haiku), scoring 100 LLM-authored react rationales per cell 1–5 on
+three axes. Table + consistency numbers in `docs/phase3_tables.md`.
+
+| cell | seed | n | state_accuracy | actionability | consistency |
+|---|---|---|---|---|---|
+| clean | 23 | 100 | 3.03 | 4.05 | 4.46 |
+| defectors | 7 | 100 | 3.00 | 3.97 | 4.52 |
+
+- **The rationales are actionable and consistent with the action taken
+  (~4.0 / ~4.5), but `state_accuracy` is the weakest axis (~3.0):** the LLM's
+  self-reported headroom/SoC figures in a rationale sometimes drift from the
+  logged decision-time state. A 10-rationale hand audit confirmed the judge
+  discriminates sensibly — it docks a rationale claiming 0.78 kWh headroom when
+  the sender's logged SoC was 1.13 kWh, and rewards rationales whose numbers
+  check out. Clean and defector cells score nearly identically, so selfish
+  prompting does not degrade explanation quality.
+- **Judge consistency (advisor 2026-07-15):** the clean cell was re-judged under
+  three paraphrases of the one rubric (default / terse / roleplay), axis names +
+  1–5 scale fixed. **Aggregate means are stable to rephrasing** (state 2.99–3.16,
+  actionability 3.73–4.05, consistency 4.03–4.46 — drift within a few tenths),
+  but **per-message exact 3-way agreement is only 32–38%** (mean absolute
+  deviation 0.30–0.36 on the 1–5 scale). So the instrument is trustworthy in
+  aggregate but noisy per message — the paper leans on **means, not per-message
+  scores**. The `--rubric-variant` instrument (mock-tested pre-live) produced
+  this directly; `explanations_eval*.json` artifacts are committed and
+  `python -m scripts.figures --tables` regenerates the table.
+- **Explanation quality stays SECONDARY to coordination performance** (advisor).
 
 ## 6. Limitations (honest, for the paper)
 
@@ -114,13 +138,15 @@ stub that auto-populates once `explanations_eval*.json` artifacts are committed.
 - **Single dataset family** (`haves_havenots_solar`) unless VT/AZ winter/heatwave
   scenarios land (deferred; free NREL data, but live cells would cost money).
 - **Degenerate Rawlsian floor** (§3).
-- **LLM-judge caveat** applies to the explanation evaluation once it runs.
+- **LLM-judge caveat** (§5): a single LLM judge, trustworthy in aggregate but
+  noisy per message (32–38% exact 3-way agreement under rubric paraphrase);
+  explanation quality is reported as secondary, mean-level only.
 - **No real-deployment claim** — simulation only (advisor warning, verbatim).
 - **The comm result measures negotiation plumbing, not reasoning** (§2).
 
 ## 7. What's next
 
 Advisor walkthrough off this outline; venue decision (CHI / ICLR / WWW main or
-workshop) with the advisor at Phase 3.3 exit. Optional budget-gated add-ons that
-would strengthen v1: Stage 4 explanation judging (§5) and, if the advisor wants
-cross-climate robustness, the VT/AZ cells.
+workshop) with the advisor at Phase 3.3 exit. Stage 4 explanation judging is
+**done** (§5). Remaining optional add-ons: the Sonnet capability ablation
+(Stage 3) and, if the advisor wants cross-climate robustness, the VT/AZ cells.

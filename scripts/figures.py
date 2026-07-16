@@ -530,9 +530,46 @@ def _live_runs() -> list[tuple[str, int]]:
     return [(cell, seed) for cell in CELL_ORDER for seed in sorted(LIVE_CELLS[cell])]
 
 
+_JUDGE_AXES = ("state_accuracy", "actionability", "consistency")
+
+
 def _find_explanation_evals() -> list[Path]:
     """Committed Stage-4 judge outputs, if any exist yet (none until Stage 4 runs)."""
     return sorted(REF.glob("**/explanations_eval*.json"))
+
+
+def _eval_cell_seed(eval_path: Path) -> tuple[str, int]:
+    """('clean', 23) from .../llm_agent/clean__seed23/explanations_eval*.json."""
+    label, _, seed = eval_path.parent.name.partition("__seed")
+    return label, int(seed)
+
+
+def _variant_agreement(variants: list[dict[str, Any]]) -> dict[str, tuple[float, int, int]]:
+    """Per-axis (mean-abs-deviation, exact-3-way-matches, n) across rubric variants.
+
+    The variants judge the SAME deterministic sample (seed + n fix the draw), so
+    row i is the same message in every file — pair by index, and count only rows
+    where the message identity agrees across all variants (defensive).
+    """
+    n = min(len(v["samples"]) for v in variants)
+    out: dict[str, tuple[float, int, int]] = {}
+    for axis in _JUDGE_AXES:
+        mad_sum = 0.0
+        exact = 0
+        paired = 0
+        for i in range(n):
+            rows = [v["samples"][i] for v in variants]
+            ids = {(r["sender"], r["t_sent"]) for r in rows}
+            if len(ids) != 1:
+                continue
+            paired += 1
+            vals = [r[axis] for r in rows]
+            mean = sum(vals) / len(vals)
+            mad_sum += sum(abs(x - mean) for x in vals) / len(vals)
+            if len(set(vals)) == 1:
+                exact += 1
+        out[axis] = (mad_sum / paired if paired else 0.0, exact, paired)
+    return out
 
 
 def render_tables(out_path: Path = REPO / "docs" / "phase3_tables.md") -> Path:
@@ -584,29 +621,100 @@ def render_tables(out_path: Path = REPO / "docs" / "phase3_tables.md") -> Path:
         "",
     ]
     evals = _find_explanation_evals()
-    if evals:
-        lines += [
-            "| variant | state_accuracy | actionability | consistency | n |",
-            "|---|---|---|---|---|",
-        ]
-        for p in evals:
-            e = json.loads(p.read_text())
-            means = e.get("rubric_means", {})
-            variant = e.get("rubric_variant", p.stem)
-            lines.append(
-                f"| {variant} | {means.get('state_accuracy', '—')} | "
-                f"{means.get('actionability', '—')} | "
-                f"{means.get('consistency', '—')} | {e.get('n', '—')} |"
-            )
-    else:
+    default_evals = [p for p in evals if p.name == "explanations_eval.json"]
+    if not default_evals:
         lines += [
             "> **Pending Stage 4.** Live explanation judging (Sonnet, money-gated) "
             "has not been authorized/run, so no rubric numbers exist yet. The "
             "`--rubric-variant` consistency instrument is shipped and mock-tested "
             "(`scripts/eval_explanations.py`); this table populates automatically "
             "once `explanations_eval*.json` artifacts are committed.",
+            "",
         ]
-    lines.append("")
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text("\n".join(lines))
+        return out_path
+
+    lines += [
+        "Live Sonnet judge (`claude-sonnet-5`) scoring LLM-authored react "
+        "rationales 1-5 on three axes (default rubric). `state_accuracy` = do the "
+        "rationale's stated numbers match the sender's logged decision-time state; "
+        "`actionability` = clear amount/direction/reason; `consistency` = matches "
+        "the action taken.",
+        "",
+        "| cell | seed | n | state_accuracy | actionability | consistency |",
+        "|---|---|---|---|---|---|",
+    ]
+    for p in default_evals:
+        e = json.loads(p.read_text())
+        cell, seed = _eval_cell_seed(p)
+        m = e["means"]
+        lines.append(
+            f"| {cell} | {seed} | {e['n_scored']} | {m['state_accuracy']:.2f} | "
+            f"{m['actionability']:.2f} | {m['consistency']:.2f} |"
+        )
+    lines += [
+        "",
+        "`state_accuracy` is the weakest axis: the LLM's self-reported "
+        "headroom/SoC figures in a rationale sometimes drift from the logged "
+        "state, while the explanations stay actionable and consistent with the "
+        "action taken.",
+        "",
+    ]
+
+    # Rubric consistency: any run dir judged under >1 rubric variant.
+    by_dir: dict[Path, dict[str, dict[str, Any]]] = {}
+    for p in evals:
+        e = json.loads(p.read_text())
+        by_dir.setdefault(p.parent, {})[e.get("rubric_variant", "default")] = e
+    multi = {d: vs for d, vs in by_dir.items() if len(vs) > 1}
+    if multi:
+        lines += [
+            "## Rubric consistency (judge stability, advisor 2026-07-15)",
+            "",
+            "Three paraphrases of ONE rubric (axis names + 1-5 scale fixed) judging "
+            "the SAME sample — a score shift measures the judge's phrasing "
+            "sensitivity, not the explanations.",
+            "",
+        ]
+        for d in sorted(multi, key=lambda p: p.name):
+            vs = multi[d]
+            cell, seed = _eval_cell_seed(d / "explanations_eval.json")
+            lines += [
+                f"Cell `{cell}` (seed {seed}), per-variant means:",
+                "",
+                "| variant | state_accuracy | actionability | consistency |",
+                "|---|---|---|---|",
+            ]
+            ordered = [v for v in ("default", "terse", "roleplay") if v in vs]
+            for v in ordered:
+                m = vs[v]["means"]
+                lines.append(
+                    f"| {v} | {m['state_accuracy']:.2f} | {m['actionability']:.2f} "
+                    f"| {m['consistency']:.2f} |"
+                )
+            agree = _variant_agreement([vs[v] for v in ordered])
+            lines += [
+                "",
+                "Per-axis agreement across the variants (mean-abs-deviation from the "
+                "per-message cross-variant mean, 0 = identical; exact = all "
+                "variants gave the same integer):",
+                "",
+                "| axis | mean abs deviation | exact match |",
+                "|---|---|---|",
+            ]
+            for axis in _JUDGE_AXES:
+                mad, exact, paired = agree[axis]
+                pct = f"{exact / paired:.0%}" if paired else "n/a"
+                lines.append(f"| {axis} | {mad:.3f} | {exact}/{paired} ({pct}) |")
+            lines += [
+                "",
+                "Aggregate means are stable to rephrasing (drift within a few tenths "
+                "on any axis), but per-message exact agreement is low — individual "
+                "scores carry phrasing noise, so the paper leans on means, not "
+                "per-message scores.",
+                "",
+            ]
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text("\n".join(lines))
     return out_path

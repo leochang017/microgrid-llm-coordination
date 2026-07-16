@@ -19,4 +19,33 @@ Reading it: clean-cell expiry ranges 5.6-27.3% across seeds (highest at seed 23)
 
 ## Explanation quality (Sonnet judge)
 
-> **Pending Stage 4.** Live explanation judging (Sonnet, money-gated) has not been authorized/run, so no rubric numbers exist yet. The `--rubric-variant` consistency instrument is shipped and mock-tested (`scripts/eval_explanations.py`); this table populates automatically once `explanations_eval*.json` artifacts are committed.
+Live Sonnet judge (`claude-sonnet-5`) scoring LLM-authored react rationales 1-5 on three axes (default rubric). `state_accuracy` = do the rationale's stated numbers match the sender's logged decision-time state; `actionability` = clear amount/direction/reason; `consistency` = matches the action taken.
+
+| cell | seed | n | state_accuracy | actionability | consistency |
+|---|---|---|---|---|---|
+| defectors | 7 | 100 | 3.00 | 3.97 | 4.52 |
+| clean | 23 | 100 | 3.03 | 4.05 | 4.46 |
+
+`state_accuracy` is the weakest axis: the LLM's self-reported headroom/SoC figures in a rationale sometimes drift from the logged state, while the explanations stay actionable and consistent with the action taken.
+
+## Rubric consistency (judge stability, advisor 2026-07-15)
+
+Three paraphrases of ONE rubric (axis names + 1-5 scale fixed) judging the SAME sample — a score shift measures the judge's phrasing sensitivity, not the explanations.
+
+Cell `clean` (seed 23), per-variant means:
+
+| variant | state_accuracy | actionability | consistency |
+|---|---|---|---|
+| default | 3.03 | 4.05 | 4.46 |
+| terse | 2.99 | 3.73 | 4.46 |
+| roleplay | 3.16 | 3.81 | 4.03 |
+
+Per-axis agreement across the variants (mean-abs-deviation from the per-message cross-variant mean, 0 = identical; exact = all variants gave the same integer):
+
+| axis | mean abs deviation | exact match |
+|---|---|---|
+| state_accuracy | 0.364 | 35/100 (35%) |
+| actionability | 0.302 | 38/100 (38%) |
+| consistency | 0.353 | 32/100 (32%) |
+
+Aggregate means are stable to rephrasing (drift within a few tenths on any axis), but per-message exact agreement is low — individual scores carry phrasing noise, so the paper leans on means, not per-message scores.

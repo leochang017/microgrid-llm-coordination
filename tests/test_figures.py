@@ -12,6 +12,7 @@ from scripts.figures import (
     cell_served_gap_closed,
     collect_cell,
     read_live_summary,
+    render_tables,
 )
 
 CLEAN = "haves_havenots_solar__llm"
@@ -63,3 +64,15 @@ def test_live_cells_cover_the_four_committed_cells() -> None:
         "haves_havenots_solar__defectors",
         "haves_havenots_solar__noise",
     }
+
+
+def test_render_tables_populates_explanation_quality_from_committed_evals(tmp_path) -> None:
+    # With the Stage-4 judge artifacts committed, --tables renders the per-cell
+    # quality table + the rubric-consistency section (not the pending stub).
+    out = render_tables(out_path=tmp_path / "tables.md")
+    txt = out.read_text()
+    assert "Pending Stage 4" not in txt
+    assert "## Explanation quality (Sonnet judge)" in txt
+    assert "| clean | 23 | 100 |" in txt  # per-cell default-rubric quality row
+    assert "## Rubric consistency" in txt
+    assert "mean abs deviation" in txt
