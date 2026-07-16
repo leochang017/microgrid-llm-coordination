@@ -189,3 +189,86 @@ def test_judge_client_uses_env_credential(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr("scripts.eval_explanations.AnthropicLLMClient", _FakeClient)
     evaluate_run(tmp_path)
     assert captured["key"] == "sk-ant-oat01-FAKE"  # routes to Authorization: Bearer
+
+
+# --- rubric-variant tests (Phase 3.2 Stage 4, advisor 2026-07-15) ---
+
+
+def test_rubric_variants_reword_the_rubric_but_keep_the_axes(tmp_path: Path) -> None:
+    """A variant must paraphrase the rubric, not change what is being asked.
+
+    The consistency check is only meaningful if the variants are the SAME
+    question asked differently — if a variant redefined an axis, a score shift
+    would measure the rewrite rather than the judge's stability.
+    """
+    from scripts.eval_explanations import _RUBRICS, _judge_prompt
+
+    msg = {
+        "t_sent": "2026-07-01T00:00:00",
+        "sender": "r0c0",
+        "recipient": "r0c1",
+        "performative": "ACCEPT",
+        "payload": {"kwh": 0.4},
+        "rationale_nl": "I have surplus",
+    }
+    prompts = {v: _judge_prompt(msg, None, variant=v) for v in _RUBRICS}
+    assert len(_RUBRICS) >= 3, "need >=3 variants to report agreement, per the advisor"
+    assert "default" in _RUBRICS
+    # Each variant is textually distinct...
+    assert len(set(prompts.values())) == len(_RUBRICS)
+    # ...but every one still asks for all three axes by name, so the judge's
+    # reply parses against the same schema.
+    for variant, prompt in prompts.items():
+        for axis in ("state_accuracy", "actionability", "consistency"):
+            assert axis in prompt, f"variant {variant!r} dropped the {axis} axis"
+
+
+def test_rubric_variant_writes_its_own_artifact_and_spares_the_default(tmp_path: Path) -> None:
+    """Paid judge artifacts must never overwrite each other.
+
+    Each variant costs real money to produce, so a second variant writing to
+    explanations_eval.json would destroy the first one's results (the
+    paid-artifact overwrite failure flagged in the 2026-07-12 pre-live review).
+    """
+    run_dir = tmp_path / "run"
+    _write_run(run_dir)
+
+    def _run(variant: str) -> dict:
+        client = MockLLMClient(
+            cache=PromptCache(local_dir=tmp_path / f"cache_{variant}", reference_dir=None),
+            canned={"1-5": _MOCK_JUDGE_RESPONSE},  # the scale line every variant shares
+        )
+        return evaluate_run(run_dir, n=10, client=client, rubric_variant=variant)
+
+    _run("default")
+    _run("terse")
+
+    assert (run_dir / "explanations_eval.json").exists()
+    assert (run_dir / "explanations_eval__terse.json").exists()
+    assert (
+        json.loads((run_dir / "explanations_eval.json").read_text())["rubric_variant"] == "default"
+    )
+    assert (
+        json.loads((run_dir / "explanations_eval__terse.json").read_text())["rubric_variant"]
+        == "terse"
+    )
+
+
+def test_rubric_variants_judge_the_same_sample(tmp_path: Path) -> None:
+    """Agreement is only computable if the variants scored the same messages.
+
+    Sampling is seeded from the run's config, so this should hold — but it is
+    the assumption the whole consistency number rests on, so pin it.
+    """
+    run_dir = tmp_path / "run"
+    _write_run(run_dir)
+
+    def _sample_keys(variant: str) -> list:
+        client = MockLLMClient(
+            cache=PromptCache(local_dir=tmp_path / f"c_{variant}", reference_dir=None),
+            canned={"1-5": _MOCK_JUDGE_RESPONSE},  # the scale line every variant shares
+        )
+        r = evaluate_run(run_dir, n=10, client=client, rubric_variant=variant)
+        return [(s["sender"], s["t_sent"]) for s in r["samples"]]
+
+    assert _sample_keys("default") == _sample_keys("terse")

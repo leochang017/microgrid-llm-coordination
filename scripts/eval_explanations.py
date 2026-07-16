@@ -57,7 +57,42 @@ def _load_jsonl(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
-def _judge_prompt(msg: dict[str, Any], state_row: dict[str, Any] | None) -> str:
+# Paraphrases of ONE rubric, not three different rubrics. The advisor
+# (2026-07-15) asked for judge-consistency reporting: if a reworded prompt moves
+# the scores, the instrument is measuring its own phrasing rather than the
+# explanations, and the Task-8 numbers can't carry the paper's claim. That test
+# is only valid if each variant asks the same question — so the axis names and
+# the 1-5 scale are fixed, and only the wording around them moves.
+_RUBRICS: dict[str, str] = {
+    "default": (
+        "Rubric (score each 1-5):\n"
+        "- state_accuracy: does the explanation's account of the sender's "
+        "situation match the logged decision-time state?\n"
+        "- actionability: could the recipient act on this (clear amount, "
+        "direction, and reason)?\n"
+        "- consistency: is the explanation consistent with the action taken "
+        "(the performative and payload)?"
+    ),
+    "terse": (
+        "Score each 1-5:\n"
+        "- state_accuracy: explanation vs. logged state — truthful?\n"
+        "- actionability: enough detail to act on?\n"
+        "- consistency: explanation vs. action taken — do they agree?"
+    ),
+    "roleplay": (
+        "You are the neighbour who received this message. Score each 1-5:\n"
+        "- state_accuracy: having now seen their real logged state, were they "
+        "honest with you about their situation?\n"
+        "- actionability: could you have done something concrete with this "
+        "message, without asking a follow-up question?\n"
+        "- consistency: did what they told you line up with what they actually did?"
+    ),
+}
+
+
+def _judge_prompt(
+    msg: dict[str, Any], state_row: dict[str, Any] | None, *, variant: str = "default"
+) -> str:
     reality = (
         json.dumps(
             {
@@ -74,13 +109,7 @@ def _judge_prompt(msg: dict[str, Any], state_row: dict[str, Any] | None) -> str:
         f"({msg['performative']}, payload={json.dumps(msg['payload'])}):\n"
         f"Explanation given: \"{msg['rationale_nl']}\"\n"
         f"Sender's actual logged state at decision time (start of that tick): {reality}\n\n"
-        f"Rubric (score each 1-5):\n"
-        f"- state_accuracy: does the explanation's account of the sender's "
-        f"situation match the logged decision-time state?\n"
-        f"- actionability: could the recipient act on this (clear amount, "
-        f"direction, and reason)?\n"
-        f"- consistency: is the explanation consistent with the action taken "
-        f"(the performative and payload)?"
+        f"{_RUBRICS[variant]}"
     )
 
 
@@ -104,7 +133,10 @@ def evaluate_run(
     n: int = 50,
     client: LLMClient | None = None,
     model: str = "claude-haiku-4-5-20251001",
+    rubric_variant: str = "default",
 ) -> dict[str, Any]:
+    if rubric_variant not in _RUBRICS:
+        raise ValueError(f"unknown rubric variant {rubric_variant!r}; have {sorted(_RUBRICS)}")
     messages = _load_jsonl(run_dir / "messages.jsonl")
     config = json.loads((run_dir / "config.json").read_text())
     states = _load_jsonl(run_dir / "state.jsonl")
@@ -131,7 +163,11 @@ def evaluate_run(
     rows: list[dict[str, Any]] = []
     unparseable = 0
     for msg in sample:
-        prompt = _judge_prompt(msg, state_by_key.get((prev_tick[msg["t_sent"]], msg["sender"])))
+        prompt = _judge_prompt(
+            msg,
+            state_by_key.get((prev_tick[msg["t_sent"]], msg["sender"])),
+            variant=rubric_variant,
+        )
         resp = client.call(
             LLMRequest(model=model, system=_JUDGE_SYSTEM, user=prompt, max_tokens=100)
         )
@@ -144,6 +180,7 @@ def evaluate_run(
     means = {axis: (sum(r[axis] for r in rows) / len(rows) if rows else None) for axis in _AXES}
     result: dict[str, Any] = {
         "run_dir": str(run_dir),
+        "rubric_variant": rubric_variant,
         "n_messages_total": len(messages),
         "n_llm_authored": len(authored),
         "n_templated": templated_count,
@@ -153,7 +190,15 @@ def evaluate_run(
         "means": means,
         "samples": rows,
     }
-    (run_dir / "explanations_eval.json").write_text(json.dumps(result, indent=2))
+    # Per-variant filename: each of these costs real money, so a second variant
+    # must not overwrite the first (pre-live review, 2026-07-12). "default"
+    # keeps the original name so existing artifacts stay where the docs say.
+    name = (
+        "explanations_eval.json"
+        if rubric_variant == "default"
+        else f"explanations_eval__{rubric_variant}.json"
+    )
+    (run_dir / name).write_text(json.dumps(result, indent=2))
     return result
 
 
@@ -169,14 +214,32 @@ def main() -> None:
         action="store_true",
         help="Use a fixed-score stub judge (no API calls; for tests/dry runs).",
     )
+    p.add_argument(
+        "--rubric-variant",
+        type=str,
+        default="default",
+        choices=sorted(_RUBRICS),
+        help=(
+            "Paraphrase of the rubric to judge with. Re-judging a run under "
+            "each variant measures whether the judge is stable under rewording; "
+            "non-default variants write explanations_eval__<variant>.json."
+        ),
+    )
     args = p.parse_args()
     client = None
     if args.mock:
         client = MockLLMClient(
             cache=PromptCache(local_dir=args.run_dir / "judge_cache", reference_dir=None),
-            canned={"Rubric": _MOCK_JUDGE_RESPONSE},
+            # Match on the scale line, which every variant shares.
+            canned={"1-5": _MOCK_JUDGE_RESPONSE},
         )
-    result = evaluate_run(args.run_dir, n=args.n, client=client, model=args.model)
+    result = evaluate_run(
+        args.run_dir,
+        n=args.n,
+        client=client,
+        model=args.model,
+        rubric_variant=args.rubric_variant,
+    )
     means = ", ".join(
         f"{axis}={result['means'][axis]:.2f}"
         if result["means"][axis] is not None
