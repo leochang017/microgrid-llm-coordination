@@ -34,6 +34,22 @@ from sim.agents.cache import PromptCache
 # inner ones invisible to base_backoff_s.
 _TIMEOUT = httpx.Timeout(60.0, connect=5.0)
 
+# Newer models reject an explicit `temperature` ("temperature is deprecated for
+# this model", 400); the Haiku agents still honour it for deterministic,
+# cache-stable output. Send temperature only where the API accepts it. The cache
+# key (LLMRequest.to_cache_dict) is unaffected — committed run caches stay valid.
+_TEMPERATURE_DEPRECATED_PREFIXES = (
+    "claude-sonnet-5",
+    "claude-opus-4-7",
+    "claude-opus-4-8",
+    "claude-fable-5",
+    "claude-mythos-5",
+)
+
+
+def _supports_temperature(model: str) -> bool:
+    return not model.startswith(_TEMPERATURE_DEPRECATED_PREFIXES)
+
 
 class NoMockResponseError(LookupError):
     """Raised when MockLLMClient receives a prompt it has no canned response for."""
@@ -161,6 +177,8 @@ class AnthropicLLMClient(LLMClient):
         # tool-use is schema-validated by the API itself, so the response is
         # always parseable.
         extra_kwargs: dict[str, Any] = {}
+        if _supports_temperature(req.model):
+            extra_kwargs["temperature"] = 0.0
         if req.tools_schema:
             extra_kwargs["tools"] = req.tools_schema
             tool_name = req.tools_schema[0]["name"]
@@ -172,7 +190,6 @@ class AnthropicLLMClient(LLMClient):
                 msg = self._sdk_client.messages.create(
                     model=req.model,
                     max_tokens=req.max_tokens,
-                    temperature=0.0,
                     system=req.system,
                     messages=[{"role": "user", "content": req.user}],
                     **extra_kwargs,

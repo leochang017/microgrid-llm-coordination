@@ -115,6 +115,30 @@ def test_anthropic_client_calls_messages_create(tmp_path) -> None:
     assert kwargs["model"] == "claude-haiku-4-5-20251001"
 
 
+def test_anthropic_client_omits_temperature_for_models_that_reject_it(tmp_path) -> None:
+    # Newer models (e.g. claude-sonnet-5, used as the explanation judge) reject
+    # an explicit `temperature` with a 400 ("temperature is deprecated for this
+    # model"); the Haiku agents above still require it for deterministic,
+    # cache-stable output. The client must send temperature only where accepted.
+    fake_msg = MagicMock()
+    fake_msg.content = [MagicMock(text="ok")]
+    fake_msg.usage = MagicMock(input_tokens=1, output_tokens=1)
+
+    fake_client = MagicMock()
+    fake_client.messages.create.return_value = fake_msg
+
+    with patch("sim.agents.llm.anthropic.Anthropic", return_value=fake_client):
+        adapter = AnthropicLLMClient(
+            cache=PromptCache(local_dir=tmp_path),
+            api_key="sk-test",
+        )
+        adapter.call(LLMRequest(model="claude-sonnet-5", system="sys", user="hi", max_tokens=64))
+
+    kwargs = fake_client.messages.create.call_args.kwargs
+    assert "temperature" not in kwargs
+    assert kwargs["model"] == "claude-sonnet-5"
+
+
 def test_anthropic_client_retries_on_rate_limit(tmp_path) -> None:
     import anthropic as anthropic_sdk
 
