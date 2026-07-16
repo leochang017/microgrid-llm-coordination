@@ -1,65 +1,135 @@
 """Preflight: does this failure cell actually DOSE the thing it claims to test?
 
-Usage: python dose_check.py <cell> <seed>
+  python -m scripts.dose_check <cell> <seed>
 
-Written 2026-07-16 after the defectors cell at seed 23 turned out to assign all
-6 defectors to have-nots -- households with 0 kW PV and 2-4 kWh batteries, i.e.
-no surplus to withhold. The cell would have run for $5.50 and returned ~the
-clean result, and the natural write-up ("robust to 20% defectors") would have
-been false: zero defectors were CAPABLE of defecting. A null that reads as good
-news is the most dangerous kind, so check the realized dose before spending.
+Exits 2 on an inert or weak cell, so it can gate spending.
 
-P(that draw) = C(21,6)/C(30,6) = 9.1% -- rare, but it landed on the one seed the
-whole Stage 2 plan was built on.
+Written 2026-07-16 after the defectors cell at seed 23 reached a paid live run
+before anyone checked *which* houses were assigned to defect. All 6 landed on
+have-nots -- 0 kW PV, 2-4 kWh batteries -- so the cell withheld 0.0% of
+generation: the agents told to hoard had nothing to hoard. It would have
+returned ~the clean result, and the obvious write-up ("robust to 20% defectors")
+would have been false, because no defector was CAPABLE of defecting. A null that
+reads as good news is the most dangerous kind of wrong result.
+
+P(that draw) = C(21,6)/C(30,6) = 9.1% -- rare, and it landed on the one seed the
+Stage 2 plan was built on. Seeds 1/7/2/3/11/42 all deliver a real 16-34% dose,
+so the design is sound; that seed was not.
+
+The root cause is scenario design, not a bug: defectors are drawn uniformly over
+ALL households, but only haves can withhold, so ~60% of every draw is inert by
+construction and the have-side dose swings 0-34% across seeds. Any defector
+result must report its realized dose -- a single-seed defector number means
+nothing on its own.
 """
 
+from __future__ import annotations
+
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 
 from sim.agents.failure_modes import assign_defectors
 from sim.engine import sample_households
-from sim.scenario import load_scenario
+from sim.scenario import Scenario, load_scenario
 
-cell, seed = sys.argv[1], int(sys.argv[2])
-sc = load_scenario(Path(f"configs/scenarios/haves_havenots_solar__{cell}.yaml"))
-hh = sample_households(sc, np.random.default_rng(seed))  # engine.py:179 seeds this way
-fm = sc.failure_modes
+# Haves draw pv_kw_peak from [5.0, 7.0]; have-nots draw exactly [0.0, 0.0]. Any
+# threshold in between separates them; 1.0 leaves room if the bands are retuned.
+_HAVE_PV_KW = 1.0
 
-print(f"=== dose check: {cell}, seed {seed} ===")
-haves = {k for k, v in hh.items() if v.pv_kw_peak > 1.0}
-print(f"population: {len(hh)} houses = {len(haves)} haves / {len(hh) - len(haves)} have-nots")
+# Below this share of generation a defector cell cannot plausibly move
+# served_load out of the noise floor (cross-seed spread is ~16 pts).
+_WEAK_DOSE_FRAC = 0.10
 
-ok = True
 
-if fm.defector_fraction > 0:
-    d = assign_defectors(list(hh), fm, seed)
-    dh = d & haves
-    tot = sum(hh[k].pv_kw_peak for k in haves)
-    wit = sum(hh[k].pv_kw_peak for k in dh)
-    frac = wit / tot if tot else 0.0
-    print(f"\ndefectors ({fm.defector_realization}): {len(d)} assigned, {len(dh)} are haves")
-    print(f"  withheld generation: {frac:.1%} of {tot:.1f} kW")
-    if not dh:
-        print("  *** INERT: no defector holds surplus. This cell cannot show defection. ***")
-        ok = False
-    elif frac < 0.10:
-        print(f"  *** WEAK: {frac:.1%} dose is unlikely to move served_load. ***")
-        ok = False
-    # Only haves can withhold, so the have-side dose is the real dose.
-    print(f"  realized dose on surplus-holders: {len(dh)}/{len(haves)} = {len(dh)/len(haves):.0%}")
+@dataclass(frozen=True)
+class DoseReport:
+    n_houses: int
+    n_haves: int
+    n_defectors: int
+    n_have_defectors: int
+    withheld_generation_frac: float
+    defector_ids: tuple[str, ...]
+    have_defector_ids: tuple[str, ...]
 
-n = fm.obs_noise
-if n.soc_std_frac > 0 or n.load_std_frac > 0:
-    print(f"\nobs_noise: soc_std_frac={n.soc_std_frac} load_std_frac={n.load_std_frac}")
-    print("  (measured 2026-07-16: load bias +0.048%, SoC clamp mean-reverting ->")
-    print("   both REDUCE sharing; neither can systematically help)")
+    @property
+    def is_inert(self) -> bool:
+        """No defector holds surplus -> the cell cannot show defection at all."""
+        return self.n_have_defectors == 0
 
-c = fm.comm
-if c.per_tick_budget is not None or c.drop_prob_by_circle:
-    print(f"\ncomm: per_tick_budget={c.per_tick_budget} drops={c.drop_prob_by_circle}")
-    print("  (INFORMs emit last -> budget starves them -> eligibility collapse)")
+    @property
+    def is_weak(self) -> bool:
+        return not self.is_inert and self.withheld_generation_frac < _WEAK_DOSE_FRAC
 
-print(f"\n=> {'OK to spend' if ok else 'DO NOT SPEND — cell is inert/weak at this seed'}")
-sys.exit(0 if ok else 2)
+
+def realized_defector_dose(scenario: Scenario, seed: int) -> DoseReport:
+    """What share of generation do this cell's defectors actually withhold?
+
+    Only haves hold surplus, so have-defectors are the entire dose; have-not
+    defectors are inert by construction. ``seed`` is passed explicitly rather
+    than read off the scenario because a run may override it via --seed.
+    """
+    households = sample_households(scenario, np.random.default_rng(seed))  # cf. engine.py:179
+    defectors = assign_defectors(list(households), scenario.failure_modes, seed)
+    haves = {hid for hid, h in households.items() if h.pv_kw_peak > _HAVE_PV_KW}
+    have_defectors = defectors & haves
+
+    total_pv = sum(households[h].pv_kw_peak for h in haves)
+    withheld_pv = sum(households[h].pv_kw_peak for h in have_defectors)
+    return DoseReport(
+        n_houses=len(households),
+        n_haves=len(haves),
+        n_defectors=len(defectors),
+        n_have_defectors=len(have_defectors),
+        withheld_generation_frac=(withheld_pv / total_pv) if total_pv else 0.0,
+        defector_ids=tuple(sorted(defectors)),
+        have_defector_ids=tuple(sorted(have_defectors)),
+    )
+
+
+def main() -> int:
+    cell, seed = sys.argv[1], int(sys.argv[2])
+    scenario = load_scenario(Path(f"configs/scenarios/haves_havenots_solar__{cell}.yaml"))
+    fm = scenario.failure_modes
+    d = realized_defector_dose(scenario, seed)
+
+    print(f"=== dose check: {cell}, seed {seed} ===")
+    print(
+        f"population: {d.n_houses} houses = {d.n_haves} haves / {d.n_houses - d.n_haves} have-nots"
+    )
+
+    ok = True
+    if fm.defector_fraction > 0:
+        print(
+            f"\ndefectors ({fm.defector_realization}): {d.n_defectors} assigned, "
+            f"{d.n_have_defectors} are haves"
+        )
+        print(f"  withheld generation: {d.withheld_generation_frac:.1%}")
+        print(f"  dose on surplus-holders: {d.n_have_defectors}/{d.n_haves}")
+        print(f"  defector ids: {', '.join(d.defector_ids)}")
+        if d.is_inert:
+            print("  *** INERT: no defector holds surplus. This cell cannot show defection. ***")
+            ok = False
+        elif d.is_weak:
+            print(f"  *** WEAK: {d.withheld_generation_frac:.1%} is inside the noise floor. ***")
+            ok = False
+
+    n = fm.obs_noise
+    if n.soc_std_frac > 0 or n.load_std_frac > 0:
+        print(f"\nobs_noise: soc_std_frac={n.soc_std_frac} load_std_frac={n.load_std_frac}")
+        print("  (measured 2026-07-16: load bias +0.048%; SoC clamp is mean-reverting ->")
+        print("   both REDUCE sharing, so neither can systematically help)")
+
+    c = fm.comm
+    if c.per_tick_budget is not None or c.drop_prob_by_circle:
+        print(f"\ncomm: per_tick_budget={c.per_tick_budget} drops={c.drop_prob_by_circle}")
+        print("  (INFORMs emit last -> budget starves them -> eligibility collapse)")
+
+    print(f"\n=> {'OK to spend' if ok else 'DO NOT SPEND — cell is inert/weak at this seed'}")
+    return 0 if ok else 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())
