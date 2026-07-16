@@ -151,11 +151,111 @@ def cell_served_gap_closed(methods: dict[str, dict[str, Any]]) -> float:
     )
 
 
+def cell_series(cell: str) -> dict[str, Any]:
+    """Per-method served mean/std over every committed seed for a cell.
+
+    The clean cell carries three seeds (the spread is the honest error bar); the
+    failure cells are single-seed, so std is 0 and ``n`` records that it is n=1.
+    """
+    seeds = sorted(LIVE_CELLS[cell])
+    vals: dict[str, list[float]] = {m: [] for m in METHOD_ORDER}
+    gcs: list[float] = []
+    for seed in seeds:
+        methods = collect_cell(cell, seed)
+        for m in METHOD_ORDER:
+            vals[m].append(float(methods[m]["served_load_fraction"]))
+        gcs.append(cell_served_gap_closed(methods))
+    return {
+        "cell": cell,
+        "seeds": seeds,
+        "n": len(seeds),
+        "served_mean": {m: float(np.mean(vals[m])) for m in METHOD_ORDER},
+        "served_std": {m: float(np.std(vals[m])) for m in METHOD_ORDER},
+        "gap_closed_mean": float(np.mean(gcs)),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Rendering. matplotlib is the optional `viz` extra (absent in CI), so it is
+# imported lazily inside each render function; nothing above this line needs it.
+# ---------------------------------------------------------------------------
+
+
+def _new_axes(nrows: int, ncols: int, figsize: tuple[float, float]) -> Any:
+    """A fresh Agg figure — no pyplot global state, deterministic across calls."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    from matplotlib.figure import Figure
+
+    fig = Figure(figsize=figsize)
+    axes = fig.subplots(nrows, ncols, squeeze=False)
+    return fig, axes
+
+
+_BAR_COLORS = {
+    "no_coordination": "#bdbdbd",
+    "llm_fallback": "#f4a259",
+    "round_robin": "#5b8e7d",
+    "llm_agent": "#1f6feb",
+    "lp_optimal": "#8a8a8a",
+}
+
+
+def render_headline(out_dir: Path = FIG_DIR) -> Path:
+    """Paired bars per cell: no-coord / control / round-robin / live / LP.
+
+    Clean cell shows mean±spread over seeds {23,1,7}; failure cells are single
+    seed (annotated n=1). gap_closed(control→LP) is printed over the live bar.
+    """
+    fig, axes = _new_axes(2, 2, (11.0, 8.0))
+    flat = [axes[r][c] for r in range(2) for c in range(2)]
+    for ax, cell in zip(flat, CELL_ORDER, strict=True):
+        s = cell_series(cell)
+        xs = list(range(len(METHOD_ORDER)))
+        heights = [s["served_mean"][m] for m in METHOD_ORDER]
+        errs = [s["served_std"][m] for m in METHOD_ORDER] if s["n"] > 1 else None
+        colors = [_BAR_COLORS[m] for m in METHOD_ORDER]
+        ax.bar(xs, heights, yerr=errs, capsize=4, color=colors, edgecolor="#333", linewidth=0.6)
+        live_i = METHOD_ORDER.index("llm_agent")
+        gc = s["gap_closed_mean"]
+        ax.annotate(
+            f"gap-closed\n{gc:+.0%}",
+            xy=(live_i, heights[live_i]),
+            xytext=(0, 6),
+            textcoords="offset points",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+            fontweight="bold",
+            color="#1f6feb",
+        )
+        seedtxt = f"seeds {s['seeds']}" if s["n"] > 1 else f"seed {s['seeds'][0]} (n=1)"
+        ax.set_title(f"{CELL_LABEL[cell]} — {seedtxt}", fontsize=10)
+        ax.set_xticks(xs)
+        ax.set_xticklabels(
+            [METHOD_LABEL[m] for m in METHOD_ORDER], rotation=30, ha="right", fontsize=8
+        )
+        ax.set_ylim(0.0, 1.0)
+        ax.set_ylabel("served-load fraction", fontsize=8)
+        ax.axhline(0.0, color="#000", linewidth=0.5)
+    fig.suptitle(
+        "Phase 3.2 live coordination vs the zero-LLM control (bar = served load, ↑ better)",
+        fontsize=12,
+    )
+    fig.tight_layout(rect=(0, 0, 1, 0.96))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out = out_dir / "phase3_headline.png"
+    fig.savefig(out, dpi=150)
+    return out
+
+
 def _cli() -> None:
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     p.add_argument("--all", action="store_true", help="regenerate every figure + table")
+    p.add_argument("--headline", action="store_true", help="render the headline figure")
     p.add_argument("--check", action="store_true", help="assert committed live numbers unchanged")
     args = p.parse_args()
     if args.check:
@@ -164,8 +264,10 @@ def _cli() -> None:
                 s = read_live_summary(cell, seed)
                 print(f"{CELL_LABEL[cell]:>10} @ {seed:>2}: served {s['served_load_fraction']:.4f}")
         return
-    # Render targets land in later tasks; keep the CLI honest until then.
-    print("no render target selected (rendering added in Phase 3.3 tasks 2-5)")
+    if args.headline or args.all:
+        print(f"wrote {render_headline()}")
+    if not (args.headline or args.all):
+        print("no render target selected (try --headline or --all)")
 
 
 if __name__ == "__main__":
