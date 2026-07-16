@@ -22,14 +22,16 @@ import httpx
 
 from sim.agents.cache import PromptCache
 
-# The SDK defaults to read=600 s with its own max_retries=2, so one wedged HTTPS
-# read costs 30 min before this module's retry loop sees an exception — and it
-# then retries up to `max_retries` more times on top. Measured on the Phase 3.2
-# Stage 1 live cell (2026-07-15): 3 hung reads cost 35 min of a 213 min run
-# (16%), one of them 23 min alone. 60 s is ~10x the observed p99 for an
-# 800-token Haiku call, so it never abandons a healthy request — which matters,
-# because a client-side abort still bills server-side. Erring long is the safe
-# direction; erring at 600 s was just expensive.
+# The SDK defaults to read=600 s, so one wedged HTTPS read costs 10 min before
+# this module's retry loop sees an exception. Measured across Phase 3.2 Stage 1
+# (2026-07-15): 4 hung reads cost 82 min of a 228 min run (36%). 60 s is ~10x the
+# observed p99 for an 800-token Haiku call, so it never abandons a healthy
+# request — which matters, because a client-side abort still bills server-side.
+# Erring long is the safe direction; erring at 600 s was just expensive.
+# The SDK's own max_retries is pinned to 0 below for the same reason: this class
+# already retries (see AnthropicLLMClient.max_retries), and nesting the SDK's
+# default 2 inside our 5 means 15 attempts at a known-dead endpoint, with the
+# inner ones invisible to base_backoff_s.
 _TIMEOUT = httpx.Timeout(60.0, connect=5.0)
 
 
@@ -145,9 +147,11 @@ class AnthropicLLMClient(LLMClient):
             # x-api-key. The Anthropic SDK exposes both via separate kwargs.
             key = self.api_key or None
             if key and key.startswith("sk-ant-oat"):
-                self._sdk_client = anthropic.Anthropic(auth_token=key, timeout=_TIMEOUT, api_key="")
+                self._sdk_client = anthropic.Anthropic(
+                    auth_token=key, timeout=_TIMEOUT, max_retries=0, api_key=""
+                )
             else:
-                self._sdk_client = anthropic.Anthropic(api_key=key, timeout=_TIMEOUT)
+                self._sdk_client = anthropic.Anthropic(api_key=key, timeout=_TIMEOUT, max_retries=0)
 
     def _call_provider(self, req: LLMRequest) -> LLMResponse:
         last_exc: Exception | None = None

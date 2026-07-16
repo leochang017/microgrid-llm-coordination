@@ -299,3 +299,20 @@ def test_anthropic_client_pins_an_explicit_request_timeout(tmp_path) -> None:
     assert timeout is not None, "SDK client built with the 600 s default read timeout"
     assert timeout.read == 60.0
     assert timeout.connect == 5.0
+
+
+def test_anthropic_client_disables_the_sdk_retry_loop(tmp_path) -> None:
+    """This class owns retries; the SDK must not add a second, invisible loop.
+
+    The SDK defaults to max_retries=2, which nests inside this class's own
+    max_retries=5 for up to 15 attempts against an endpoint that has already
+    proven dead. Worse, the inner retries are invisible to `base_backoff_s`, so
+    the outer loop's exponential backoff is measuring the wrong thing.
+
+    Measured across Phase 3.2 Stage 1 (2026-07-15): 4 stalls cost 82 min of 228
+    (36%), all with the same signature — a pooled connection to a single edge IP
+    wedged in an SSL read, then re-tried on that same wedged connection.
+    """
+    with patch("sim.agents.llm.anthropic.Anthropic") as ctor:
+        AnthropicLLMClient(cache=PromptCache(local_dir=tmp_path), api_key="sk-ant-api-x")
+    assert ctor.call_args.kwargs.get("max_retries") == 0
