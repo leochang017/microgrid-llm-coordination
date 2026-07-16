@@ -24,6 +24,8 @@ runs/
 reference_runs/*/round_robin/
 reference_runs/*/llm_fallback/
 reference_runs/*/lp_optimal/
+reference_runs/*/no_coordination/
+reference_runs/*/round_robin_overlay/
 
 # Env
 .env
