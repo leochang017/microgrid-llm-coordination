@@ -63,6 +63,7 @@ CELL_ORDER = [
     "haves_havenots_solar__noise",
     "haves_havenots_solar__comm",
 ]
+CLEAN = "haves_havenots_solar__llm"  # the multi-seed clean reference cell
 
 BASELINES = ["no_coordination", "round_robin", "llm_fallback"]
 # Canonical left-to-right method order for grouped bars: floor, control, tuned
@@ -327,6 +328,128 @@ _CELL_MARKER = {
     "haves_havenots_solar__comm": "D",
 }
 
+# Each failure axis paired with the seed its live cell was run at, and the clean
+# reference is the SAME seed (so the control's clean→stress drop is causal, not
+# cross-seed). realized-dose text is what dose_check pinned.
+_AXES = [
+    ("haves_havenots_solar__defectors", 7, "defectors\n(33.6% withheld)"),
+    ("haves_havenots_solar__noise", 23, "noise\n(SoC 10% + load 15%)"),
+    ("haves_havenots_solar__comm", 23, "comm\n(msg budget 2)"),
+]
+
+# Mock canned-policy floor: the control's clean→stress served drop, mean over 5
+# seeds, from docs/phase3_mock_sweep.md (regenerated 2026-07-12). Cited as
+# external corroboration of the same-seed control drop the bars show; the noise
+# entry is the SoC-only sweep proxy (the live cell is dual-channel).
+_MOCK_CONTROL_DROP = {
+    "haves_havenots_solar__defectors": 0.0,  # 0.6993 -> 0.6993 (flat: prompt inert w/o LLM)
+    "haves_havenots_solar__noise": 0.7173 - 0.6993,  # +0.018 (SoC-only proxy)
+    "haves_havenots_solar__comm": 0.5524 - 0.6993,  # -0.147 (budget 2)
+}
+
+
+def failure_axis_deltas() -> list[dict[str, Any]]:
+    """Per axis: the control's clean→stress drop and live's recovery over it.
+
+    Both deltas use the SAME seed as the live cell (clean reference at that seed),
+    so ``control_drop`` and ``live_minus_control`` are causal, not cross-seed. The
+    two summed give live's net position against the clean control.
+    """
+    out: list[dict[str, Any]] = []
+    for cell, seed, label in _AXES:
+        clean = collect_cell(CLEAN, seed)
+        stress = collect_cell(cell, seed)
+        cc, cs, ls = clean["llm_fallback"], stress["llm_fallback"], stress["llm_agent"]
+        out.append(
+            {
+                "cell": cell,
+                "seed": seed,
+                "label": label,
+                "control_drop_served": cs["served_load_fraction"] - cc["served_load_fraction"],
+                "live_minus_control_served": ls["served_load_fraction"]
+                - cs["served_load_fraction"],
+                "control_drop_jain": cs["jains_index"] - cc["jains_index"],
+                "live_minus_control_jain": ls["jains_index"] - cs["jains_index"],
+                "mock_control_drop_served": _MOCK_CONTROL_DROP[cell],
+            }
+        )
+    return out
+
+
+def render_failure_axis(out_dir: Path = FIG_DIR) -> Path:
+    """What the fixed policy loses under stress, and what live recovers over it.
+
+    Left panel = served-load, right = Jain. Per axis, two bars: the control's
+    clean→stress drop (grey, same seed) and live-minus-control under stress (blue,
+    the mandatory-bar delta). A grey diamond marks the mock 5-seed control drop
+    (docs/phase3_mock_sweep.md) as external corroboration on the served panel.
+    """
+    data = failure_axis_deltas()
+    fig, axes = _new_axes(1, 2, (13.0, 6.0))
+    xs = list(range(len(data)))
+    width = 0.36
+    for ax, served in ((axes[0][0], True), (axes[0][1], False)):
+        drop_key = "control_drop_served" if served else "control_drop_jain"
+        lmc_key = "live_minus_control_served" if served else "live_minus_control_jain"
+        drops = [d[drop_key] for d in data]
+        lmcs = [d[lmc_key] for d in data]
+        ax.bar(
+            [x - width / 2 for x in xs],
+            drops,
+            width,
+            color="#f4a259",
+            edgecolor="#333",
+            linewidth=0.5,
+            label="control clean→stress drop",
+        )
+        ax.bar(
+            [x + width / 2 for x in xs],
+            lmcs,
+            width,
+            color="#1f6feb",
+            edgecolor="#333",
+            linewidth=0.5,
+            label="live - control (same seed)",
+        )
+        if served:
+            ax.scatter(
+                xs,
+                [d["mock_control_drop_served"] for d in data],
+                marker="D",
+                s=55,
+                color="#666",
+                edgecolor="#000",
+                zorder=4,
+                label="mock 5-seed control drop",
+            )
+        for x, v in zip(xs, lmcs, strict=True):
+            ax.annotate(
+                f"{v:+.3f}",
+                (x + width / 2, v),
+                textcoords="offset points",
+                xytext=(0, 3 if v >= 0 else -11),
+                ha="center",
+                fontsize=8,
+                fontweight="bold",
+                color="#1f6feb",
+            )
+        ax.axhline(0.0, color="#000", linewidth=0.7)
+        ax.set_xticks(xs)
+        ax.set_xticklabels([d["label"] for d in data], fontsize=8)
+        ax.set_ylabel(
+            ("Δ served-load" if served else "Δ Jain's index") + " vs clean control", fontsize=9
+        )
+        ax.legend(fontsize=7, loc="lower left")
+    fig.suptitle(
+        "Phase 3.2 failure axes — control loses under stress (orange); live recovers over it (blue)",
+        fontsize=12,
+    )
+    fig.tight_layout(rect=(0, 0, 1, 0.95))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out = out_dir / "phase3_failure_axis.png"
+    fig.savefig(out, dpi=150)
+    return out
+
 
 def render_efficiency_equity(out_dir: Path = FIG_DIR) -> Path:
     """Served-load vs fairness scatter (advisor's dedicated tradeoff figure).
@@ -410,6 +533,9 @@ def _cli() -> None:
     p.add_argument("--headline", action="store_true", help="render the headline figure")
     p.add_argument("--fairness", action="store_true", help="render the fairness panel")
     p.add_argument("--scatter", action="store_true", help="render the efficiency-vs-equity scatter")
+    p.add_argument(
+        "--failure-axis", action="store_true", help="render the failure-axis delta figure"
+    )
     p.add_argument("--check", action="store_true", help="assert committed live numbers unchanged")
     args = p.parse_args()
     if args.check:
@@ -428,8 +554,13 @@ def _cli() -> None:
     if args.scatter or args.all:
         print(f"wrote {render_efficiency_equity()}")
         did = True
+    if args.failure_axis or args.all:
+        print(f"wrote {render_failure_axis()}")
+        did = True
     if not did:
-        print("no render target selected (try --headline / --fairness / --scatter / --all)")
+        print(
+            "no render target selected (try --headline / --fairness / --scatter / --failure-axis / --all)"
+        )
 
 
 if __name__ == "__main__":
