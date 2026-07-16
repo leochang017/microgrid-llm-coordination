@@ -37,6 +37,15 @@ from sim.agents.llm import AnthropicLLMClient, LLMClient, LLMRequest, LLMRespons
 
 _AXES = ("state_accuracy", "actionability", "consistency")
 
+# The judge must run a model from a different family than the author (advisor
+# requirement); the practical judge is claude-sonnet-5, which runs adaptive
+# thinking by default. On the real (state + rubric) prompts it spends 400-640
+# output tokens thinking before emitting the ~30-token JSON verdict, so a tight
+# budget truncates mid-thought into an empty, unparseable reply (measured 84/100
+# failures at 100 tokens; end_turn with a clean parse at 1024). Budget clears the
+# thinking with margin; billing is on tokens actually used, not this cap.
+_JUDGE_MAX_TOKENS = 2048
+
 _JUDGE_SYSTEM = (
     "You are grading explanations that household energy agents gave their "
     "neighbors during a simulated grid outage. Score STRICTLY on the rubric; "
@@ -169,7 +178,7 @@ def evaluate_run(
             variant=rubric_variant,
         )
         resp = client.call(
-            LLMRequest(model=model, system=_JUDGE_SYSTEM, user=prompt, max_tokens=100)
+            LLMRequest(model=model, system=_JUDGE_SYSTEM, user=prompt, max_tokens=_JUDGE_MAX_TOKENS)
         )
         scores = _parse_scores(resp.text)
         if scores is None:

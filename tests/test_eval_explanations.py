@@ -153,9 +153,11 @@ def _mini_run_dir(tmp_path: Path) -> Path:
 @dataclass
 class _RecordingMock(MockLLMClient):
     last_user: str = ""
+    last_max_tokens: int = 0
 
     def _call_provider(self, req: LLMRequest) -> LLMResponse:
         self.last_user = req.user
+        self.last_max_tokens = req.max_tokens
         return super()._call_provider(req)
 
 
@@ -170,6 +172,21 @@ def test_judge_pairs_with_decision_time_state_and_skips_first_tick(tmp_path: Pat
     assert result["n_first_tick_excluded"] == 1  # the t0 message has no prior row
     assert '"soc_kwh": 5.0' in rec.last_user  # graded against the t0 (start-of-tick) row
     assert "decision time" in rec.last_user
+
+
+def test_judge_request_budgets_tokens_for_thinking_models(tmp_path: Path) -> None:
+    # Sonnet-family judges (the advisor requires judge != author family) run
+    # adaptive thinking that spends 400-640 output tokens BEFORE the JSON verdict.
+    # At max_tokens=100 the reply is 100 tokens of thinking with no text block
+    # (empty, unparseable) — measured 84/100 failures on claude-sonnet-5. The
+    # request must leave room for the thinking plus the ~30-token JSON.
+    run_dir = _mini_run_dir(tmp_path)
+    rec = _RecordingMock(
+        cache=PromptCache(local_dir=tmp_path / "jc", reference_dir=None),
+        canned={"Rubric": _MOCK_JUDGE_RESPONSE},
+    )
+    evaluate_run(run_dir, client=rec)
+    assert rec.last_max_tokens >= 1024
 
 
 def test_judge_client_uses_env_credential(tmp_path: Path, monkeypatch) -> None:
