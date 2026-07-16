@@ -84,6 +84,19 @@ class JsonlLogger:
         ``failure_modes`` is the scenario's resolved failure-mode config; it lands
         in summary.json as ``failure_modes_active`` so a run directory records
         which cell it belongs to (was hardcoded {} before 2026-07-07).
+
+        CAUTION — "active" means CONFIGURED FOR THIS CELL, not applied to this
+        run. Failure modes have exactly one application site in the codebase:
+        ``llm_agent.prepare`` (which ``llm_fallback`` also routes through).
+        ``round_robin`` and ``lp_optimal`` never read them -- round_robin gets
+        ``message_bus=None`` and reads engine ground truth; lp_optimal is an
+        oracle over ground-truth profiles. So a round_robin summary.json in the
+        comm cell truthfully reports ``per_tick_budget: 2`` while not one line
+        of comm code ran, and its served_load_fraction is bit-identical to
+        clean. Do not read this field as evidence a strategy was exposed to a
+        failure mode; check the strategy first. (Verified 2026-07-16: the
+        round_robin and lp_optimal baselines are identical across all five
+        cells to 6 dp.)
         """
         # Re-read state.jsonl
         self._state_file.flush()
