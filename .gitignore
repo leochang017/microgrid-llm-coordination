@@ -13,6 +13,17 @@ data/
 runs/
 # reference_runs/ is EXPLICITLY TRACKED (the in-repo reproducibility artifact
 # for Phase 2 LLM-agent runs — see docs/superpowers/specs/2026-06-13-phase2-llm-agent-design.md §6).
+#
+# ...but only the llm_agent runs. Those cost money and ship an llm_cache that
+# replays them for $0, so they are worth their size. The zero-dollar baselines
+# below regenerate from the scenario YAML + --seed in about a minute each, so
+# committing them would add ~40 MB of derivable data to a PUBLIC repo for no
+# provenance gain — their provenance is the recorded number plus the command.
+# Ignoring them explicitly also stops a stray `git add -A` from doing it by
+# accident, which is the real reason this rule exists.
+reference_runs/*/round_robin/
+reference_runs/*/llm_fallback/
+reference_runs/*/lp_optimal/
 
 # Env
 .env
