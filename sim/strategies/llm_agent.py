@@ -300,12 +300,18 @@ def _decide_with_registry(
         if agent.should_replan(grid_islanded=not grid[hid], t=t):
             agent.plan(t=t)
 
-    # 4. React to pending messages
+    # 4. React to pending messages. A reply the bus refuses (budget overflow /
+    # comm drop) retracts its provisional commitment — the requester never saw
+    # the promise, so the sender must not ship energy against it (C1 fix).
+    # In zero-drop cells send() always returns True and this is a no-op.
+    # (With messaging off no reply ever reaches the bus — and no REQUEST ever
+    # arrived to react to — so retraction is unreachable there by construction.)
     for agent in reg.agents.values():
         replies = agent.react_to_pending(t=t)
         if reg.messaging_enabled:
             for m in replies:
-                reg.bus.send(reg.defector_wrapper.maybe_corrupt(m))
+                if not reg.bus.send(reg.defector_wrapper.maybe_corrupt(m)):
+                    agent.retract_commitment(m)
 
     # 5. Act: collect transfers + outbound messages
     all_transfers: list[Transfer] = []
@@ -384,6 +390,7 @@ def current_call_counts(registry: _AgentRegistry | None = None) -> dict[str, int
             "commitments_made": 0,
             "commitments_expired": 0,
             "react_amount_defaulted": 0,
+            "commitments_retracted": 0,
             "cache_hits": 0,
             "cache_misses": 0,
         }
@@ -398,6 +405,7 @@ def current_call_counts(registry: _AgentRegistry | None = None) -> dict[str, int
     commitments_made = sum(a.n_commitments_made for a in registry.agents.values())
     commitments_expired = sum(a.n_commitments_expired for a in registry.agents.values())
     react_amount_defaulted = sum(a.n_react_amount_defaulted for a in registry.agents.values())
+    commitments_retracted = sum(a.n_commitments_retracted for a in registry.agents.values())
     # Cache hits/misses come from the shared LLM client (all agents share one).
     # The client lives on each agent; pick any (zeros for a degenerate
     # zero-household run).
@@ -414,6 +422,7 @@ def current_call_counts(registry: _AgentRegistry | None = None) -> dict[str, int
         "commitments_made": commitments_made,
         "commitments_expired": commitments_expired,
         "react_amount_defaulted": react_amount_defaulted,
+        "commitments_retracted": commitments_retracted,
         "cache_hits": getattr(cache, "n_hits", 0),
         "cache_misses": getattr(cache, "n_misses", 0),
     }

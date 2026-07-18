@@ -259,6 +259,8 @@ class LLMAgent:
     n_commitments_made: int = 0
     n_commitments_expired: int = 0
     n_react_amount_defaulted: int = 0  # ACCEPT/COUNTER without a parseable kwh
+    n_commitments_retracted: int = 0  # C1: reply refused by the bus -> promise undone
+    _reply_commitments: dict[str, Commitment] = field(default_factory=dict, init=False, repr=False)
 
     _prev_soc_frac: float | None = field(default=None, init=False, repr=False)
     plan_consecutive_failures: int = field(default=0, init=False)
@@ -604,6 +606,7 @@ class LLMAgent:
         Excess genuinely stays queued (oldest first) and is retried on later
         ticks until it ages out via react_stale_after_ticks in observe().
         """
+        self._reply_commitments.clear()
         if self.llm_disabled:
             self.pending_react = []
             return []
@@ -622,6 +625,23 @@ class LLMAgent:
             if resp is not None:
                 out.append(resp)
         return out
+
+    def retract_commitment(self, reply: Message) -> None:
+        """Undo the provisional commitment behind ``reply`` (C1 fix).
+
+        Called by the strategy facade when the bus REFUSED the ACCEPT/COUNTER
+        (budget overflow / comm drop): the requester never saw the promise, so
+        no energy may ship against it. No-op for replies with no commitment
+        (REJECTs, zero-amount replies, unknown correlation ids).
+        """
+        c = self._reply_commitments.pop(reply.correlation_id, None)
+        if c is None:
+            return
+        try:
+            self.commitments.remove(c)
+        except ValueError:  # already consumed — cannot happen mid-tick; be safe
+            return
+        self.n_commitments_retracted += 1
 
     def _react_to_message(self, t: datetime, m: Message) -> Message | None:
         # A binding ACCEPT/COUNTER must be grounded in what the household can
@@ -701,13 +721,14 @@ class LLMAgent:
                 amount = float(payload.get("kwh", 0.0) or 0.0)
                 self.n_react_amount_defaulted += 1
             if amount > 0:
-                self.commitments.append(
-                    Commitment(
-                        recipient=m.sender,
-                        kwh_remaining=amount,
-                        expires_t_idx=self.last_t_idx + 2,
-                    )
+                c = Commitment(
+                    recipient=m.sender,
+                    kwh_remaining=amount,
+                    expires_t_idx=self.last_t_idx + 2,
                 )
+                self.commitments.append(c)
+                # C1: provisional until the facade confirms the bus accepted the reply
+                self._reply_commitments[m.correlation_id] = c
                 self.n_commitments_made += 1
             payload["kwh"] = amount
         return Message(

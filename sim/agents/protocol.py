@@ -116,7 +116,15 @@ class MessageBus:
         self._drop_prob_by_circle = dict(drop_prob_by_circle or {})
         self._per_tick_budget = per_tick_budget
 
-    def send(self, m: Message) -> None:
+    def send(self, m: Message) -> bool:
+        """Attempt to enqueue ``m`` for delivery.
+
+        Returns True iff the message entered the delivery queue… False iff
+        the bus refused it (budget_overflow, invalid_recipient, comm_drop) —
+        the recipient will never see it. Callers registering state against a
+        message (commitment ledgers) must treat False as "this message does
+        not exist for the recipient" (C1 fix, 2026-07-18).
+        """
         if self._per_tick_budget is not None:
             key = (m.t_sent, m.sender)
             self._budget_used[key] += 1
@@ -136,7 +144,7 @@ class MessageBus:
                         reason="budget_overflow",
                     )
                 )
-                return
+                return False
         if m.recipient not in self.neighborhood.union_neighbors(m.sender):
             self._log.append(
                 _LogRow(
@@ -153,7 +161,7 @@ class MessageBus:
                     reason="invalid_recipient",
                 )
             )
-            return
+            return False
         circle = self._circle_between(m.sender, m.recipient)
         drop_p = self._drop_prob_by_circle.get(circle, 0.0)
         if drop_p > 0 and self._rng.random() < drop_p:
@@ -172,8 +180,9 @@ class MessageBus:
                     reason="comm_drop",
                 )
             )
-            return
+            return False
         self._queue.append(m)
+        return True
 
     def deliver_pending(self, now: datetime) -> dict[str, list[Message]]:
         inboxes: dict[str, list[Message]] = defaultdict(list)

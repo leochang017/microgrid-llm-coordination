@@ -226,6 +226,16 @@ def test_bus_latency_follows_dt() -> None:
     assert bus.deliver_pending(t0 + timedelta(hours=0.05)) != {}  # one tick later
 
 
+def test_send_reports_acceptance_and_refusal() -> None:
+    bus = MessageBus(neighborhood=_bus_neighborhood(), seed=42)
+    bus.configure_failure_modes(per_tick_budget=2)
+    t0 = datetime(2026, 1, 1)
+    assert bus.send(_msg(t0, "r0c0", "r0c1")) is True
+    assert bus.send(_msg(t0, "r0c0", "r1c0")) is True
+    assert bus.send(_msg(t0, "r0c0", "r0c1")) is False  # budget_overflow
+    assert bus.send(_msg(t0, "r0c0", "r4c4")) is False  # invalid_recipient
+
+
 def test_end_of_run_queue_is_flushed_to_log(tmp_path: Path) -> None:
     nb = build_grid_neighborhood(rows=1, cols=2, bus_max_kw=50.0)
     bus = MessageBus(neighborhood=nb, seed=0)

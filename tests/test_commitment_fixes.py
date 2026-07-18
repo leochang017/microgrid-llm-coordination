@@ -160,3 +160,157 @@ def test_mock_clean_cell_characterization_pin(tmp_path, monkeypatch) -> None:
     assert summary["served_load_fraction"] == pytest.approx(0.519560067167591, abs=5e-7)
     assert summary["transfer_count"] == 664
     assert summary["llm_call_counts_detailed"]["commitments_made"] == 2287
+    # C1 (Task 3): this is a zero-drop mock cell, so no reply is ever refused —
+    # the no-op proof the register-then-retract design depends on.
+    assert summary["llm_call_counts_detailed"]["commitments_retracted"] == 0
+
+
+# --- Task 3: C1 — retract commitments whose reply the bus refused ---
+
+
+def test_retract_commitment_undoes_the_refused_reply(tmp_path) -> None:
+    a = _agent(tmp_path)
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.observe(t=t0, own_state=_own(8.0), inbox=[_request("r0c0", "c1", t0)], t_idx=0)
+    (reply,) = a.react_to_pending(t=t0)
+    assert len(a.commitments) == 1 and a.n_commitments_made == 1
+    a.retract_commitment(reply)  # bus said False
+    assert a.commitments == []
+    assert a.n_commitments_retracted == 1
+    assert a.n_commitments_made == 1  # made stays: the promise WAS uttered
+    a.retract_commitment(reply)  # idempotent
+    assert a.n_commitments_retracted == 1
+
+
+def test_retract_is_a_noop_for_reject_replies(tmp_path) -> None:
+    a = _agent(tmp_path, reply_text="REJECT\nrationale: no")
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.observe(t=t0, own_state=_own(8.0), inbox=[_request("r0c0", "c2", t0)], t_idx=0)
+    (reply,) = a.react_to_pending(t=t0)
+    a.retract_commitment(reply)
+    assert a.commitments == [] and a.n_commitments_retracted == 0
+
+
+def _prepare_1x3_with_budget(tmp_path: Path, per_tick_budget: int | None):  # type: ignore[no-untyped-def]
+    """Prepare a minimal 1x3 llm_agent cell under a comm per_tick_budget and
+    return (decide, scenario, households). Modeled on
+    tests/test_strategy_llm_agent.py::_prepare_with_failure; uses the shared
+    _canned_mock (bare ACCEPT replies bind, plan policy fixed)."""
+    from sim.agents.failure_modes import CommConfig, FailureModeConfig
+    from sim.household import Household
+    from sim.network import build_overlay_neighborhood
+    from sim.scenario import Scenario
+    from sim.strategies import llm_agent as llm_strat
+    from sim.types import HouseholdProfile
+
+    fm = FailureModeConfig(comm=CommConfig(per_tick_budget=per_tick_budget))
+    scenario = Scenario(
+        scenario_id="t",
+        start=datetime(2026, 1, 1, 8, 0),
+        end=datetime(2026, 1, 1, 8, 30),
+        dt_hours=0.25,
+        seed=42,
+        rows=1,
+        cols=3,
+        bus_max_kw=50.0,
+        bus_loss_factor=0.05,
+        strategy="llm_agent",
+        data_source="synthetic",
+        household_sampling={
+            "pv_kw_peak": [4.0, 4.0],
+            "battery_kwh": [10.0, 10.0],
+            "rt_efficiency": 0.9,
+            "dod_floor_frac": 0.1,
+        },
+        failure_modes=fm,
+    )
+    households = {
+        f"r0c{c}": Household(
+            id=f"r0c{c}",
+            pv_kw_peak=4.0,
+            battery_kwh=10.0,
+            battery_max_rate_kw=2.0,
+            rt_efficiency=0.9,
+            dod_floor_frac=0.1,
+            grid_max_kw=10.0,
+            profile=HouseholdProfile(description="t"),
+        )
+        for c in range(3)
+    }
+    nb = build_overlay_neighborhood(
+        rows=1, cols=3, affiliations={}, bus_max_kw=50.0, bus_loss_factor=0.05
+    )
+    mock = _canned_mock(tmp_path / "cache")
+    decide = llm_strat.prepare(
+        scenario=scenario,
+        households=households,
+        solar=None,
+        loads=None,
+        neighborhood=nb,
+        llm_client_factory=lambda model, run_dir: mock,
+    )
+    return decide, scenario, households
+
+
+def _seed_two_requests_and_tick(decide, scenario, households):  # type: ignore[no-untyped-def]
+    """Send two REQUESTs to the middle house (r0c1) so they're delivered on
+    the first tick, then run one decide() tick. Returns the registry."""
+    from datetime import timedelta
+
+    from sim.household import HouseholdState
+    from sim.network import build_overlay_neighborhood
+
+    reg = decide.registry
+    t0 = scenario.start
+    dt = timedelta(hours=scenario.dt_hours)
+    for sender, cid in (("r0c0", "req1"), ("r0c2", "req2")):
+        reg.bus.send(
+            Message(
+                t_sent=t0 - dt,
+                sender=sender,
+                recipient="r0c1",
+                performative="REQUEST",
+                payload={"kwh": 0.9, "urgency": "normal"},
+                rationale_nl="need energy",
+                correlation_id=cid,
+            )
+        )
+    states = {
+        hid: HouseholdState(soc_kwh=5.0, last_solar_kw=0.0, last_load_kw=1.0, grid_connected=True)
+        for hid in households
+    }
+    # grid-CONNECTED (not islanded): act() returns [] early for every agent,
+    # so nothing serves/expires a commitment this tick — the assertions below
+    # isolate the react/retract bookkeeping this test targets, undisturbed by
+    # the commitment-serving physics in act() (which runs the same tick).
+    grid = {hid: True for hid in households}
+    solar_kw = {hid: 0.0 for hid in households}
+    load_kw = {hid: 1.0 for hid in households}
+    nb = build_overlay_neighborhood(
+        rows=1, cols=3, affiliations={}, bus_max_kw=50.0, bus_loss_factor=0.05
+    )
+    decide(t0, states, households, solar_kw, load_kw, grid, nb, scenario.dt_hours)
+    return reg
+
+
+def test_budget_dropped_reply_leaves_no_commitment(tmp_path) -> None:
+    decide, scenario, households = _prepare_1x3_with_budget(tmp_path, per_tick_budget=1)
+    reg = _seed_two_requests_and_tick(decide, scenario, households)
+
+    middle = reg.agents["r0c1"]
+    assert middle.n_commitments_made == 2
+    assert middle.n_commitments_retracted == 1
+    assert len(middle.commitments) == 1
+    dropped_accepts = [
+        r for r in reg.bus.iter_log() if r["outcome"] == "dropped" and r["performative"] == "ACCEPT"
+    ]
+    assert len(dropped_accepts) == 1
+
+
+def test_no_drop_run_retracts_nothing(tmp_path) -> None:
+    decide, scenario, households = _prepare_1x3_with_budget(tmp_path, per_tick_budget=None)
+    reg = _seed_two_requests_and_tick(decide, scenario, households)
+
+    middle = reg.agents["r0c1"]
+    assert middle.n_commitments_retracted == 0
+    assert len(middle.commitments) == 2
