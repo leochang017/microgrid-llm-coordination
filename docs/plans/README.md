@@ -12,3 +12,5 @@ Executor-ready plans produced by `/planbatch` (distinct from the per-phase specs
 | 4 | [2026-07-18-full-repo-review-plan.md](2026-07-18-full-repo-review-plan.md) | Full fresh adversarial review of sim/ + scripts/ + tests/ + configs, verify → triage → TDD fixes → review record | pending |
 
 Flip a row to **done** in the executing session's wrap task.
+
+**Kickoff prompts** for all four plans live in [2026-07-18-kickoff-prompts.md](2026-07-18-kickoff-prompts.md) — after `/clear`, tell Claude to read that file and run the next pending kickoff.
