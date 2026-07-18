@@ -134,6 +134,34 @@ def test_reference_cell_dir_gains_seed_suffix(tmp_path, monkeypatch):
     ).exists()
 
 
+def test_summary_records_realized_defector_house_ids(tmp_path: Path) -> None:
+    """C3: random-assignment defectors are invisible in every artifact —
+    summary.json must record the realized draw (additive field)."""
+    from sim.agents.failure_modes import assign_defectors
+
+    sc = load_scenario(Path("configs/scenarios/haves_havenots__defectors.yaml"))
+    logger = JsonlLogger(tmp_path / "d", scenario_id=sc.scenario_id)
+    run(sc, None, logger, prepare=llm_fallback.prepare)
+    logger.close()
+    llm_strat.update_summary_with_counts(tmp_path / "d")
+    summary = json.loads((tmp_path / "d" / "summary.json").read_text())
+    got = summary["failure_modes_active"]["defector_house_ids"]
+    hh = list(llm_strat._REGISTRY.agents)
+    expect = sorted(assign_defectors(hh, sc.failure_modes, sc.seed))
+    assert got == expect and len(got) > 0
+    assert summary["failure_modes_active"]["defector_fraction"] == pytest.approx(0.2)
+
+
+def test_summary_defector_house_ids_empty_in_clean_cell(tmp_path: Path) -> None:
+    sc = load_scenario(_SCENARIO)  # the file's existing clean-cell constant
+    logger = JsonlLogger(tmp_path / "c", scenario_id=sc.scenario_id)
+    run(sc, None, logger, prepare=llm_fallback.prepare)
+    logger.close()
+    llm_strat.update_summary_with_counts(tmp_path / "c")
+    summary = json.loads((tmp_path / "c" / "summary.json").read_text())
+    assert summary["failure_modes_active"]["defector_house_ids"] == []
+
+
 def test_timestamp_run_dirs_carry_pid_suffix(tmp_path, monkeypatch):
     monkeypatch.chdir(REPO_ROOT)
     monkeypatch.setattr(

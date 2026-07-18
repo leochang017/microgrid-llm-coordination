@@ -97,6 +97,10 @@ class JsonlLogger:
         failure mode; check the strategy first. (Verified 2026-07-16: the
         round_robin and lp_optimal baselines are identical across all five
         cells to 6 dp.)
+
+        ``defector_house_ids`` present ⇒ realized (written post-run by
+        llm_agent/llm_fallback); absent ⇒ configured-only (round_robin/
+        lp_optimal never realize an assignment).
         """
         # Re-read state.jsonl
         self._state_file.flush()

@@ -55,6 +55,10 @@ class _AgentRegistry:
     # the bus (scenario llm.messaging: "off"). Transfers still flow — this
     # isolates whether NL messaging causally affects allocations.
     messaging_enabled: bool = True
+    # C3: the REALIZED defector assignment (random draw included), recorded so
+    # summary.json can report who actually defected — config.json only carries
+    # the configured tuple, which is () for random assignment.
+    defector_house_ids: tuple[str, ...] = ()
 
     def t_idx(self, t: datetime) -> int:
         if t not in self.tick_index:
@@ -210,6 +214,7 @@ def prepare(
         # "off" via YAML/--set may arrive as the string "off" or as boolean False
         # (bare `off` is a YAML boolean) — treat both as disabled.
         messaging_enabled=str(scenario.llm.get("messaging", "on")).lower() not in ("off", "false"),
+        defector_house_ids=tuple(sorted(defectors)),
     )
     # Module global kept for single-run-per-process callers (scripts/run.py's
     # post-run counter fill). The returned closure carries ITS OWN registry so
@@ -433,9 +438,16 @@ def update_summary_with_counts(run_dir: Path, registry: _AgentRegistry | None = 
     summary["policy_fallbacks_to_round_robin"] = counts["plan_fallbacks"]
     # Also extend with finer-grained Phase-2.5 fields.
     summary["llm_call_counts_detailed"] = counts
+    reg = registry or _REGISTRY
+    # C3: record the REALIZED defector assignment (additive; the engine-written
+    # failure_modes_active block reports the configured tuple, which is []
+    # whenever defector_assignment is "random").
+    if reg is not None:
+        summary.setdefault("failure_modes_active", {})["defector_house_ids"] = list(
+            reg.defector_house_ids
+        )
     # Real cost estimate from fresh-call tokens (was hardcoded 0.0 pre-2026-07-07;
     # the shipped reference run claimed $0.00 against ~$11.6 of actual spend).
-    reg = registry or _REGISTRY
     if reg is not None and reg.agents:
         any_agent = next(iter(reg.agents.values()))
         client = any_agent.llm_client
