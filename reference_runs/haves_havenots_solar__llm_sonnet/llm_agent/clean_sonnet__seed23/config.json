@@ -1,0 +1,102 @@
+{
+  "scenario_id": "haves_havenots_solar__llm_sonnet",
+  "start": "2018-01-01T00:00:00",
+  "end": "2018-01-02T00:00:00",
+  "dt_hours": 0.25,
+  "seed": 23,
+  "rows": 5,
+  "cols": 6,
+  "bus_max_kw": 50.0,
+  "bus_loss_factor": 0.05,
+  "strategy": "llm_agent",
+  "data_source": "synthetic",
+  "solar_tz_offset_hours": 0.0,
+  "llm": {
+    "model": "claude-sonnet-5",
+    "react_max_per_tick": 3
+  },
+  "failure_modes": {
+    "defector_fraction": 0.0,
+    "defector_assignment": "random",
+    "defector_house_ids": [],
+    "defector_realization": "prompt",
+    "obs_noise": {
+      "soc_std_frac": 0.0,
+      "load_std_frac": 0.0
+    },
+    "comm": {
+      "drop_prob_by_circle": {},
+      "per_tick_budget": null
+    }
+  },
+  "household_sampling": {
+    "mode": "bimodal",
+    "have": {
+      "pv_kw_peak": [
+        5.0,
+        7.0
+      ],
+      "battery_kwh": [
+        35.0,
+        40.0
+      ]
+    },
+    "havenot": {
+      "pv_kw_peak": [
+        0.0,
+        0.0
+      ],
+      "battery_kwh": [
+        2.0,
+        4.0
+      ]
+    },
+    "have_fraction": 0.4,
+    "rt_efficiency": 0.9,
+    "dod_floor_frac": 0.1,
+    "synthetic_load_kw": 1.0,
+    "critical_load_frac": [
+      0.2,
+      0.6
+    ]
+  },
+  "outages": [
+    {
+      "start": "2018-01-01T00:00:00",
+      "end": "2018-01-02T00:00:00",
+      "affected_houses": [
+        "r0c0",
+        "r0c1",
+        "r0c2",
+        "r0c3",
+        "r0c4",
+        "r0c5",
+        "r1c0",
+        "r1c1",
+        "r1c2",
+        "r1c3",
+        "r1c4",
+        "r1c5",
+        "r2c0",
+        "r2c1",
+        "r2c2",
+        "r2c3",
+        "r2c4",
+        "r2c5",
+        "r3c0",
+        "r3c1",
+        "r3c2",
+        "r3c3",
+        "r3c4",
+        "r3c5",
+        "r4c0",
+        "r4c1",
+        "r4c2",
+        "r4c3",
+        "r4c4",
+        "r4c5"
+      ]
+    }
+  ],
+  "strict": true
+}
