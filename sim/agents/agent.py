@@ -184,8 +184,10 @@ class PeerBelief:
 class Commitment:
     """Energy this agent has PROMISED to deliver (its ACCEPT/COUNTER to a
     REQUEST). Served by act() ahead of discretionary sharing, bypassing the
-    below-mean belief filter — a promise is a promise — until fulfilled or
-    expired (TTL keeps damage from over-promising bounded)."""
+    below-mean belief filter — a promise is a promise — but only once the
+    agent's own share_min_soc_frac safety floor is met (C2): held, not
+    dropped, while below it, until fulfilled or expired (TTL keeps damage
+    from over-promising bounded)."""
 
     recipient: str
     kwh_remaining: float
@@ -777,20 +779,29 @@ class LLMAgent:
         headroom_kwh = max(0.0, soc - dod_floor)
         soc_frac = soc / max(1e-9, capacity)
 
-        # Serve outstanding commitments FIRST (Phase 3): promised energy ships
-        # regardless of the below-mean filter and threshold, bounded by the
-        # policy power cap and believed headroom. Expired promises are dropped
-        # and counted.
+        # Expire stale promises first — a counted, visible outcome whether or
+        # not the agent is currently allowed to serve (C2: a held promise must
+        # still be able to age out on its original TTL).
+        live_commitments: list[Commitment] = []
+        for c in self.commitments:
+            if self.last_t_idx > c.expires_t_idx:
+                self.n_commitments_expired += 1
+            else:
+                live_commitments.append(c)
+        self.commitments = live_commitments
+
+        # Serve outstanding commitments FIRST (Phase 3): promised energy
+        # bypasses the below-MEAN discretionary filter, but NOT the agent's
+        # own share_min_soc_frac safety threshold (C2 fix, 2026-07-19): an
+        # agent below its own floor holds the promise — it may serve after
+        # recovering, or expire (counted above).
         c_transfers: list[Transfer] = []
         c_outbox: list[Message] = []
         committed_kw = 0.0
-        if self.commitments:
+        if self.commitments and soc_frac >= self.policy.share_min_soc_frac:
             budget_kw = min(self.policy.max_share_kw_per_tick, headroom_kwh / dt_hours)
             still_open: list[Commitment] = []
             for c in self.commitments:
-                if self.last_t_idx > c.expires_t_idx:
-                    self.n_commitments_expired += 1
-                    continue
                 kw = min(c.kwh_remaining / dt_hours, max(0.0, budget_kw - committed_kw))
                 if kw > 1e-12:
                     c_transfers.append(Transfer(from_id=self.house_id, to_id=c.recipient, kw=kw))
@@ -810,7 +821,7 @@ class LLMAgent:
                     )
                     c.kwh_remaining -= kw * dt_hours
                     committed_kw += kw
-                if c.kwh_remaining > 1e-9 and self.last_t_idx <= c.expires_t_idx:
+                if c.kwh_remaining > 1e-9:
                     still_open.append(c)
             self.commitments = still_open
             headroom_kwh = max(0.0, headroom_kwh - committed_kw * dt_hours)

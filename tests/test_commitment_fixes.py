@@ -22,19 +22,20 @@ current, unmodified mock clean-cell outcome, plus the shared `_agent`/`_own`/
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
 import yaml
 
-from sim.agents.agent import LLMAgent
+from sim.agents.agent import Commitment, LLMAgent
 from sim.agents.cache import PromptCache
 from sim.agents.failure_modes import FailureModeConfig, NoiseSource
 from sim.agents.llm import LLMResponse, MockLLMClient
 from sim.agents.memory import MemoryStream
 from sim.agents.policy import Policy
 from sim.agents.protocol import Message
+from sim.network import build_grid_neighborhood
 
 ROOT = Path(__file__).resolve().parent.parent
 SCEN_DIR = ROOT / "configs" / "scenarios"
@@ -156,10 +157,15 @@ def test_mock_clean_cell_characterization_pin(tmp_path, monkeypatch) -> None:
     commit must keep it green (proof C1 is a no-op without bus drops). The C2
     commit deliberately re-pins it (below-threshold holders stop exporting) —
     update the values IN THAT COMMIT ONLY, with old->new in the comment."""
+    # C2 re-pin 2026-07-19 (below-threshold holders stop exporting):
+    #   served_load_fraction 0.519560067167591 -> 0.5232789139715761
+    #   transfer_count 664 -> 302
+    #   commitments_made 2287 -> 2023
+    # Confirmed deterministic across 2 fresh runs before pinning.
     summary = _run_mock("haves_havenots__llm.yaml", tmp_path, monkeypatch)
-    assert summary["served_load_fraction"] == pytest.approx(0.519560067167591, abs=5e-7)
-    assert summary["transfer_count"] == 664
-    assert summary["llm_call_counts_detailed"]["commitments_made"] == 2287
+    assert summary["served_load_fraction"] == pytest.approx(0.5232789139715761, abs=5e-7)
+    assert summary["transfer_count"] == 302
+    assert summary["llm_call_counts_detailed"]["commitments_made"] == 2023
     # C1 (Task 3): this is a zero-drop mock cell, so no reply is ever refused —
     # the no-op proof the register-then-retract design depends on.
     assert summary["llm_call_counts_detailed"]["commitments_retracted"] == 0
@@ -314,3 +320,61 @@ def test_no_drop_run_retracts_nothing(tmp_path) -> None:
     middle = reg.agents["r0c1"]
     assert middle.n_commitments_retracted == 0
     assert len(middle.commitments) == 2
+
+
+# --- Task 4: C2 — hold (don't serve) commitments below own share_min_soc_frac ---
+
+
+def test_below_threshold_holds_commitment_then_serves_after_recovery(tmp_path) -> None:
+    # NOTE: the brief's example used recipient="r0c0", which is this agent's
+    # OWN house_id (_bare_agent hardcodes house_id="r0c0") — a self-transfer,
+    # which sim.types.Transfer.__post_init__ rejects unconditionally. Using
+    # "r0c1" instead (consistent with test 3 and the verbatim test_agent.py
+    # sibling this file's test 3 copies) so the recovery act() can actually
+    # construct+serve the transfer the test asserts on.
+    a = _agent(tmp_path)
+    nb = build_grid_neighborhood(rows=1, cols=3, bus_max_kw=50.0)
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.observe(t=t0, own_state=_own(2.0), inbox=[], t_idx=0)  # 0.20 < 0.30 threshold
+    a.commitments.append(Commitment(recipient="r0c1", kwh_remaining=0.4, expires_t_idx=5))
+    transfers, outbox = a.act(t=t0, own_state=_own(2.0), neighborhood=nb, dt_hours=0.25)
+    assert transfers == []  # nothing ships below own threshold
+    assert len(a.commitments) == 1  # the promise is HELD, not dropped
+    assert a.commitments[0].kwh_remaining == pytest.approx(0.4)
+    assert any(m.performative == "REQUEST" for m in outbox)  # still begging
+    t1 = t0 + timedelta(minutes=15)
+    a.observe(t=t1, own_state=_own(8.0), inbox=[], t_idx=1)  # recovered
+    transfers, _ = a.act(t=t1, own_state=_own(8.0), neighborhood=nb, dt_hours=0.25)
+    assert [tr.to_id for tr in transfers if tr.kw > 0] == ["r0c1"]
+    assert a.commitments == []
+
+
+def test_below_threshold_commitment_expires_while_held(tmp_path) -> None:
+    a = _agent(tmp_path)
+    nb = build_grid_neighborhood(rows=1, cols=3, bus_max_kw=50.0)
+    a.commitments.append(Commitment(recipient="r0c0", kwh_remaining=0.4, expires_t_idx=1))
+    for t_idx in (0, 1, 2):  # stays at 0.20 frac the whole time
+        t = datetime(2026, 1, 1, 8, 0) + timedelta(minutes=15 * t_idx)
+        a.observe(t=t, own_state=_own(2.0), inbox=[], t_idx=t_idx)
+        transfers, _ = a.act(t=t, own_state=_own(2.0), neighborhood=nb, dt_hours=0.25)
+        assert transfers == []
+    assert a.commitments == []
+    assert a.n_commitments_expired == 1  # counted even though never serviceable
+
+
+def test_above_threshold_commitments_still_bypass_below_mean_filter(tmp_path) -> None:
+    """Regression guard for the PRESERVED semantics: verbatim copy (adapted
+    only to this file's _agent/_own helpers) of
+    tests/test_agent.py::test_commitment_produces_transfer_bypassing_belief_filter
+    — fixture SoC 8.0 = 0.80 >= 0.30 threshold. Asserted here so the C2 commit
+    carries its own proof that above-threshold serving is untouched."""
+    a = _agent(tmp_path)
+    nb = build_grid_neighborhood(rows=1, cols=3, bus_max_kw=50.0)
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.observe(t=t0, own_state=_own(8.0), inbox=[], t_idx=0)
+    a.commitments.append(Commitment(recipient="r0c1", kwh_remaining=0.4, expires_t_idx=2))
+    transfers, outbox = a.act(t=t0, own_state=_own(8.0), neighborhood=nb, dt_hours=0.25)
+    by_target = {tr.to_id: tr.kw for tr in transfers}
+    assert by_target.get("r0c1") == pytest.approx(0.4 / 0.25)
+    assert a.commitments == []  # fully served
+    assert any(m.recipient == "r0c1" and m.performative == "OFFER" for m in outbox)
