@@ -301,3 +301,11 @@ def test_unknown_yaml_keys_hard_error(tmp_path: Path) -> None:
 )
 def test_all_shipped_scenarios_load(path: Path) -> None:
     load_scenario(path)
+
+
+def test_shipped_scenario_count_is_pinned() -> None:
+    # The suite's total test count is data-driven through this glob (each YAML
+    # parametrizes the strict-load loop). Pin the count so adding/removing a
+    # scenario is a visible, deliberate act rather than silent test-count drift.
+    yamls = sorted(Path("configs/scenarios").glob("*.yaml"))
+    assert len(yamls) == 21, [p.name for p in yamls]
