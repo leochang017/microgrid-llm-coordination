@@ -280,6 +280,67 @@ def test_act_respects_headroom_cap(tmp_path) -> None:
     assert total_kw <= headroom_kw + 1e-9
 
 
+def test_act_dedups_dual_circle_recipient_to_one_transfer(tmp_path) -> None:
+    """C3-1 fix: `_candidate_recipients` must not return a peer once per
+    circle it's reachable through. `act()`'s discretionary-sharing block
+    consumed the raw, un-deduped candidate list, so a peer reachable via 2+
+    overlapping trust circles (e.g. a geographic neighbor who is ALSO in the
+    same owner/HOA affiliation — exactly the Phase 1.6-mandated overlapping-
+    circle structure) received TWO separate Transfer/OFFER objects in one
+    tick instead of one. `_emit_requests` (the other consumer of the same
+    candidate list) already dedups via its own `best_by_target`, keeping the
+    max-weight circle per target; this fixture makes `act()` agree with it.
+    Not reachable in any committed live cell (0 overlapping-circle pairs
+    across every shipped `haves_havenots_solar*` variant), so this fix
+    cannot move a published number."""
+    a = _bare_agent(tmp_path)
+    a.policy = Policy(
+        sharing_intent="generous",
+        share_min_soc_frac=0.50,
+        max_share_kw_per_tick=2.0,
+        recipient_priority=(
+            RecipientPriority(circle="owner", weight=1.0),
+            RecipientPriority(circle="geographic", weight=1.0),
+        ),
+        distrusted_peers=(),
+        request_urgency="normal",
+        belief_note="",
+        ttl_ticks=4,
+    )
+    # r0c1 is reachable from r0c0 via BOTH geographic and owner circles
+    # (dual-circle peer, weight 1.0 on each); r1c0 stays owner-only
+    # (single-circle peer, weight 1.0).
+    nb = Neighborhood(
+        comm_graph={"r0c0": ["r0c1"], "r0c1": ["r0c0"], "r1c0": []},
+        bus_max_kw=50.0,
+        bus_loss_factor=0.05,
+        edges_by_type={
+            "geographic": {"r0c0": ["r0c1"], "r0c1": ["r0c0"], "r1c0": []},
+            "owner": {"r0c0": ["r0c1", "r1c0"], "r0c1": ["r0c0"], "r1c0": ["r0c0"]},
+        },
+    )
+    t0 = datetime(2026, 1, 1, 8, 0)
+    a.observe(
+        t=t0,
+        own_state=_own_state(8.0),
+        inbox=[
+            _inform("r0c1", 2.0, 10.0, t0, "d1"),  # below-mean, dual-circle peer
+            _inform("r1c0", 3.0, 10.0, t0, "d2"),  # below-mean, single-circle (owner)
+            _inform("r2c2", 8.0, 10.0, t0, "d3"),  # heard from (raises mean), not a neighbor
+        ],
+        t_idx=0,
+    )
+    transfers, outbox = a.act(t=t0, own_state=_own_state(8.0), neighborhood=nb, dt_hours=0.25)
+    r0c1_transfers = [tr for tr in transfers if tr.to_id == "r0c1"]
+    r1c0_transfers = [tr for tr in transfers if tr.to_id == "r1c0"]
+    assert len(r0c1_transfers) == 1  # was 2 before the fix (one per circle)
+    assert len(r1c0_transfers) == 1
+    # Equal effective weight after max-based dedup (both circles weight 1.0
+    # for the dual-circle peer, same as the single-circle peer) -> equal split.
+    assert r0c1_transfers[0].kw == pytest.approx(r1c0_transfers[0].kw)
+    assert sum(1 for m in outbox if m.recipient == "r0c1" and m.performative == "OFFER") == 1
+
+
 # --- LLMAgent.plan tests (Task 15) ---
 
 

@@ -639,9 +639,15 @@ class LLMAgent:
         c = self._reply_commitments.pop(reply.correlation_id, None)
         if c is None:
             return
-        try:
-            self.commitments.remove(c)
-        except ValueError:  # already consumed — cannot happen mid-tick; be safe
+        # Remove by IDENTITY, not value: Commitment is a plain value-equal
+        # dataclass, so two commitments minted in the same react_to_pending()
+        # batch (same recipient/amount/expiry) collide by == while remaining
+        # distinct objects. list.remove(c) would delete the first VALUE-equal
+        # entry — possibly the wrong (already-delivered) one — silently
+        # defeating C1's "undo only the bus-refused promise" guarantee (C4-1).
+        before = len(self.commitments)
+        self.commitments = [x for x in self.commitments if x is not c]
+        if len(self.commitments) == before:  # already consumed — cannot happen mid-tick; be safe
             return
         self.n_commitments_retracted += 1
 
@@ -928,10 +934,21 @@ class LLMAgent:
         return out
 
     def _candidate_recipients(self, neighborhood: Neighborhood) -> list[tuple[str, str, float]]:
-        """Return [(target_hid, circle, weight)] for each (peer, circle) the policy ranks."""
+        """Return [(target_hid, circle, weight)], one entry per PEER.
+
+        A peer reachable through 2+ overlapping trust circles (e.g. a
+        geographic neighbor who is also in the same owner/HOA affiliation)
+        keeps only its highest-weight circle — deterministic tiebreak: first
+        circle encountered wins ties (neighborhood.edges_by_type iteration
+        order). This dedup used to live only in _emit_requests's
+        best_by_target; hoisting it here (C3-1 fix) makes act()'s
+        discretionary OFFER path agree with _emit_requests's REQUEST path on
+        how a dual-circle peer counts, instead of silently double-counting
+        it into two Transfer/OFFER objects.
+        """
         distrusted = set(self.policy.distrusted_peers)
         weight_by_circle = {rp.circle: rp.weight for rp in self.policy.recipient_priority}
-        candidates: list[tuple[str, str, float]] = []
+        best_by_target: dict[str, tuple[str, str, float]] = {}
         for circle, edges in neighborhood.edges_by_type.items():
             weight = weight_by_circle.get(circle, 0.0)
             if weight <= 0:
@@ -939,8 +956,10 @@ class LLMAgent:
             for nb in edges.get(self.house_id, []):
                 if nb == self.house_id or nb in distrusted:
                     continue
-                candidates.append((nb, circle, weight))
-        return candidates
+                cur = best_by_target.get(nb)
+                if cur is None or weight > cur[2]:
+                    best_by_target[nb] = (nb, circle, weight)
+        return list(best_by_target.values())
 
     def _emit_requests(
         self, t: datetime, neighborhood: Neighborhood, soc_frac: float, dt_hours: float

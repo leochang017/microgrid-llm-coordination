@@ -197,6 +197,48 @@ def test_retract_is_a_noop_for_reject_replies(tmp_path) -> None:
     assert a.commitments == [] and a.n_commitments_retracted == 0
 
 
+def test_retract_removes_by_identity_not_value(tmp_path) -> None:
+    """C4-1 fix: `retract_commitment` must remove the exact object popped
+    from `_reply_commitments`, not the first VALUE-equal `Commitment` in the
+    list. `Commitment` is a plain value-equal dataclass, so two commitments
+    minted in the same `react_to_pending()` batch to the same recipient with
+    the same amount and expiry (same `last_t_idx` for the whole batch)
+    collide by `==` while remaining distinct objects. `list.remove(c)`
+    removes the FIRST equal element, which can be the wrong (delivered) one
+    if a third, differently-valued commitment interposes between them in
+    append order — silently defeating the C1 retraction fix by erasing a
+    promise the requester actually saw instead of the one the bus refused.
+    Confirmed to fire for real (twice) in the committed comm@23 artifact,
+    proven inert there only by luck (adjacent append order, or the agent
+    never reaching the serving loop) — this test forces the general case."""
+    a = _agent(tmp_path)
+    c1 = Commitment(recipient="r0c1", kwh_remaining=0.4, expires_t_idx=5)  # delivered
+    c2 = Commitment(
+        recipient="r2c2", kwh_remaining=0.1, expires_t_idx=5
+    )  # interposed, different value
+    c3 = Commitment(
+        recipient="r0c1", kwh_remaining=0.4, expires_t_idx=5
+    )  # bus-refused, value == c1
+    assert c1 == c3 and c1 is not c3  # value-equal, distinct objects
+    a.commitments = [c1, c2, c3]
+    a._reply_commitments["cidA"] = c1
+    a._reply_commitments["cidB"] = c3
+    reply = Message(
+        t_sent=datetime(2026, 1, 1, 8, 0),
+        sender="r0c1",
+        recipient=a.house_id,
+        performative="ACCEPT",
+        payload={"kwh": 0.4},
+        rationale_nl="x",
+        correlation_id="cidB",  # retract the bus-refused one, NOT c1
+    )
+    a.retract_commitment(reply)
+    assert a.n_commitments_retracted == 1
+    assert a.commitments == [c1, c2]
+    assert a.commitments[0] is c1  # the delivered commitment must survive, by identity
+    assert all(x is not c3 for x in a.commitments)
+
+
 def _prepare_1x3_with_budget(tmp_path: Path, per_tick_budget: int | None):  # type: ignore[no-untyped-def]
     """Prepare a minimal 1x3 llm_agent cell under a comm per_tick_budget and
     return (decide, scenario, households). Modeled on
