@@ -98,9 +98,16 @@ class JsonlLogger:
         round_robin and lp_optimal baselines are identical across all five
         cells to 6 dp.)
 
-        ``defector_house_ids`` present ⇒ realized (written post-run by
-        llm_agent/llm_fallback); absent ⇒ configured-only (round_robin/
-        lp_optimal never realize an assignment).
+        ``defector_house_ids`` is always present (a dataclass field with a
+        default `()`, always emitted by ``dataclasses.asdict`` — never
+        literally absent, for any strategy). Read it as: non-empty list ⇒
+        realized (written post-run by llm_agent/llm_fallback) or a manually
+        pinned config (``defector_assignment: manual``). An empty list is
+        ambiguous between "nothing configured" (``defector_fraction: 0``) and
+        "configured, but this strategy never realizes an assignment"
+        (round_robin/lp_optimal always report `[]` even under a nonzero
+        `defector_fraction`) — disambiguate via `defector_fraction` and the
+        strategy name, not presence/absence of the key.
         """
         # Re-read state.jsonl
         self._state_file.flush()

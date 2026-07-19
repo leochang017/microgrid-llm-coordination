@@ -37,7 +37,14 @@ _TIMEOUT = httpx.Timeout(60.0, connect=5.0)
 # Newer models reject an explicit `temperature` ("temperature is deprecated for
 # this model", 400); the Haiku agents still honour it for deterministic,
 # cache-stable output. Send temperature only where the API accepts it. The cache
-# key (LLMRequest.to_cache_dict) is unaffected — committed run caches stay valid.
+# KEY doesn't drift (LLMRequest.to_cache_dict always hashes temperature=0.0,
+# regardless of whether it was actually sent) — but for a model where
+# temperature is omitted, a from-scratch call is non-deterministic and will
+# silently overwrite the cached entry at that key with no diff/version check.
+# Fine for every committed cell today (Haiku always sends temperature=0.0, so
+# it's reproducible from scratch); any future non-Haiku live cell should be
+# treated as non-reproducible-from-scratch by design, not just by incident
+# report — see the Sonnet ablation cell's own progress-log caveat.
 _TEMPERATURE_DEPRECATED_PREFIXES = (
     "claude-sonnet-5",
     "claude-opus-4-7",

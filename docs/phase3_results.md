@@ -204,6 +204,16 @@ else changed.
   before and after.
 - **Commitment expiry is only counted while islanded** — a pre-existing scope
   note carried over unchanged by C1/C2.
+- **The committed `defectors@7` artifact predates the C3 provenance fix.** Its
+  `summary.json`'s `failure_modes_active.defector_house_ids` reads `[]` even
+  though 6 defector houses (33.6% dose) actually were realized — C3 (wiring
+  the realized draw into `summary.json`) landed after this cell was produced,
+  and per the no-rewrite rule the committed artifact is not backfilled. The
+  33.6% figure and the realized defector ids are not sourced from that stale
+  field; they're independently pinned by `scripts/dose_check.py` and
+  `tests/test_run_provenance.py`. No number here is wrong — this is a
+  provenance caveat on one JSON field of one pre-fix artifact, not a
+  correction.
 
 ## 7. What's next
 

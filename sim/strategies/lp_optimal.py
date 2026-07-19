@@ -311,6 +311,16 @@ def _schedule_from_solution(
 
     Within each grid-status group, distribute each receiver's required gross
     inflow across senders proportionally to their send share.
+
+    CAUTION — when a receiver is also itself a sender in the same tick (a
+    "self-pair"), it is excluded from its own sender pool and its gross need
+    is renormalized over the REMAINING senders only. That can push a
+    remaining sender's total scheduled obligation (summed across all
+    receivers it's paired with) beyond that sender's own LP-certified `send`
+    bound for the tick. This is a visualization/realized-run-only path;
+    `optimal_metrics()` — the function every published LP-ceiling number
+    comes from — reads the LP's own decision variables directly and never
+    calls this function, so it is unaffected.
     """
     schedule: dict[datetime, list[Transfer]] = {}
     for k, t in enumerate(ticks):

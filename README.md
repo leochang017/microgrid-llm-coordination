@@ -290,18 +290,21 @@ settles against physical truth. Consequences, all test-enforced:
   `ACCEPT <kwh>` / `COUNTER <kwh>` reply creates a commitment ledger entry that
   `act()` serves ahead of discretionary sharing (TTL 2 ticks).
 
-**The solar showcase (`haves_havenots_solar.yaml`).** PV on the haves over a 24 h
-outage makes energy abundant but *misplaced* — the coordination-bound regime:
+**The solar showcase (`haves_havenots_solar__llm.yaml`, seed 23 — the live cell).** PV
+on the haves over a 24 h outage makes energy abundant but *misplaced* — the
+coordination-bound regime. All rows below are the one live `__llm` population at seed 23,
+so the numbers are jointly comparable (they match `docs/phase3_results.md`'s seed-23 row):
 
 | strategy | served | note |
 |---|---|---|
-| no_coordination | 0.4280 | hoarding collapses overnight |
-| llm_fallback (zero-LLM control) | 0.6269 | tuned executor, no LLM — the bar any LLM run must beat (live `__llm` cell, seed 23) |
-| round_robin | 0.7666 | myopic sharing strands midday solar |
-| lp_optimal (ceiling) | 0.9711 | pre-positions solar into have-not batteries |
+| no_coordination | 0.3336 | hoarding collapses overnight |
+| llm_fallback (zero-LLM control) | 0.6269 | tuned executor, no LLM — the bar any LLM run must beat |
+| round_robin | 0.6444 | myopic sharing strands midday solar |
+| lp_optimal (ceiling) | 0.7684 | pre-positions solar into have-not batteries |
 
-A 20.4-point rr→LP gap (20× the old showcase) and an unsaturated control with 34
-points of headroom above it.
+A 12.4-point rr→LP gap and an unsaturated control with **14.2 points of control→LP
+headroom** — of which live Haiku closes ~⅓ (served 0.6726, 32.3% of the control→LP gap;
+see `docs/phase3_results.md`).
 
 **Fairness + explainability substrate.** `critical_load_frac` sampling with
 served-critical accounting (unmet hits flexible load first), Rawlsian floor

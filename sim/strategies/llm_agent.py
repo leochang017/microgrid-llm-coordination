@@ -88,7 +88,18 @@ def _reference_cache_dir(run_dir: Path) -> Path | None:
     runs/<scen>/<strategy>/<ts> and reference_runs/<scen>/<strategy>/<cell> —
     so the repo root is parents[3] of the RESOLVED run dir. Cell defaults to
     "clean"; override with MICROGRID_REFERENCE_CELL. (Fixed 2026-07-12: the
-    old walk stopped one parent short and never resolved for ANY real run.)"""
+    old walk stopped one parent short and never resolved for ANY real run.)
+
+    CAUTION — that path-depth symmetry is NOT a resume-safety symmetry. Only
+    the reference_runs/<scen>/<strat>/<cell> layout (i.e. running with
+    --reference-cell) is crash-resume-safe: its path is stable across
+    invocations of the identical command, so re-running replays every
+    already-paid call from local_dir. A plain runs/<scen>/<strat>/<ts>-<pid>
+    live cell gets a brand-new, empty-cache directory on every invocation
+    (the ts-pid suffix exists so concurrent runs don't collide) — a crash
+    there is NOT automatically resumable; the orphaned cache would need to be
+    located and repointed to by hand.
+    """
     try:
         resolved = run_dir.resolve()
         root = resolved.parents[3]
