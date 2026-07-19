@@ -143,6 +143,24 @@ three axes. Table + consistency numbers in `docs/phase3_tables.md`.
   explanation quality is reported as secondary, mean-level only.
 - **No real-deployment claim** — simulation only (advisor warning, verbatim).
 - **The comm result measures negotiation plumbing, not reasoning** (§2).
+- **The clean/defectors/noise live cells are pre-fix artifacts.** They were
+  produced before the C1/C2 commitment-negotiation fixes (`d3b5ff14`,
+  `0fdc9424`; pre-batch baseline `cf18b13d`). After C2, they are frozen
+  measurements of the pre-fix protocol and are **not re-derivable from cache
+  with current code** — a naive replay would silently re-pay every call
+  instead of hitting the prompt cache. This is known to matter, not
+  hypothetical: the clean seed-23 solar live run logged 914 commitment
+  expiries out of 3,343 made, which proves below-threshold committers exist
+  in that run, exactly the population C2 changes the handling of.
+- **`commitments_expired` is not comparable pre- vs post-C2.** C2 made the
+  counter also count promises that die while held below the committer's own
+  `share_min_soc_frac` threshold (previously such promises were exported
+  anyway, not tracked as expiring-while-held). So a post-fix expiry
+  percentage is measuring a different thing than the pre-fix percentages
+  quoted above (§2, §4) — do not diff them as if they were the same metric
+  before and after.
+- **Commitment expiry is only counted while islanded** — a pre-existing scope
+  note carried over unchanged by C1/C2.
 
 ## 7. What's next
 
