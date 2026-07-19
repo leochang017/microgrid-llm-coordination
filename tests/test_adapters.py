@@ -133,30 +133,27 @@ def test_nrel_solar_tz_offset_realigns_utc_data(tmp_path: Path) -> None:
     assert solar.get_kw(datetime(2018, 7, 15, 3, 0)) == 0.0
 
 
-def test_nrel_noise_is_timezone_independent() -> None:
+def test_nrel_noise_is_timezone_independent(monkeypatch) -> None:
     """The per-(seed, t) noise draw must not depend on the machine's TZ env.
 
     Pre-2026-07-06 the seed came from naive datetime.timestamp(), which Python
     interprets in the machine's local timezone — same code, same seed, same
     scenario gave different numbers on differently-configured machines.
     """
-    import os
     import time
 
     t = datetime(2024, 7, 1, 9, 30)
-    old_tz = os.environ.get("TZ")
     try:
-        os.environ["TZ"] = "UTC"
+        monkeypatch.setenv("TZ", "UTC")
         time.tzset()
         kw_utc = NRELSolar(csv_path=_FIXTURE_NREL, seed=7).get_kw(t)
-        os.environ["TZ"] = "America/Chicago"
+        monkeypatch.setenv("TZ", "America/Chicago")
         time.tzset()
         kw_chicago = NRELSolar(csv_path=_FIXTURE_NREL, seed=7).get_kw(t)
     finally:
-        if old_tz is None:
-            os.environ.pop("TZ", None)
-        else:
-            os.environ["TZ"] = old_tz
+        # monkeypatch restores the TZ env var; tzset() must run afterwards so the
+        # process actually re-reads it.
+        monkeypatch.undo()
         time.tzset()
     assert kw_utc == kw_chicago
 
