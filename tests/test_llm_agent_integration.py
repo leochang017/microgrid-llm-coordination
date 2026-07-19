@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 import yaml
 
 from sim.agents.cache import PromptCache
@@ -90,12 +91,16 @@ def test_llm_agent_pipeline_integrates_on_haves_havenots(tmp_path: Path, monkeyp
     # Smoke check: LLM strategy produces a non-trivial served fraction (architecture works
     # end-to-end). Strict-beat is a Phase 3 benchmark concern; this test verifies the
     # pipeline integrates (engine → facade → agent → bus → settle → log → summary).
+    # exact pin derived 2026-07-18; re-derive deliberately on any physics change
+    assert llm_summary["served_load_fraction"] == pytest.approx(0.5189926422777774, abs=5e-7)
     assert llm_summary["served_load_fraction"] > 0.0, llm_summary
     assert (out_llm / "messages.jsonl").exists()
     assert (out_llm / "state.jsonl").exists()
     assert (out_llm / "events.jsonl").exists()
     assert (out_llm / "config.json").exists()
     msgs = (out_llm / "messages.jsonl").read_text().splitlines()
+    # exact pin derived 2026-07-18; re-derive deliberately on any physics change
+    assert len(msgs) == 10988
     assert len(msgs) > 0, "LLM strategy must send at least one message"
 
     # Sanity: LLM should be in the same ballpark as round_robin (within 10%).

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 import yaml
 
 from sim.agents.cache import PromptCache
@@ -81,6 +82,8 @@ def test_defector_wrapper_corruption_changes_outcomes(tmp_path: Path, monkeypatc
     clean = _run("haves_havenots__llm.yaml", tmp_path, monkeypatch)
     dirty = _run("haves_havenots__defectors.yaml", tmp_path, monkeypatch)
     assert dirty["message_counts"]["sent"] > 0, dirty
+    # exact pin derived 2026-07-18; re-derive deliberately on any physics change
+    assert dirty["served_load_fraction"] == pytest.approx(0.5227893278851087, abs=5e-7)
     assert (
         dirty["served_load_fraction"] != clean["served_load_fraction"]
         or dirty["transfer_count"] != clean["transfer_count"]
@@ -96,6 +99,8 @@ def test_noise_changes_outcomes_vs_clean(tmp_path: Path, monkeypatch) -> None:
     clean = _run("haves_havenots__llm.yaml", tmp_path, monkeypatch)
     noisy = _run("haves_havenots__noise.yaml", tmp_path, monkeypatch)
     assert noisy["served_load_fraction"] > 0.0, noisy
+    # exact pin derived 2026-07-18; re-derive deliberately on any physics change
+    assert noisy["served_load_fraction"] == pytest.approx(0.5204974940507625, abs=5e-7)
     assert (
         noisy["served_load_fraction"] != clean["served_load_fraction"]
         or noisy["transfer_count"] != clean["transfer_count"]
@@ -115,6 +120,8 @@ def test_comm_constraint_reduces_delivery_AND_changes_outcomes(tmp_path: Path, m
     assert (
         cons_ratio < clean_ratio
     ), f"clean ratio={clean_ratio:.3f} constrained ratio={cons_ratio:.3f}"
+    # exact pin derived 2026-07-18; re-derive deliberately on any physics change
+    assert constrained["served_load_fraction"] == pytest.approx(0.4915447847393646, abs=5e-7)
     assert (
         constrained["served_load_fraction"] != clean["served_load_fraction"]
         or constrained["transfer_count"] != clean["transfer_count"]

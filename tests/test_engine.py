@@ -82,6 +82,8 @@ def test_run_smoke_no_coordination(tmp_path) -> None:
     logger = JsonlLogger(out, scenario_id=s.scenario_id)
     summary = run(s, decide_transfers, logger, strict=True)
     logger.close()
+    # exact pin derived 2026-07-18; re-derive deliberately on any physics change
+    assert summary["served_load_fraction"] == pytest.approx(1.0, abs=5e-7)
     # Sanity bounds: served fraction is in [0, 1], the run produced output.
     assert 0.0 <= summary["served_load_fraction"] <= 1.0
     # 30 houses x 96 ticks (15-min over 24 h) = 2880 state rows
@@ -138,6 +140,8 @@ def test_run_resstock_path_end_to_end(tmp_path) -> None:
     logger.close()
     rows = (out / "state.jsonl").read_text().splitlines()
     assert len(rows) == 12  # 4 houses x 3 ticks
+    # exact pin derived 2026-07-18; re-derive deliberately on any physics change
+    assert summary["served_load_fraction"] == pytest.approx(1.0, abs=5e-7)
     assert 0.0 <= summary["served_load_fraction"] <= 1.0
 
 
@@ -188,6 +192,8 @@ def test_run_real_data_path_end_to_end(tmp_path) -> None:
     # 4 houses x 3 ticks = 12 state rows
     rows = (out / "state.jsonl").read_text().splitlines()
     assert len(rows) == 12
+    # exact pin derived 2026-07-18; re-derive deliberately on any physics change
+    assert summary["served_load_fraction"] == pytest.approx(1.0, abs=5e-7)
     # Sanity: served fraction is in [0, 1]
     assert 0.0 <= summary["served_load_fraction"] <= 1.0
 
