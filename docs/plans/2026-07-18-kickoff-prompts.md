@@ -4,6 +4,8 @@ How to use: after `/clear`, open a fresh session and paste ONE block below (in o
 
 Progress tracking: the executing session flips the matching row in `docs/plans/README.md` from **pending** to **done** in its wrap task.
 
+**Next-step handoff (standing instruction for every executing session):** as the very last thing in your wrap — after the row is flipped, the branch is pushed, and CI is green — end your closing summary by printing the **next pending** kickoff block from this file verbatim, inside a copyable ``` code fence, prefaced with "To continue, `/clear` and paste this into a fresh session:". Determine "next pending" by reading the status column in `docs/plans/README.md` (the first row still marked pending after yours). If yours was the last plan (#4) — or no pending rows remain — say instead that the 2026-07-18 batch is complete and there is nothing left to run.
+
 ---
 
 ## 1 — Phase-3 accuracy (bug fixes + comm re-run; money-gated, cap $8)
