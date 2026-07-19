@@ -1,9 +1,12 @@
 # Phase 3 — Results (empirical story, real numbers)
 
-**Status:** Phase 3.3 analysis draft, 2026-07-16. Every number below traces to a
-committed `llm_agent` summary (live) or a deterministically-regenerated $0
-baseline; regenerate the figures/tables with `python -m scripts.figures --all`.
-Model: Claude Haiku (`claude-haiku-4-5`). Live cells at tag `phase3.2-live-complete`.
+**Status:** Phase 3.3 analysis draft, 2026-07-16; updated 2026-07-19 with the
+Stage-3 Sonnet capability ablation (§5.5) and the Task-5 commitment-negotiation
+fixes' expiry-semantics caveat (§6). Every number below traces to a committed
+`llm_agent` summary (live) or a deterministically-regenerated $0 baseline;
+regenerate the figures/tables with `python -m scripts.figures --all`. Model:
+Claude Haiku (`claude-haiku-4-5`) unless noted; the ablation uses
+`claude-sonnet-5`. Live cells at tag `phase3.2-live-complete`.
 
 All performance is framed as **gap-closed between round_robin and the LP
 ceiling**, with the **zero-LLM control (`llm_fallback`) as the mandatory bar** —
@@ -131,6 +134,33 @@ three axes. Table + consistency numbers in `docs/phase3_tables.md`.
   `python -m scripts.figures --tables` regenerates the table.
 - **Explanation quality stays SECONDARY to coordination performance** (advisor).
 
+## 5.5 Capability ablation (Stage 3): model capability doesn't move clean-cell coordination
+
+Same clean scenario (`haves_havenots_solar`, seed 23), agents swapped from
+Claude Haiku (`claude-haiku-4-5`) to Claude Sonnet (`claude-sonnet-5`) — nothing
+else changed.
+
+| model | served | vs control | vs round_robin | gap-closed (ctrl→LP) |
+|---|---|---|---|---|
+| Haiku (clean@23) | 0.6726 | +4.6 | +2.8 | 32.3% |
+| Sonnet (clean_sonnet@23) | 0.6685 | +4.2 | +2.4 | 29.4% |
+
+- **Sonnet ties Haiku (−0.4 pts, statistically indistinguishable at n=1) —
+  a stronger model buys nothing here.** Both clear the control (0.6269) and
+  round_robin (0.6444) by comparable margins; Sonnet closes slightly less of
+  the control→LP gap (29.4% vs 32.3%), not more.
+- **Finding: the LLM's coordination advantage tracks scenario difficulty, not
+  raw model capability.** This corroborates the Phase 2.8 architecture-ceiling
+  result (adding peer state + LLM-controlled share fraction moved no macro
+  metric there either) and gives the advisor's 2026-07-15 "scenario design
+  over model comparison" guidance a live data point.
+- **Caveats:** n=1 seed, not statistically powered beyond a single comparison;
+  **not byte-deterministic** — `temperature` is omitted for Sonnet (it rejects
+  the parameter), so the run is cache-replayable but not re-derivable from
+  scratch; higher parse-noise than Haiku (plan-parse 5.8% vs 2.7%, react-unparsed
+  11.1% vs 0%, only 1 true round-robin fallback) that the negotiation machinery
+  absorbed without moving any macro metric.
+
 ## 6. Limitations (honest, for the paper)
 
 - **n=1 on every failure cell** — single-seed deltas; the clean headline is the
@@ -166,5 +196,8 @@ three axes. Table + consistency numbers in `docs/phase3_tables.md`.
 
 Advisor walkthrough off this outline; venue decision (CHI / ICLR / WWW main or
 workshop) with the advisor at Phase 3.3 exit. Stage 4 explanation judging is
-**done** (§5). Remaining optional add-ons: the Sonnet capability ablation
-(Stage 3) and, if the advisor wants cross-climate robustness, the VT/AZ cells.
+**done** (§5) and Stage 3, the Sonnet capability ablation, is **done** (§5.5) —
+all Phase 3.2 playbook stages (1-5, including optional Stage 3) are now
+complete. Remaining deferred, not scheduled: cross-climate VT/AZ cells and the
+`all`@7 failure cell (its comm component is confounded with the shipped
+`comm`@23 cell — see CLAUDE.md Phase 3.2 status).

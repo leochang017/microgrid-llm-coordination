@@ -4,7 +4,7 @@ A research project asking: can a population of LLM agents — one per household 
 
 The contribution is on the CS/ML axis (natural-language coordination, robustness, explainability), not power systems. Classical optimization handles fairness under strong assumptions, struggles with robustness, and doesn't attempt explainability. That gap is what this project explores.
 
-**Status:** Phases 1–2.9 complete; Phase 3 infrastructure + pre-live hardening complete; live runs complete; **Phase 3.3 analysis & results complete** (`phase3.3-complete`, 2026-07-16). Run `pytest` for the current test count; ruff + mypy --strict clean. **Headline: live Haiku beats the zero-LLM control on 3/3 seeds (+5.8 ± 1.0 pts, closing 29% of the control→LP gap)** — the first replicated evidence the LLM layer adds coordination value; failure-cell probes then show it retains 89% of that value under 33.6% defection and tolerates observation noise, while a bandwidth-constrained comm cell is the one regime where the negotiation protocol costs more than it buys. The results story with real numbers is in [`docs/phase3_results.md`](docs/phase3_results.md); every figure + table regenerates from committed artifacts with `python -m scripts.figures --all` ($0, no API calls). Next: Phase 4 (paper + demo). Optional/budget-gated: Sonnet ablation, live explanation judging (the explanation-quality table is stubbed pending it).
+**Status:** Phases 1–2.9 complete; Phase 3 infrastructure + pre-live hardening complete; live runs complete; **Phase 3.3 analysis & results complete** (`phase3.3-complete`, 2026-07-16); **all Phase 3.2 playbook stages done, including the optional Stage 3 Sonnet capability ablation (2026-07-18) and Stage 4 live explanation judging (2026-07-17)**. Run `pytest` for the current test count; ruff + mypy --strict clean. **Headline: live Haiku beats the zero-LLM control on 3/3 seeds (+5.8 ± 1.0 pts, closing 29% of the control→LP gap)** — the first replicated evidence the LLM layer adds coordination value; failure-cell probes then show it retains 89% of that value under 33.6% defection and tolerates observation noise, while a bandwidth-constrained comm cell is the one regime where the negotiation protocol costs more than it buys. **Capability ablation: swapping Haiku for Sonnet on the clean cell ties (0.6685 vs 0.6726) — model capability does not move clean-cell coordination quality; the LLM advantage is about scenario difficulty, not raw reasoning power.** **Explanation judging (Sonnet judge, ≠ author family): rationales score 3.03/4.05/4.46 (state_accuracy/actionability/consistency) on the clean cell, 3.00/3.97/4.52 on defectors — actionable and consistent, self-reported state figures are the weakest axis.** The results story with real numbers is in [`docs/phase3_results.md`](docs/phase3_results.md); every figure + table regenerates from committed artifacts with `python -m scripts.figures --all` ($0, no API calls). Next: Phase 4 (paper + demo). Deferred, not scheduled: VT/AZ cross-climate cells.
 
 📐 [Phase 1 spec](docs/superpowers/specs/2026-05-14-phase1-simulator-design.md) · [Phase 1.6 spec](docs/superpowers/specs/2026-05-29-phase1.6-hardening-design.md) · [Phase 2 spec](docs/superpowers/specs/2026-06-13-phase2-llm-agent-design.md) · [Phase 3 spec](docs/superpowers/specs/2026-07-07-phase3-benchmark-design.md) · [Phase 3.1 spec](docs/superpowers/specs/2026-07-12-phase3.1-prelive-hardening.md) · 📋 [Phase 1 plan](docs/superpowers/plans/2026-05-14-phase1-simulator.md) · [Phase 1.6 plan](docs/superpowers/plans/2026-05-29-phase1.6-hardening.md) · [Phase 2 plan](docs/superpowers/plans/2026-06-13-phase2-llm-agent.md) · 🧠 [Project context (CLAUDE.md)](CLAUDE.md)
 
@@ -308,7 +308,8 @@ served-critical accounting (unmet hits flexible load first), Rawlsian floor
 (`min_house_served_fraction`), Jain's index; message rationales carry
 `templated: true/false` provenance and `scripts/eval_explanations.py` scores
 LLM-authored explanations 1-5 on state-accuracy / actionability / consistency
-against the sender's logged state (LLM-judge method pending advisor sign-off).
+against the sender's logged state (LLM-judge method advisor-approved
+2026-07-15; live judging complete — see `docs/phase3_tables.md`).
 
 **Machinery.** `run.py --set dotted.key=value` overrides (typos hard-fail),
 `scripts/sweep.py` dose-response grids (subprocess-per-cell), and process-stable
@@ -320,9 +321,10 @@ comparisons; round_robin's flat rows demonstrate rule-based baselines are
 structurally immune to information-quality failures): see
 `docs/phase3_mock_sweep.md`.
 
-**Budget-gated next steps** (spec Part E): live clean-cell + failure-cell runs under
-the new architecture, Sonnet capability ablation (~$22 batched), live explanation
-judging, VT/AZ data for winter/heatwave scenarios.
+**Budget-gated work (spec Part E) — done:** live clean-cell + failure-cell runs
+under the new architecture, the Sonnet capability ablation (ties Haiku, see
+status line above), and live explanation judging are all complete. Deferred,
+not scheduled: VT/AZ data for winter/heatwave cross-climate scenarios.
 
 ## License
 

@@ -76,3 +76,16 @@ def test_render_tables_populates_explanation_quality_from_committed_evals(tmp_pa
     assert "| clean | 23 | 100 |" in txt  # per-cell default-rubric quality row
     assert "## Rubric consistency" in txt
     assert "mean abs deviation" in txt
+
+
+def test_ablation_cell_reads_committed_sonnet_summary() -> None:
+    s = read_live_summary("haves_havenots_solar__llm_sonnet", 23)
+    assert s["served_load_fraction"] == 0.6685037752963732
+    assert s["scenario_id"] == "haves_havenots_solar__llm_sonnet"
+
+
+def test_tables_include_capability_ablation_row(tmp_path) -> None:
+    out = render_tables(out_path=tmp_path / "tables.md")
+    txt = out.read_text()
+    assert "clean (Sonnet)" in txt  # negotiation-table row for the ablation
+    assert "capability" in txt.lower()  # the ablation is labeled as such

@@ -49,6 +49,13 @@ LIVE_CELLS: dict[str, dict[int, str]] = {
     "haves_havenots_solar__noise": {23: "noise__seed23"},
 }
 
+# Stage-3 capability ablation (Sonnet agents, clean cell, seed 23). Kept out
+# of LIVE_CELLS: the four-cell figures tell the failure-axis story; the
+# ablation appears in the tables + results doc as a capability data point.
+ABLATION_CELLS: dict[str, dict[int, str]] = {
+    "haves_havenots_solar__llm_sonnet": {23: "clean_sonnet__seed23"},
+}
+
 # Short human labels for figures/tables, in the order the paper tells the story:
 # the clean multi-seed headline first, then the three failure axes.
 CELL_LABEL: dict[str, str] = {
@@ -56,6 +63,7 @@ CELL_LABEL: dict[str, str] = {
     "haves_havenots_solar__comm": "comm",
     "haves_havenots_solar__defectors": "defectors",
     "haves_havenots_solar__noise": "noise",
+    "haves_havenots_solar__llm_sonnet": "clean (Sonnet)",
 }
 CELL_ORDER = [
     "haves_havenots_solar__llm",
@@ -93,10 +101,16 @@ def scenario_path(cell: str) -> Path:
 
 
 def read_live_summary(cell: str, seed: int) -> dict[str, Any]:
-    """Load the committed llm_agent summary.json for one live cell/seed."""
-    if cell not in LIVE_CELLS or seed not in LIVE_CELLS[cell]:
+    """Load the committed llm_agent summary.json for one live cell/seed.
+
+    Resolves through the four-cell ``LIVE_CELLS`` plus ``ABLATION_CELLS`` (the
+    Stage-3 Sonnet capability ablation) — same lookup contract, unknown
+    cell/seed still raises ``KeyError``.
+    """
+    cells = {**LIVE_CELLS, **ABLATION_CELLS}
+    if cell not in cells or seed not in cells[cell]:
         raise KeyError(f"no committed live run for {cell} @ seed {seed}")
-    p = REF / cell / "llm_agent" / LIVE_CELLS[cell][seed] / "summary.json"
+    p = REF / cell / "llm_agent" / cells[cell][seed] / "summary.json"
     if not p.exists():
         raise FileNotFoundError(f"expected committed live summary at {p}")
     return json.loads(p.read_text())  # type: ignore[no-any-return]
@@ -526,8 +540,16 @@ def render_efficiency_equity(out_dir: Path = FIG_DIR) -> Path:
 
 
 def _live_runs() -> list[tuple[str, int]]:
-    """Every committed (cell, seed) live run, in the paper's storytelling order."""
-    return [(cell, seed) for cell in CELL_ORDER for seed in sorted(LIVE_CELLS[cell])]
+    """Every committed (cell, seed) live run, in the paper's storytelling order.
+
+    The four failure-axis cells first (the story the figures tell), then the
+    Stage-3 Sonnet capability-ablation cell — a fifth data point that belongs
+    in the negotiation table but is deliberately excluded from ``LIVE_CELLS``
+    so the four-cell figures stay untouched.
+    """
+    live = [(cell, seed) for cell in CELL_ORDER for seed in sorted(LIVE_CELLS[cell])]
+    ablation = [(cell, seed) for cell in ABLATION_CELLS for seed in sorted(ABLATION_CELLS[cell])]
+    return live + ablation
 
 
 _JUDGE_AXES = ("state_accuracy", "actionability", "consistency")
@@ -573,11 +595,15 @@ def _variant_agreement(variants: list[dict[str, Any]]) -> dict[str, tuple[float,
 
 
 def render_tables(out_path: Path = REPO / "docs" / "phase3_tables.md") -> Path:
-    """Negotiation-instrumentation table + explanation-quality stub (markdown).
+    """Negotiation-instrumentation + explanation-quality tables (markdown).
 
     All numbers are READ from the committed live summaries — no engine runs, $0.
-    The explanation-quality table stays a "pending Stage 4" stub until the
-    money-gated Sonnet judging is authorized and its outputs are committed.
+    The negotiation table covers the four failure-axis live cells plus the
+    Stage-3 Sonnet capability-ablation cell (``ABLATION_CELLS``); explanation
+    quality is populated from committed ``explanations_eval*.json`` artifacts
+    (falls back to a "pending Stage 4" stub only if none are committed yet —
+    both stages are done as of this writing, so the stub branch is currently
+    dead in practice but kept as the honest no-artifact fallback).
     """
     lines: list[str] = [
         "# Phase 3.3 results tables",
@@ -615,7 +641,17 @@ def render_tables(out_path: Path = REPO / "docs" / "phase3_tables.md") -> Path:
         "seed 23) — honest haves over-promising against depleted batteries, not "
         "reneging (the engine ships commitments before the discretionary filter). "
         "The comm cell is where `dropped_budget` bites (only 4260 of 17647 "
-        "messages delivered); note zero comm/budget drops on every other run.",
+        "messages delivered); note zero comm/budget drops on every other run. "
+        "The final row (`clean (Sonnet)`) is the Stage-3 capability ablation — "
+        "the same clean scenario run with `claude-sonnet-5` agents instead of "
+        "Haiku, included here as a capability data point, not a fifth "
+        "failure axis. **Its `commitments_expired` is not comparable to the "
+        "Haiku rows above**: this run predates the Task-5 C1/C2 "
+        "commitment-negotiation fixes, which changed what the counter counts "
+        "(post-fix, it also counts promises held-but-unserved below the "
+        "committer's own `share_min_soc_frac` threshold) — pre/post-fix "
+        "expiry percentages measure different things and should not be "
+        "diffed as if they were the same metric.",
         "",
         "## Explanation quality (Sonnet judge)",
         "",
