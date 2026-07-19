@@ -52,6 +52,32 @@ def test_override_unknown_key_is_hard_error() -> None:
         apply_overrides(sc, ["not_a_field=1"])
 
 
+def test_override_dict_leaf_typo_is_hard_error() -> None:
+    """A typo'd FINAL leaf key inside a dict-typed field (llm/household_sampling/
+    data_paths) must be rejected exactly like a dataclass-path typo — it must
+    never silently add a dead key while leaving the real field untouched (C6-2).
+    """
+    sc = load_scenario(_SCENARIO)
+    with pytest.raises(ValueError, match="rect_max_per_tick"):
+        apply_overrides(sc, ["llm.rect_max_per_tick=99"])
+    with pytest.raises(ValueError, match="hve_fraction"):
+        apply_overrides(sc, ["household_sampling.hve_fraction=0.9"])
+
+
+def test_override_dict_leaf_real_key_still_works() -> None:
+    """The fix must not collateral-damage legitimate dict-leaf overrides."""
+    sc = load_scenario(_SCENARIO)
+    out = apply_overrides(sc, ["llm.react_max_per_tick=5"])
+    assert out.llm["react_max_per_tick"] == 5
+    # A brand-new-but-known llm key (not present in this YAML) must still work.
+    out2 = apply_overrides(sc, ["llm.messaging=off"])
+    assert out2.llm["messaging"] is False
+    # household_sampling has no fixed known-key set; a key already present in
+    # the scenario's dict must still be overridable.
+    out3 = apply_overrides(sc, ["household_sampling.have_fraction=0.9"])
+    assert out3.household_sampling["have_fraction"] == 0.9
+
+
 def test_sweep_driver_end_to_end_smoke(tmp_path: Path) -> None:
     """One tiny axis x one strategy x one seed through real subprocesses."""
     import yaml

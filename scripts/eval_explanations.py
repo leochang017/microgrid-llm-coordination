@@ -143,9 +143,30 @@ def evaluate_run(
     client: LLMClient | None = None,
     model: str = "claude-haiku-4-5-20251001",
     rubric_variant: str = "default",
+    force: bool = False,
 ) -> dict[str, Any]:
     if rubric_variant not in _RUBRICS:
         raise ValueError(f"unknown rubric variant {rubric_variant!r}; have {sorted(_RUBRICS)}")
+    # Per-variant filename: each of these costs real money, so a second variant
+    # must not overwrite the first (pre-live review, 2026-07-12). "default"
+    # keeps the original name so existing artifacts stay where the docs say.
+    name = (
+        "explanations_eval.json"
+        if rubric_variant == "default"
+        else f"explanations_eval__{rubric_variant}.json"
+    )
+    out_path = run_dir / name
+    # C6-6: the cross-variant filename separation above does NOT protect
+    # against re-running the SAME variant twice — an operator re-run (thinking
+    # a code change requires it, a different --n, a cleared cache) would
+    # otherwise silently overwrite the existing paid artifact with no
+    # confirmation. Fail fast, before spending anything on judge calls.
+    if out_path.exists() and not force:
+        raise FileExistsError(
+            f"{out_path} already exists — refusing to silently overwrite a paid "
+            "judging artifact; pass force=True (CLI: --force) to overwrite "
+            "intentionally."
+        )
     messages = _load_jsonl(run_dir / "messages.jsonl")
     config = json.loads((run_dir / "config.json").read_text())
     states = _load_jsonl(run_dir / "state.jsonl")
@@ -184,7 +205,18 @@ def evaluate_run(
         if scores is None:
             unparseable += 1
             continue
-        rows.append({"sender": msg["sender"], "t_sent": msg["t_sent"], **scores})
+        rows.append(
+            {
+                "sender": msg["sender"],
+                "t_sent": msg["t_sent"],
+                # Stable per-message identity (C6-5): (sender, t_sent) alone
+                # collides ~80% of the time on real data (an agent can author
+                # several messages in the same tick), so rubric-variant
+                # cross-file pairing needs a tighter key than that pair alone.
+                "correlation_id": msg.get("correlation_id"),
+                **scores,
+            }
+        )
 
     means = {axis: (sum(r[axis] for r in rows) / len(rows) if rows else None) for axis in _AXES}
     result: dict[str, Any] = {
@@ -199,15 +231,7 @@ def evaluate_run(
         "means": means,
         "samples": rows,
     }
-    # Per-variant filename: each of these costs real money, so a second variant
-    # must not overwrite the first (pre-live review, 2026-07-12). "default"
-    # keeps the original name so existing artifacts stay where the docs say.
-    name = (
-        "explanations_eval.json"
-        if rubric_variant == "default"
-        else f"explanations_eval__{rubric_variant}.json"
-    )
-    (run_dir / name).write_text(json.dumps(result, indent=2))
+    out_path.write_text(json.dumps(result, indent=2))
     return result
 
 
@@ -234,6 +258,11 @@ def main() -> None:
             "non-default variants write explanations_eval__<variant>.json."
         ),
     )
+    p.add_argument(
+        "--force",
+        action="store_true",
+        help="Allow overwriting an existing explanations_eval*.json for this run/variant.",
+    )
     args = p.parse_args()
     client = None
     if args.mock:
@@ -248,6 +277,7 @@ def main() -> None:
         client=client,
         model=args.model,
         rubric_variant=args.rubric_variant,
+        force=args.force,
     )
     means = ", ".join(
         f"{axis}={result['means'][axis]:.2f}"

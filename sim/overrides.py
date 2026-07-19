@@ -17,7 +17,19 @@ from typing import Any
 
 import yaml
 
-from sim.scenario import Scenario
+from sim.scenario import _KNOWN_LLM_KEYS, Scenario
+
+# Known-key sets for the plain-dict Scenario fields, applied to the FINAL leaf
+# segment of an override path targeting them (e.g. "llm.react_max_per_tick").
+# `None` means "no fixed known-set" (household_sampling's keys are
+# mode-dependent, mirroring sim/scenario.py's deliberate non-strict load-time
+# check) — for those, a leaf key is only accepted if it's already present in
+# the scenario's current dict, so a typo can't add a silent dead key.
+_DICT_FIELD_KNOWN_KEYS: dict[str, frozenset[str] | None] = {
+    "llm": _KNOWN_LLM_KEYS,
+    "household_sampling": None,
+    "data_paths": None,
+}
 
 
 def _set_path(obj: Any, parts: list[str], value: Any, path_so_far: str) -> Any:
@@ -30,6 +42,12 @@ def _set_path(obj: Any, parts: list[str], value: Any, path_so_far: str) -> Any:
         if len(parts) == 1:
             return dataclasses.replace(obj, **{key: value})
         child = getattr(obj, key)
+        if isinstance(child, dict) and len(parts) == 2 and key in _DICT_FIELD_KNOWN_KEYS:
+            leaf = parts[1]
+            known = _DICT_FIELD_KNOWN_KEYS[key]
+            allowed = known if known is not None else set(child)
+            if leaf not in allowed:
+                raise ValueError(f"unknown override key {full}.{leaf!r} (valid: {sorted(allowed)})")
         return dataclasses.replace(obj, **{key: _set_path(child, parts[1:], value, full + ".")})
     if isinstance(obj, dict):
         new = dict(obj)

@@ -30,6 +30,45 @@ def _resolve_strategy(name: str) -> tuple[Callable[..., Any] | None, Callable[..
     return getattr(module, "decide_transfers", None), getattr(module, "prepare", None)
 
 
+def _seed_was_overridden(cli_seed: int | None, set_specs: list[str]) -> bool:
+    """True if the seed was changed via `--seed` OR a generic `--set seed=...`.
+
+    `Scenario.seed` is a normal dataclass field reachable by `apply_overrides`,
+    so `--set seed=99` is a real, working alternate path to change the seed
+    that the old `args.seed is None` check couldn't see (C6-4) — it would
+    silently omit the `__seedN` directory suffix even though the engine ran at
+    the overridden seed.
+    """
+    if cli_seed is not None:
+        return True
+    for spec in set_specs:
+        path = spec.split("=", 1)[0].strip()
+        if path == "seed":
+            return True
+    return False
+
+
+def _reference_cell_dirname(reference_cell: str, *, seed_overridden: bool, seed: int) -> str:
+    """The `reference_runs/.../<cell>/` leaf name, suffixed with the ACTUAL seed
+    the engine ran at whenever the seed was overridden by any mechanism."""
+    return reference_cell if not seed_overridden else f"{reference_cell}__seed{seed}"
+
+
+def _check_reference_cell_writable(run_dir: Path, *, force: bool) -> None:
+    """Refuse to silently truncate an existing non-empty --reference-cell dir.
+
+    `JsonlLogger` opens state.jsonl/events.jsonl in "w" mode with no existence
+    check, so a mislabeled or reused reference-cell name would otherwise
+    silently destroy a previously-committed (possibly paid) artifact the
+    instant logging starts (C6-4).
+    """
+    if run_dir.exists() and any(run_dir.iterdir()) and not force:
+        raise SystemExit(
+            f"refusing to overwrite existing non-empty reference-cell directory "
+            f"{run_dir} — pass --force to overwrite intentionally"
+        )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run a microgrid simulation scenario.")
     parser.add_argument("--scenario", type=Path, required=True, help="Path to scenario YAML")
@@ -75,6 +114,11 @@ def main() -> None:
             "(in-repo, git-tracked) instead of runs/<scenario>/<strategy>/<ts>/."
         ),
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Allow overwriting an existing non-empty --reference-cell directory.",
+    )
     args = parser.parse_args()
 
     scenario = load_scenario(args.scenario)
@@ -88,10 +132,12 @@ def main() -> None:
         scenario = apply_overrides(scenario, args.set)
     decide, prepare = _resolve_strategy(scenario.strategy)
     if args.reference_cell is not None:
-        cell = (
-            args.reference_cell if args.seed is None else f"{args.reference_cell}__seed{args.seed}"
+        seed_overridden = _seed_was_overridden(args.seed, args.set)
+        cell = _reference_cell_dirname(
+            args.reference_cell, seed_overridden=seed_overridden, seed=scenario.seed
         )
         run_dir = Path("reference_runs") / scenario.scenario_id / scenario.strategy / cell
+        _check_reference_cell_writable(run_dir, force=args.force)
     else:
         # PID suffix: subprocess-per-cell sweeps launch several runs of the same
         # (scenario, strategy) within one second — bare seconds collide and the

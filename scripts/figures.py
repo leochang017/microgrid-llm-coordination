@@ -32,7 +32,7 @@ from scripts.compare import gap_closed
 from sim.engine import _build_data, run, sample_households
 from sim.logging import JsonlLogger
 from sim.network import build_overlay_neighborhood
-from sim.scenario import load_scenario
+from sim.scenario import Scenario, load_scenario
 from sim.strategies import lp_optimal
 
 REPO = Path(__file__).resolve().parent.parent
@@ -116,13 +116,67 @@ def read_live_summary(cell: str, seed: int) -> dict[str, Any]:
     return json.loads(p.read_text())  # type: ignore[no-any-return]
 
 
+def _committed_config_path(cell: str, seed: int) -> Path | None:
+    """Path to the committed live run's frozen config.json for (cell, seed), if any."""
+    cells = {**LIVE_CELLS, **ABLATION_CELLS}
+    if cell not in cells or seed not in cells[cell]:
+        return None
+    p = REF / cell / "llm_agent" / cells[cell][seed] / "config.json"
+    return p if p.exists() else None
+
+
+def _assert_scenario_matches_committed_config(scenario: Scenario, config_path: Path) -> None:
+    """Guard against silently regenerating baselines under drifted physics (C6-3).
+
+    A committed live cell's ``config.json`` is the frozen scenario it actually
+    ran under. If the on-disk scenario YAML is later edited, ``regen_baselines``
+    would otherwise silently compute the $0 baselines/LP ceiling under the NEW
+    physics and plot/table them next to the OLD frozen live number — no error,
+    no indication the comparison stopped being apples-to-apples. Checks only the
+    fields that determine baseline/LP determinism (seed, bus geometry,
+    household sampling, outages, failure modes); raises loudly on any mismatch.
+    """
+    committed = json.loads(config_path.read_text())
+    current: dict[str, Any] = {
+        "seed": scenario.seed,
+        "bus_max_kw": scenario.bus_max_kw,
+        "bus_loss_factor": scenario.bus_loss_factor,
+        "household_sampling": scenario.household_sampling,
+        "failure_modes": json.loads(
+            json.dumps(dataclasses.asdict(scenario.failure_modes), default=str)
+        ),
+        "outages": [
+            {
+                "start": o.start.isoformat(),
+                "end": o.end.isoformat(),
+                "affected_houses": list(o.affected_houses),
+            }
+            for o in scenario.outages
+        ],
+    }
+    mismatches = {k: (v, committed.get(k)) for k, v in current.items() if v != committed.get(k)}
+    if mismatches:
+        raise ValueError(
+            f"scenario YAML has drifted from the committed live run's frozen "
+            f"config.json at {config_path} — baselines/LP would be regenerated "
+            f"under different physics than the frozen live number. Mismatched "
+            f"fields: {sorted(mismatches)}"
+        )
+
+
 def regen_baselines(cell: str, seed: int) -> dict[str, dict[str, Any]]:
     """Regenerate the $0 baselines + LP ceiling via the engine (deterministic).
 
     Runs into a throwaway dir: baselines carry no paid cache, so nothing here is
-    worth keeping — only the numbers, which the caller consumes.
+    worth keeping — only the numbers, which the caller consumes. If ``cell`` has
+    a committed live run, its frozen ``config.json`` is checked against the
+    current scenario YAML first (C6-3) — see
+    ``_assert_scenario_matches_committed_config``.
     """
     base = dataclasses.replace(load_scenario(scenario_path(cell)), seed=seed)
+    config_path = _committed_config_path(cell, seed)
+    if config_path is not None:
+        _assert_scenario_matches_committed_config(base, config_path)
     out: dict[str, dict[str, Any]] = {}
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
@@ -148,6 +202,63 @@ def regen_baselines(cell: str, seed: int) -> dict[str, dict[str, Any]]:
     solar, loads = _build_data(base, households)
     out["lp_optimal"] = lp_optimal.optimal_metrics(base, households, solar, loads, nbhd)
     return out
+
+
+# Golden pins for `--check` (C6-1). One entry per LIVE_CELLS (cell, seed) pair;
+# `test_check_covers_every_live_cell_seed_pair` enforces that coverage stays
+# complete as LIVE_CELLS grows. Values are the EXACT committed served/gini
+# floats (not rounded) — read directly off the committed summary.json files,
+# never invented. `--check` asserts these, unlike the pre-fix version which
+# only printed whatever was on disk and could not detect drift.
+EXPECTED_LIVE: dict[tuple[str, int], dict[str, float]] = {
+    (CLEAN, 23): {
+        "served_load_fraction": 0.6725764138021589,
+        "gini_welfare": 0.2704366770546185,
+    },
+    (CLEAN, 1): {
+        "served_load_fraction": 0.8248454685184583,
+        "gini_welfare": 0.14318472558836626,
+    },
+    (CLEAN, 7): {
+        "served_load_fraction": 0.7963806526129852,
+        "gini_welfare": 0.15965984807217337,
+    },
+    ("haves_havenots_solar__comm", 23): {
+        "served_load_fraction": 0.49408665834713517,
+        "gini_welfare": 0.4530940790550697,
+    },
+    ("haves_havenots_solar__defectors", 7): {
+        "served_load_fraction": 0.7563637535247261,
+        "gini_welfare": 0.20018694132939574,
+    },
+    ("haves_havenots_solar__noise", 23): {
+        "served_load_fraction": 0.6486433125635858,
+        "gini_welfare": 0.2793614622137661,
+    },
+}
+
+
+def check_live_numbers(expected: dict[tuple[str, int], dict[str, float]] | None = None) -> None:
+    """Assert every committed live cell's served/gini match their golden pin.
+
+    Exits non-zero (SystemExit) on any mismatch, instead of the pre-fix
+    ``--check`` which only printed whatever was on disk and could not detect
+    a silently drifted/corrupted/regenerated ``summary.json`` (C6-1).
+    """
+    exp = EXPECTED_LIVE if expected is None else expected
+    mismatches: list[str] = []
+    for (cell, seed), want in exp.items():
+        s = read_live_summary(cell, seed)
+        for key, want_v in want.items():
+            got_v = s[key]
+            print(f"{CELL_LABEL[cell]:>10} @ {seed:>2}: {key} {got_v:.6f}")
+            if got_v != want_v:
+                mismatches.append(f"{cell} @ seed {seed}: {key} = {got_v!r}, expected {want_v!r}")
+    if mismatches:
+        raise SystemExit(
+            "committed live numbers have drifted from their golden pin:\n  "
+            + "\n  ".join(mismatches)
+        )
 
 
 def collect_cell(cell: str, seed: int) -> dict[str, dict[str, Any]]:
@@ -572,6 +683,20 @@ def _variant_agreement(variants: list[dict[str, Any]]) -> dict[str, tuple[float,
     The variants judge the SAME deterministic sample (seed + n fix the draw), so
     row i is the same message in every file — pair by index, and count only rows
     where the message identity agrees across all variants (defensive).
+
+    C6-5: `(sender, t_sent)` alone is NOT a unique message identity — on the
+    committed clean-cell data, 80.4% of authored messages share a
+    `(sender, t_sent)` pair with at least one other authored message (an agent
+    can send several replies in the same tick). If a future judging run has
+    unequal unparseable-drop counts across variants, index-aligned rows can
+    silently drift out of alignment and land on two DIFFERENT messages that
+    happen to share `(sender, t_sent)` — the old check would accept that as
+    "paired" and average their scores. `correlation_id` (present on every row
+    since the C6-5 fix to ``eval_explanations.evaluate_run``) is unique per
+    authored message, so it's included in the identity whenever present;
+    `.get(...)` keeps this a no-op on any pre-fix artifact that lacks the
+    field (all rows there uniformly resolve to `None`, same as the old
+    two-tuple behavior).
     """
     n = min(len(v["samples"]) for v in variants)
     out: dict[str, tuple[float, int, int]] = {}
@@ -581,7 +706,7 @@ def _variant_agreement(variants: list[dict[str, Any]]) -> dict[str, tuple[float,
         paired = 0
         for i in range(n):
             rows = [v["samples"][i] for v in variants]
-            ids = {(r["sender"], r["t_sent"]) for r in rows}
+            ids = {(r["sender"], r["t_sent"], r.get("correlation_id")) for r in rows}
             if len(ids) != 1:
                 continue
             paired += 1
@@ -773,10 +898,8 @@ def _cli() -> None:
     p.add_argument("--check", action="store_true", help="assert committed live numbers unchanged")
     args = p.parse_args()
     if args.check:
-        for cell, seeds in LIVE_CELLS.items():
-            for seed in seeds:
-                s = read_live_summary(cell, seed)
-                print(f"{CELL_LABEL[cell]:>10} @ {seed:>2}: served {s['served_load_fraction']:.4f}")
+        check_live_numbers()
+        print("OK: all committed live numbers match their golden pin")
         return
     did = False
     if args.headline or args.all:

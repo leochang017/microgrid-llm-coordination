@@ -6,6 +6,8 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+import pytest
+
 from scripts.eval_explanations import _MOCK_JUDGE_RESPONSE, _parse_scores, evaluate_run
 from sim.agents.cache import PromptCache
 from sim.agents.llm import LLMRequest, LLMResponse, MockLLMClient
@@ -90,6 +92,20 @@ def test_evaluate_run_scores_only_llm_authored_messages(tmp_path: Path) -> None:
     assert result["means"]["state_accuracy"] == 3.0
     saved = json.loads((run_dir / "explanations_eval.json").read_text())
     assert saved["n_scored"] == 1
+
+
+def test_sample_rows_carry_a_stable_correlation_id(tmp_path: Path) -> None:
+    # C6-5: _variant_agreement's (sender, t_sent) pairing key collides ~80% of
+    # the time on real data (multiple authored messages per sender per tick).
+    # A stable per-message identity is needed to tighten that check.
+    run_dir = tmp_path / "run"
+    _write_run(run_dir)
+    client = MockLLMClient(
+        cache=PromptCache(local_dir=tmp_path / "cache2", reference_dir=None),
+        canned={"Rubric": _MOCK_JUDGE_RESPONSE},
+    )
+    result = evaluate_run(run_dir, n=10, client=client)
+    assert result["samples"][0]["correlation_id"] == "a1"
 
 
 def test_evaluate_run_counts_unparseable_judge_replies(tmp_path: Path) -> None:
@@ -238,6 +254,41 @@ def test_rubric_variants_reword_the_rubric_but_keep_the_axes(tmp_path: Path) -> 
     for variant, prompt in prompts.items():
         for axis in ("state_accuracy", "actionability", "consistency"):
             assert axis in prompt, f"variant {variant!r} dropped the {axis} axis"
+
+
+def test_rerunning_same_variant_without_force_raises(tmp_path: Path) -> None:
+    # C6-6: evaluate_run had no existence guard, so a second same-variant
+    # invocation (operator re-run, different --n, cache cleared, ...) would
+    # silently overwrite the existing paid artifact with no confirmation.
+    run_dir = tmp_path / "run"
+    _write_run(run_dir)
+
+    def _client(cache_name: str) -> MockLLMClient:
+        return MockLLMClient(
+            cache=PromptCache(local_dir=tmp_path / cache_name, reference_dir=None),
+            canned={"Rubric": _MOCK_JUDGE_RESPONSE},
+        )
+
+    evaluate_run(run_dir, n=10, client=_client("c1"))
+    first = json.loads((run_dir / "explanations_eval.json").read_text())
+    with pytest.raises(FileExistsError):
+        evaluate_run(run_dir, n=10, client=_client("c2"))
+    # The existing artifact must survive the refused re-run untouched.
+    assert json.loads((run_dir / "explanations_eval.json").read_text()) == first
+
+
+def test_rerunning_same_variant_with_force_overwrites(tmp_path: Path) -> None:
+    run_dir = tmp_path / "run"
+    _write_run(run_dir)
+
+    def _client(cache_name: str) -> MockLLMClient:
+        return MockLLMClient(
+            cache=PromptCache(local_dir=tmp_path / cache_name, reference_dir=None),
+            canned={"Rubric": _MOCK_JUDGE_RESPONSE},
+        )
+
+    evaluate_run(run_dir, n=10, client=_client("c1"))
+    evaluate_run(run_dir, n=10, client=_client("c2"), force=True)  # no raise
 
 
 def test_rubric_variant_writes_its_own_artifact_and_spares_the_default(tmp_path: Path) -> None:
