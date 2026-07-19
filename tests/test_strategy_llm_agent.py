@@ -167,6 +167,7 @@ def test_wrapper_corruption_gated_on_realization(tmp_path) -> None:
 def test_negotiation_counters_reach_summary(tmp_path) -> None:
     import json
 
+    from sim.agents.failure_modes import FailureModeConfig
     from sim.strategies import llm_agent as llm_strat
 
     counts = llm_strat.current_call_counts(registry=None)  # zero-dict shape
@@ -177,9 +178,12 @@ def test_negotiation_counters_reach_summary(tmp_path) -> None:
         "react_amount_defaulted",
     ):
         assert key in counts and counts[key] == 0
-    # and update_summary_with_counts writes the detailed dict through:
+    # and update_summary_with_counts writes the detailed dict through, using an
+    # explicitly-prepared registry — this test must pass in isolation, with no
+    # reliance on the module-global left behind by a previously-run test:
+    decide, _scenario, _households = _prepare_with_failure(tmp_path, FailureModeConfig())
     (tmp_path / "summary.json").write_text("{}")
-    llm_strat.update_summary_with_counts(tmp_path)  # module-global registry from last prepare
+    llm_strat.update_summary_with_counts(tmp_path, registry=decide.registry)
     detailed = json.loads((tmp_path / "summary.json").read_text())["llm_call_counts_detailed"]
     for key in (
         "react_unparsed",
