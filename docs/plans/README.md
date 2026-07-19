@@ -8,7 +8,7 @@ Executor-ready plans produced by `/planbatch` (distinct from the per-phase specs
 |---|------|--------|--------|
 | 1 | [2026-07-18-phase3-accuracy-plan.md](2026-07-18-phase3-accuracy-plan.md) | Phase-3 accuracy completion: Sonnet-cell wiring, doc staleness, C1/C2 negotiation-bug fixes + authorized comm-cell re-run (~$4–7), defector provenance | **done** (2026-07-19, `5c576ba5`; comm 0.4565→0.4941, spend $3.96) |
 | 2 | [2026-07-18-test-accuracy-hardening-plan.md](2026-07-18-test-accuracy-hardening-plan.md) | Test-suite accuracy: order-dependence, TZ leak, LLM-client error paths, reference-resume e2e, mypy → scripts/, exact e2e pins | **done** (2026-07-19; 8/8 tasks, 362→367 tests, mypy now covers sim/ + scripts/, zero sim/ runtime change) |
-| 3 | [2026-07-18-repo-cleanup-claudemd-plan.md](2026-07-18-repo-cleanup-claudemd-plan.md) | Archive completed-phase planning files, remove dead code, condense CLAUDE.md (~101 KB → ~30 KB), README refresh | pending |
+| 3 | [2026-07-18-repo-cleanup-claudemd-plan.md](2026-07-18-repo-cleanup-claudemd-plan.md) | Archive completed-phase planning files, remove dead code, condense CLAUDE.md (132 KB → 89 KB; ≤35 KB gate waived by Leo, recent detail kept), README refresh | **done** (2026-07-19; 6/6 tasks, 367→364 tests, 17 files archived, 4 dead funcs + plotter removed) |
 | 4 | [2026-07-18-full-repo-review-plan.md](2026-07-18-full-repo-review-plan.md) | Full fresh adversarial review of sim/ + scripts/ + tests/ + configs, verify → triage → TDD fixes → review record | pending |
 
 Flip a row to **done** in the executing session's wrap task.
