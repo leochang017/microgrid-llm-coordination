@@ -1,28 +1,28 @@
 {
   "scenario_id": "haves_havenots_solar__comm",
-  "served_load_fraction": 0.45647965855980976,
-  "unmet_kwh_total": 391.334645836937,
-  "wasted_kwh_total": 63.06390397737513,
-  "gini_welfare": 0.4803115156467819,
-  "transfer_count": 518,
+  "served_load_fraction": 0.49408665834713517,
+  "unmet_kwh_total": 364.2576059900627,
+  "wasted_kwh_total": 63.39774675377837,
+  "gini_welfare": 0.4530940790550697,
+  "transfer_count": 473,
   "min_house_served_fraction": 0.035690864168377225,
-  "jains_index": 0.5665267918028896,
-  "served_critical_load_fraction": 0.6528464139392556,
+  "jains_index": 0.5958572867480867,
+  "served_critical_load_fraction": 0.6411875354803183,
   "message_counts": {
-    "sent": 17647,
-    "delivered": 4260,
+    "sent": 16954,
+    "delivered": 4224,
     "dropped_invalid_recipient": 0,
-    "dropped_comm": 1462,
-    "dropped_budget": 11887,
+    "dropped_comm": 1498,
+    "dropped_budget": 11194,
     "pending_at_end": 38
   },
   "llm_call_counts": {
-    "reflect_plan": 625,
-    "react_msg": 1196,
-    "cache_hits": 159,
-    "cache_misses": 1662
+    "reflect_plan": 655,
+    "react_msg": 1143,
+    "cache_hits": 292,
+    "cache_misses": 1506
   },
-  "llm_cost_usd_estimated": 4.034517,
+  "llm_cost_usd_estimated": 3.95844,
   "failure_modes_active": {
     "defector_fraction": 0.0,
     "defector_assignment": "random",
@@ -44,18 +44,19 @@
   "policy_parse_failures": 25,
   "policy_fallbacks_to_round_robin": 0,
   "llm_call_counts_detailed": {
-    "reflect_plan": 625,
-    "react_msg": 1196,
-    "react_skipped": 167,
-    "react_dropped_stale": 27,
+    "reflect_plan": 655,
+    "react_msg": 1143,
+    "react_skipped": 79,
+    "react_dropped_stale": 13,
     "plan_parse_failures": 25,
     "plan_fallbacks": 0,
     "react_refusals": 0,
     "react_unparsed": 0,
-    "commitments_made": 920,
-    "commitments_expired": 324,
+    "commitments_made": 663,
+    "commitments_expired": 205,
     "react_amount_defaulted": 0,
-    "cache_hits": 159,
-    "cache_misses": 1662
+    "commitments_retracted": 202,
+    "cache_hits": 292,
+    "cache_misses": 1506
   }
 }

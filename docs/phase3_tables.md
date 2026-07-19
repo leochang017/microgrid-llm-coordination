@@ -13,7 +13,7 @@ What actually happened in negotiation, per live run. `expired%` = commitments_ex
 | clean | 23 | 3343 | 914 | 27.3% | 0 | 320 | 35 | 18 | 24354 | 24104 | 0 | 0 |
 | defectors | 7 | 2622 | 468 | 17.8% | 0 | 244 | 44 | 10 | 22458 | 22239 | 0 | 0 |
 | noise | 23 | 2606 | 149 | 5.7% | 0 | 735 | 165 | 27 | 23785 | 23550 | 0 | 0 |
-| comm | 23 | 920 | 324 | 35.2% | 0 | 167 | 27 | 25 | 17647 | 4260 | 1462 | 11887 |
+| comm | 23 | 663 | 205 | 30.9% | 0 | 79 | 13 | 25 | 16954 | 4224 | 1498 | 11194 |
 | clean (Sonnet) | 23 | 1673 | 22 | 1.3% | 10 | 476 | 105 | 64 | 23989 | 23748 | 0 | 0 |
 
 Reading it: clean-cell expiry ranges 5.6-27.3% across seeds (highest at seed 23) — honest haves over-promising against depleted batteries, not reneging (the engine ships commitments before the discretionary filter). The comm cell is where `dropped_budget` bites (only 4260 of 17647 messages delivered); note zero comm/budget drops on every other run. The final row (`clean (Sonnet)`) is the Stage-3 capability ablation — the same clean scenario run with `claude-sonnet-5` agents instead of Haiku, included here as a capability data point, not a fifth failure axis. **Its `commitments_expired` is not comparable to the Haiku rows above**: this run predates the Task-5 C1/C2 commitment-negotiation fixes, which changed what the counter counts (post-fix, it also counts promises held-but-unserved below the committer's own `share_min_soc_frac` threshold) — pre/post-fix expiry percentages measure different things and should not be diffed as if they were the same metric.

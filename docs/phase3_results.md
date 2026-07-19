@@ -1,8 +1,9 @@
 # Phase 3 — Results (empirical story, real numbers)
 
 **Status:** Phase 3.3 analysis draft, 2026-07-16; updated 2026-07-19 with the
-Stage-3 Sonnet capability ablation (§5.5) and the Task-5 commitment-negotiation
-fixes' expiry-semantics caveat (§6). Every number below traces to a committed
+Stage-3 Sonnet capability ablation (§5.5), the Task-5 commitment-negotiation
+fixes' expiry-semantics caveat (§6), and the **comm@23 live re-run** after the
+C1/C2/C3 fixes (§2: served 0.4565 → 0.4941, control gap −4.6 → −0.86 pts). Every number below traces to a committed
 `llm_agent` summary (live) or a deterministically-regenerated $0 baseline;
 regenerate the figures/tables with `python -m scripts.figures --all`. Model:
 Claude Haiku (`claude-haiku-4-5`) unless noted; the ablation uses
@@ -53,7 +54,7 @@ deltas, reported honestly as such.
 |---|---|---|---|---|---|---|
 | defectors | 7 | 33.6% generation withheld | 0.7337 | 0.7564 | **+2.3** | retains 89.1% of coordination value |
 | noise | 23 | SoC 10% + load 15% | 0.6399 | 0.6486 | **+0.9** | robustness holds, margin compressed |
-| comm | 23 | msg budget 2/tick | 0.5027 | 0.4565 | **−4.6** | negotiation bandwidth cost |
+| comm | 23 | msg budget 2/tick | 0.5027 | 0.4941 | **−0.86** | residual bandwidth cost (post C1/C2/C3) |
 
 - **Defectors (+2.3 over control):** beating the control here is strong because
   the control is *structurally immune* to prompt-realized defection (no LLM reads
@@ -68,13 +69,23 @@ deltas, reported honestly as such.
   perturbed channel. The pre-registered "tolerates noise but pays for it"
   outcome. (The mock floor shows noise *mildly helps* the fixed control, +1.3;
   live must beat that accidental gain, and does.)
-- **Comm (−4.6 vs control):** the one loss. A per-tick message budget starves the
-  OFFER/REQUEST traffic that moves energy because ACCEPT/COUNTER/REJECT replies
-  emit first (hardcoded send order); the control, sending no negotiation replies,
-  gets 60% more energy-moving traffic through. **Scope: "a negotiation protocol
-  costs bandwidth that under scarcity can exceed the coordination it buys" — NOT
-  "LLM coordination is fragile."** Send order is plumbing the LLM can't control
-  (follow-up hardening tracked in CLAUDE.md).
+- **Comm (−0.86 vs control, re-run post C1/C2/C3):** originally measured at −4.6,
+  but two commitment-integrity bugs accounted for most of that loss. **C1**
+  (`d3b5ff14`): the sender shipped energy against ACCEPT/COUNTER replies the
+  per-tick message budget had *refused* — the requester never saw the promise
+  (this run retracted 202 such commitments, matching exactly the 202
+  budget/comm-dropped ACCEPT/COUNTER replies in `messages.jsonl`). **C2**
+  (`0fdc9424`): agents exported committed energy while below their own
+  `share_min_soc_frac` safety floor. Fixing both lifts served 0.4565 → **0.4941**
+  and shrinks the control gap from −4.6 to **−0.86 pts** (gap-closed −17.4% →
+  −3.2%); fairness improves too (Gini 0.480 → 0.453, Jain 0.566 → 0.596). A small
+  residual loss remains: the per-tick budget still starves OFFER/REQUEST traffic
+  because replies emit first (hardcoded send order the LLM can't control —
+  11,194 of 16,954 messages budget-dropped this run). **Scope: "a negotiation
+  protocol costs *some* bandwidth under scarcity" — much smaller than first
+  measured, and most of the original apparent loss was measurement bugs, not
+  fundamental LLM fragility.** n=1; send-order hardening still tracked in
+  CLAUDE.md.
 
 ## 3. Fairness and the efficiency–equity (non-)tradeoff
 
@@ -87,9 +98,10 @@ shown alone (Gini + Jain + Rawlsian floor + critical-load served).
   that it does not appear where coordination succeeds. On defectors, live is
   slightly *fairer* than control (Gini 0.200 vs 0.204, Jain 0.866 vs 0.861) while
   also serving more.
-- **Comm is the exception in both dimensions:** live Gini 0.480 (control 0.441)
-  and Jain 0.566 (control 0.608) — under message scarcity the failed negotiation
-  hurts equity too, consistent with the served-load loss.
+- **Comm is the exception in both dimensions:** live Gini 0.453 (control 0.441)
+  and Jain 0.596 (control 0.608) — under message scarcity the residual
+  negotiation loss still slightly hurts equity, consistent with the served-load
+  loss (both improved from the pre-fix 0.480 / 0.566 after C1/C2).
 - **Caveat — the Rawlsian floor is degenerate:** `min_house_served_fraction` is
   near-identical across strategies (~0.035–0.041), so it contributes nothing to
   the comparison and is reported but not leaned on.
@@ -100,8 +112,9 @@ shown alone (Gini + Jain + Rawlsian floor + critical-load served).
 committed summaries. Highlights: clean-cell commitment expiry ranges 5.6–27.3%
 across seeds — honest haves over-promising against depleted batteries, **not**
 defectors reneging (the engine ships commitments before the discretionary
-filter). The comm cell delivered only 4,260 of 17,647 messages (11,887
-budget-dropped); every other run had zero comm/budget drops.
+filter). The comm cell (re-run post C1/C2/C3) delivered only 4,224 of 16,954
+messages (11,194 budget-dropped, 1,498 comm-dropped); every other run had zero
+comm/budget drops.
 
 ## 5. Explanation quality (Stage 4, live Sonnet judge)
 
