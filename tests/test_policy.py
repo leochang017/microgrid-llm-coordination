@@ -55,6 +55,29 @@ def test_policy_rejects_negative_weight() -> None:
         Policy.from_dict(d)
 
 
+def test_policy_rejects_nan_weight() -> None:
+    """C3-3: float('nan') < 0 is False, so a bare '< 0' check lets NaN through.
+    Reachable only via the free-text YAML fallback (yaml 1.1 accepts .nan)."""
+    d = _valid_policy_dict()
+    d["recipient_priority"][0]["weight"] = float("nan")
+    with pytest.raises(PolicyValidationError, match="weight"):
+        Policy.from_dict(d)
+
+
+def test_policy_rejects_inf_weight() -> None:
+    d = _valid_policy_dict()
+    d["recipient_priority"][0]["weight"] = float("inf")
+    with pytest.raises(PolicyValidationError, match="weight"):
+        Policy.from_dict(d)
+
+
+def test_policy_accepts_normal_weight() -> None:
+    d = _valid_policy_dict()
+    d["recipient_priority"][0]["weight"] = 0.75
+    p = Policy.from_dict(d)
+    assert p.recipient_priority[0].weight == 0.75
+
+
 def test_policy_rejects_ttl_zero() -> None:
     d = _valid_policy_dict()
     d["ttl_ticks"] = 0

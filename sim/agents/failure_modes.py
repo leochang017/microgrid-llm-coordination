@@ -54,6 +54,9 @@ class FailureModeConfig:
             raise ValueError(
                 f"defector_realization must be prompt|wrapper|both, got {realization!r}"
             )
+        defector_fraction = float(d.get("defector_fraction", 0.0))
+        if not (0.0 <= defector_fraction <= 1.0):
+            raise ValueError(f"defector_fraction must be in [0.0, 1.0], got {defector_fraction!r}")
         _known = {
             "defector_fraction",
             "defector_assignment",
@@ -74,7 +77,7 @@ class FailureModeConfig:
         if unknown:
             raise ValueError(f"unknown failure_modes.comm key(s): {sorted(unknown)}")
         return FailureModeConfig(
-            defector_fraction=float(d.get("defector_fraction", 0.0)),
+            defector_fraction=defector_fraction,
             defector_assignment=assignment,
             defector_house_ids=tuple(d.get("defector_house_ids", ())),
             defector_realization=realization,
@@ -99,6 +102,9 @@ def assign_defectors(
     scenario_seed: int,
 ) -> set[str]:
     if cfg.defector_assignment == "manual":
+        unknown = set(cfg.defector_house_ids) - set(house_ids)
+        if unknown:
+            raise ValueError(f"defector_house_ids contains unknown house id(s): {sorted(unknown)}")
         return set(cfg.defector_house_ids)
     if cfg.defector_fraction <= 0:
         return set()

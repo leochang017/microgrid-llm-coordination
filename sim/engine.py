@@ -85,6 +85,11 @@ def sample_households(scenario: Scenario, rng: np.random.Generator) -> dict[str,
         raise ValueError(
             f"household_sampling.critical_load_frac must be [lo, hi], got {crit_range!r}"
         )
+    if crit_range is not None and not (0.0 <= crit_range[0] <= crit_range[1] <= 1.0):
+        raise ValueError(
+            f"household_sampling.critical_load_frac must satisfy "
+            f"0.0 <= lo <= hi <= 1.0, got {crit_range!r}"
+        )
 
     households: dict[str, Household] = {}
     for r in range(scenario.rows):

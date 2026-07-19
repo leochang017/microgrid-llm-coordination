@@ -59,6 +59,59 @@ def test_round_robin_moves_from_high_soc_to_low_soc_neighbor() -> None:
     assert any(t.from_id == "r0c0" and t.to_id == "r0c1" for t in transfers)
 
 
+def test_round_robin_does_not_crash_on_zero_battery_household() -> None:
+    """C2-4: soc_kwh / battery_kwh has no zero-guard. A degenerate
+    battery_kwh=0 household must not crash the islanded round_robin path —
+    treat it as fraction 0.0 (neutral / never a net sender)."""
+    n = build_grid_neighborhood(rows=5, cols=6, bus_max_kw=50.0)
+    households = {hid: make_household(hid) for hid in n.comm_graph}
+    households["r0c0"] = Household(
+        id="r0c0",
+        pv_kw_peak=8.0,
+        battery_kwh=0.0,
+        battery_max_rate_kw=5.0,
+        rt_efficiency=0.9,
+        dod_floor_frac=0.1,
+        grid_max_kw=10.0,
+        profile=HouseholdProfile(description="test"),
+    )
+    states = {hid: make_state(soc=5.0) for hid in n.comm_graph}
+    states["r0c0"] = make_state(soc=0.0)
+    solar = {hid: 0.0 for hid in n.comm_graph}
+    load = {hid: 1.0 for hid in n.comm_graph}
+    grid = {hid: False for hid in n.comm_graph}
+    transfers = round_robin(
+        datetime(2024, 7, 1, 12, 0), states, households, solar, load, grid, n, 0.25
+    )
+    assert not any(t.from_id == "r0c0" for t in transfers)
+
+
+def test_round_robin_overlay_does_not_crash_on_zero_battery_household() -> None:
+    from sim.strategies import round_robin_overlay
+
+    n = build_grid_neighborhood(rows=5, cols=6, bus_max_kw=50.0)
+    households = {hid: make_household(hid) for hid in n.comm_graph}
+    households["r0c0"] = Household(
+        id="r0c0",
+        pv_kw_peak=8.0,
+        battery_kwh=0.0,
+        battery_max_rate_kw=5.0,
+        rt_efficiency=0.9,
+        dod_floor_frac=0.1,
+        grid_max_kw=10.0,
+        profile=HouseholdProfile(description="test"),
+    )
+    states = {hid: make_state(soc=5.0) for hid in n.comm_graph}
+    states["r0c0"] = make_state(soc=0.0)
+    solar = {hid: 0.0 for hid in n.comm_graph}
+    load = {hid: 1.0 for hid in n.comm_graph}
+    grid = {hid: False for hid in n.comm_graph}
+    transfers = round_robin_overlay.decide_transfers(
+        datetime(2024, 7, 1, 12, 0), states, households, solar, load, grid, n, 0.25
+    )
+    assert not any(t.from_id == "r0c0" for t in transfers)
+
+
 def test_overlay_shares_across_owner_edge_that_geographic_lacks() -> None:
     from sim.network import Neighborhood
     from sim.strategies import round_robin_overlay

@@ -362,3 +362,26 @@ def test_critical_load_frac_malformed_shape_rejected() -> None:
     )  # scalar, not [lo, hi]
     with pytest.raises(ValueError, match="critical_load_frac"):
         sample_households(sc, np.random.default_rng(sc.seed))
+
+
+def test_critical_load_frac_out_of_bounds_rejected() -> None:
+    """Upper bound > 1.0 must be rejected — see C1-1 review finding: an
+    unbounded crit_range silently corrupts served_critical_load_fraction
+    downstream (sim/logging.py) rather than crashing loudly."""
+    base = load_scenario("configs/scenarios/synthetic_smoke.yaml")
+    sc = replace(
+        base,
+        household_sampling={**base.household_sampling, "critical_load_frac": [0.2, 1.4]},
+    )
+    with pytest.raises(ValueError, match="critical_load_frac"):
+        sample_households(sc, np.random.default_rng(sc.seed))
+
+
+def test_critical_load_frac_shipped_range_still_works() -> None:
+    base = load_scenario("configs/scenarios/synthetic_smoke.yaml")
+    sc = replace(
+        base,
+        household_sampling={**base.household_sampling, "critical_load_frac": [0.2, 0.6]},
+    )
+    households = sample_households(sc, np.random.default_rng(sc.seed))
+    assert all(0.2 <= h.profile.critical_load_frac <= 0.6 for h in households.values())

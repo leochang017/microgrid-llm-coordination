@@ -8,6 +8,7 @@ validator suffices (no Pydantic dependency).
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
@@ -126,9 +127,10 @@ def _validate(d: dict[str, Any]) -> None:
             raise PolicyValidationError(
                 f"recipient_priority entries need 'circle' + 'weight', got {rp!r}"
             )
-        if float(rp["weight"]) < 0:
+        w = float(rp["weight"])
+        if not math.isfinite(w) or w < 0:
             raise PolicyValidationError(
-                f"recipient_priority weight must be >= 0, got {rp['weight']!r}"
+                f"recipient_priority weight must be a finite number >= 0, got {rp['weight']!r}"
             )
 
     ttl = int(d.get("ttl_ticks", 4))

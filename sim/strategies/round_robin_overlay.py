@@ -32,7 +32,12 @@ def decide_transfers(
     islanded = [hid for hid, ok in grid.items() if not ok]
     if not islanded:
         return []
-    fracs = {hid: states[hid].soc_kwh / households[hid].battery_kwh for hid in islanded}
+    fracs = {
+        hid: states[hid].soc_kwh / households[hid].battery_kwh
+        if households[hid].battery_kwh > 0
+        else 0.0
+        for hid in islanded
+    }
     mean = sum(fracs.values()) / len(fracs)
 
     transfers: list[Transfer] = []

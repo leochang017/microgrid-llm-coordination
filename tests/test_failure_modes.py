@@ -46,6 +46,19 @@ def test_defector_assignment_manual_overrides() -> None:
     assert ids == {"r2c3", "r4c1"}
 
 
+def test_defector_assignment_manual_rejects_unknown_house_ids() -> None:
+    """C4-3: a typo'd/nonexistent manual defector house id was silently
+    accepted and produced a zero-defector cell (matched no real house) with
+    no error and no signal in summary.json."""
+    house_ids = [f"r{r}c{c}" for r in range(5) for c in range(6)]
+    cfg = FailureModeConfig(
+        defector_assignment="manual",
+        defector_house_ids=("r2c3", "r9c9"),
+    )
+    with pytest.raises(ValueError, match="r9c9"):
+        assign_defectors(house_ids, cfg, scenario_seed=42)
+
+
 def test_defector_count_matches_fraction() -> None:
     house_ids = [f"h{i}" for i in range(30)]
     cfg = FailureModeConfig(defector_fraction=0.2, defector_assignment="random")
@@ -177,6 +190,21 @@ def test_defector_enums_validated() -> None:
         {"defector_assignment": "manual", "defector_realization": "both"}
     )
     assert cfg.defector_assignment == "manual"
+
+
+def test_defector_fraction_out_of_bounds_rejected() -> None:
+    """C4-2: an out-of-range defector_fraction (e.g. a 0.15 -> 1.5 typo) was
+    previously only caught deep inside random.sample() with a confusing
+    stdlib error. Must be rejected at from_dict time, naming the field."""
+    with pytest.raises(ValueError, match="defector_fraction"):
+        FailureModeConfig.from_dict({"defector_fraction": 1.5})
+    with pytest.raises(ValueError, match="defector_fraction"):
+        FailureModeConfig.from_dict({"defector_fraction": -0.1})
+
+
+def test_defector_fraction_in_bounds_accepted() -> None:
+    cfg = FailureModeConfig.from_dict({"defector_fraction": 0.2})
+    assert cfg.defector_fraction == 0.2
 
 
 def test_unknown_failure_mode_keys_hard_error() -> None:
