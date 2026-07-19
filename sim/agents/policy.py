@@ -89,25 +89,6 @@ class Policy:
         )
 
 
-def policy_to_yaml(p: Policy) -> str:
-    return yaml.safe_dump(
-        {
-            "sharing_intent": p.sharing_intent,
-            "share_min_soc_frac": p.share_min_soc_frac,
-            "max_share_kw_per_tick": p.max_share_kw_per_tick,
-            "recipient_priority": [
-                {"circle": rp.circle, "weight": rp.weight} for rp in p.recipient_priority
-            ],
-            "distrusted_peers": list(p.distrusted_peers),
-            "request_urgency": p.request_urgency,
-            "belief_note": p.belief_note,
-            "ttl_ticks": p.ttl_ticks,
-            "share_fraction_per_tick": p.share_fraction_per_tick,
-        },
-        sort_keys=False,
-    )
-
-
 def policy_from_yaml(s: str) -> Policy:
     d = yaml.safe_load(s)
     if not isinstance(d, dict):

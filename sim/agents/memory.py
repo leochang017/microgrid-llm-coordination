@@ -83,22 +83,6 @@ class MemoryStream:
                     + "\n"
                 )
 
-    @staticmethod
-    def from_jsonl(path: Path) -> MemoryStream:
-        s = MemoryStream()
-        for line in Path(path).read_text(encoding="utf-8").splitlines():
-            d = json.loads(line)
-            s.append(
-                MemoryEntry(
-                    t=datetime.fromisoformat(d["t"]),
-                    kind=d["kind"],
-                    content=d["content"],
-                    nl=d["nl"],
-                    importance=float(d["importance"]),
-                )
-            )
-        return s
-
 
 def _cosine_or_one(query: str | None, text: str) -> float:
     """No embedder in v0; similarity is identity (1.0). Hook for Phase 3 to swap in."""

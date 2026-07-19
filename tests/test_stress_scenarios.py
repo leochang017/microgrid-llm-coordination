@@ -43,7 +43,7 @@ def _lp_ceiling() -> float:
         bus_loss_factor=sc.bus_loss_factor,
     )
     solar, loads = _build_data(sc, households)
-    return lp_optimal.optimal_served_fraction(sc, households, solar, loads, nbhd)
+    return lp_optimal.optimal_metrics(sc, households, solar, loads, nbhd)["served_load_fraction"]
 
 
 def test_haves_havenots_breaks_simple_sharing(tmp_path) -> None:

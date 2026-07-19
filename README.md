@@ -79,7 +79,7 @@ sim/            engine.py · household.py · network.py · scenario.py · loggin
 sim/agents/     agent.py · policy.py · memory.py · protocol.py · cache.py · llm.py · failure_modes.py · seeding.py
 sim/adapters/   nrel_solar.py · resstock.py · pecan_street.py
 sim/strategies/ no_coordination.py · round_robin.py · round_robin_overlay.py · lp_optimal.py · llm_agent.py · llm_fallback.py
-scripts/        run.py · compare.py · sweep.py · eval_explanations.py · fetch_data.py · plot_phase1_results.py
+scripts/        run.py · compare.py · sweep.py · eval_explanations.py · fetch_data.py
 ```
 
 The **coordination strategy is an injected callback** — `decide_transfers(t, states, households, solar, load, grid, neighborhood, dt) -> list[Transfer]`. Phase 2 added `sim/strategies/llm_agent.py` (the LLM strategy facade) and Phase 2.9 added `llm_fallback.py` (the zero-LLM control).

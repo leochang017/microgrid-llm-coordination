@@ -180,7 +180,7 @@ def test_lp_ceiling_regression_haves_havenots() -> None:
         bus_loss_factor=sc.bus_loss_factor,
     )
     solar, loads = _build_data(sc, hh)
-    ceiling = lp_optimal.optimal_served_fraction(sc, hh, solar, loads, nbhd)
+    ceiling = lp_optimal.optimal_metrics(sc, hh, solar, loads, nbhd)["served_load_fraction"]
     assert abs(ceiling - 0.529368385) < 5e-7
 
 

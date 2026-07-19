@@ -50,16 +50,3 @@ def test_memory_entry_is_frozen() -> None:
     e = _entry(datetime(2026, 1, 1), "obs", 5.0)
     with pytest.raises((AttributeError, TypeError)):
         e.importance = 10.0  # type: ignore[misc]
-
-
-def test_memory_stream_jsonl_round_trip(tmp_path) -> None:
-    s = MemoryStream()
-    t0 = datetime(2026, 1, 1, 8, 0)
-    s.append(_entry(t0, "obs", 3.0, nl="hello"))
-    s.append(_entry(t0 + timedelta(minutes=15), "reflection", 8.0, nl="world"))
-    path = tmp_path / "mem.jsonl"
-    s.write_jsonl(path)
-    loaded = MemoryStream.from_jsonl(path)
-    assert len(loaded.entries) == 2
-    assert loaded.entries[0].nl == "hello"
-    assert loaded.entries[1].importance == 8.0

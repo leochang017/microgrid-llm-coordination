@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from sim.agents.policy import Policy, PolicyValidationError, policy_from_yaml, policy_to_yaml
+from sim.agents.policy import Policy, PolicyValidationError, policy_from_yaml
 
 
 def _valid_policy_dict() -> dict:
@@ -23,10 +23,25 @@ def _valid_policy_dict() -> dict:
     }
 
 
-def test_policy_round_trip_yaml() -> None:
-    p = policy_from_yaml(policy_to_yaml(Policy.from_dict(_valid_policy_dict())))
+def test_policy_from_yaml_parses() -> None:
+    yaml_str = """\
+sharing_intent: balanced
+share_min_soc_frac: 0.5
+max_share_kw_per_tick: 1.5
+recipient_priority:
+- circle: owner
+  weight: 1.0
+- circle: geographic
+  weight: 0.4
+distrusted_peers: []
+request_urgency: normal
+belief_note: no strong beliefs yet
+ttl_ticks: 4
+share_fraction_per_tick: 0.05
+"""
+    p = policy_from_yaml(yaml_str)
     assert p.sharing_intent == "balanced"
-    assert p.share_min_soc_frac == 0.50
+    assert p.share_min_soc_frac == 0.5
     assert p.recipient_priority[0].circle == "owner"
     assert p.recipient_priority[0].weight == 1.0
     assert p.distrusted_peers == ()

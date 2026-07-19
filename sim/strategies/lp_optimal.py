@@ -6,15 +6,17 @@ Objective: maximize total served load power. No fairness tiebreak (documented
 future refinement). HiGHS is deterministic, so the result is reproducible.
 
 Two ways to consume the solution:
-  - `optimal_served_fraction(...)` returns the LP objective as a served-load
-    fraction. **This is the reported ceiling** for the "% of gap closed between
-    round_robin and LP-optimal" framing — the true theoretical upper bound.
+  - `optimal_metrics(...)["served_load_fraction"]` returns the LP objective as
+    a served-load fraction. **This is the reported ceiling** for the "% of gap
+    closed between round_robin and LP-optimal" framing — the true theoretical
+    upper bound.
   - `prepare(...)` returns a per-tick transfer schedule so the LP can also be
     run as a strategy through the engine (for visualization / state logs). Note
     the engine's greedy per-tick `step()` dispatch will NOT faithfully execute
     the LP's planned battery schedule, so the engine-realized served-load can
     fall below the LP optimum (and even below round_robin). Always use
-    `optimal_served_fraction` for the ceiling figure, never the realized run.
+    `optimal_metrics(...)["served_load_fraction"]` for the ceiling figure,
+    never the realized run.
 """
 
 from __future__ import annotations
@@ -80,7 +82,7 @@ def _solve_lp(
 
     Returns (x, col, ids, ticks, grid_at, load_at). Callers derive either the
     per-tick transfer schedule (_solve) or the optimal served fraction
-    (optimal_served_fraction) from this.
+    (optimal_metrics(...)["served_load_fraction"]) from this.
     """
     ids = sorted(households)
     ticks = list(scenario.timesteps())
@@ -295,23 +297,6 @@ def optimal_metrics(
         "unmet_kwh_total": (total_load - total_served) * scenario.dt_hours,
         "gini_welfare": _gini(per_house_frac),
     }
-
-
-def optimal_served_fraction(
-    scenario: Scenario,
-    households: dict[str, Household],
-    solar_profile: SolarProfile,
-    load_profiles: dict[str, LoadProfile],
-    neighborhood: Neighborhood,
-) -> float:
-    """The LP's optimal served-load fraction — the theoretical ceiling.
-
-    Thin wrapper over optimal_metrics for callers that only need the headline
-    fraction (e.g. the stress-scenario acceptance test).
-    """
-    return optimal_metrics(scenario, households, solar_profile, load_profiles, neighborhood)[
-        "served_load_fraction"
-    ]
 
 
 def _schedule_from_solution(
