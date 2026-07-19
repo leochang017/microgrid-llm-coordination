@@ -67,6 +67,49 @@ def test_mock_uses_cache(tmp_path) -> None:
     assert first.text == second.text == "world"
 
 
+def test_empty_response_is_not_persisted_to_cache(tmp_path) -> None:
+    """A response with no text and no tool_input (e.g. a thinking-exhausted
+    stop_reason=max_tokens reply — see the 2026-07-17 Stage-4-judge incident and
+    the 418 such entries in the committed Sonnet-ablation cache) must never be
+    written to the cache (C5-2), or it would silently poison every future
+    replay at this exact key forever. MockLLMClient raising NoMockResponseError
+    on the second call proves the first call's response was never cached."""
+    mock = MockLLMClient(
+        cache=PromptCache(local_dir=tmp_path),
+        canned={"hello": LLMResponse(text="", tokens_in=5, tokens_out=1, tool_input=None)},
+    )
+    req = LLMRequest(
+        model="claude-sonnet-5-x",
+        system="sys",
+        user="hello",
+        max_tokens=64,
+    )
+    first = mock.call(req)
+    assert first.text == "" and first.tool_input is None
+    mock.canned.clear()
+    with pytest.raises(NoMockResponseError):
+        mock.call(req)  # not cached -> falls through to the (now-empty) provider
+
+
+def test_normal_response_is_still_persisted_to_cache(tmp_path) -> None:
+    """Contrast with the empty-response case above: a usable response IS cached
+    (the C5-2 gate must not become a blanket cache bypass)."""
+    mock = MockLLMClient(
+        cache=PromptCache(local_dir=tmp_path),
+        canned={"hello": LLMResponse(text="world", tokens_in=5, tokens_out=1)},
+    )
+    req = LLMRequest(
+        model="claude-haiku-4-5-20251001",
+        system="sys",
+        user="hello",
+        max_tokens=64,
+    )
+    mock.call(req)
+    mock.canned.clear()
+    second = mock.call(req)  # cached -> served despite the now-empty canned dict
+    assert second.text == "world"
+
+
 def test_mock_substring_match_is_supported(tmp_path) -> None:
     """For agent prompt tests, we match by substring in the user prompt — exact match is too brittle for evolving prompts."""
     mock = MockLLMClient(

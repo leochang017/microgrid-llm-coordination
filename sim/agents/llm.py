@@ -107,6 +107,18 @@ class LLMClient:
         resp = self._call_provider(req)
         self.n_fresh_tokens_in += resp.tokens_in
         self.n_fresh_tokens_out += resp.tokens_out
+        # A response with neither text nor a tool call is unusable (e.g. the
+        # model spent its whole max_tokens budget on internal "thinking" and
+        # hit stop_reason=max_tokens without ever emitting output — see the
+        # 2026-07-17 Stage-4-judge incident). Never PERSIST it to the
+        # content-addressed cache: a bad entry at a given key would silently
+        # poison every future replay at that exact key forever. Still RETURN
+        # it so the caller's existing fallback path engages (C5-2, 2026-07-19).
+        # get() is deliberately untouched: already-committed caches that
+        # contain such entries (e.g. the Sonnet ablation cell, 418 of them)
+        # must keep replaying byte-identically.
+        if resp.text == "" and resp.tool_input is None:
+            return resp
         self.cache.put(
             cache_req,
             {

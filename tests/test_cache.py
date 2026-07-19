@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from sim.agents.cache import PromptCache, cache_key
 
 
@@ -24,6 +26,30 @@ def test_cache_key_deterministic() -> None:
     k2 = cache_key(_req())
     assert k1 == k2
     assert cache_key(_req("hi")) != k1
+
+
+@pytest.mark.parametrize(
+    ("field_name", "new_value"),
+    [
+        ("model", "claude-other-model-x"),
+        ("system", "a completely different system prompt"),
+        ("temperature", 0.7),
+        ("max_tokens", 999),
+        ("tools_schema", [{"name": "foo"}]),
+    ],
+)
+def test_cache_key_changes_when_any_hashed_field_varies(field_name: str, new_value: object) -> None:
+    """cache_key() hashes {model, system, user, temperature, max_tokens,
+    tools_schema} (sim/agents/cache.py:27-40) — the only prior test isolated
+    `user`. This guards each of the other four fields independently (C7-1):
+    a future refactor that silently drops one of them from the hashed dict
+    (e.g. max_tokens, which the 2026-07-17 judge-token-budget fix depended on
+    being cache-key-significant) would otherwise collide two genuinely
+    different requests onto the same cache entry undetected."""
+    base = _req()
+    varied = dict(base)
+    varied[field_name] = new_value
+    assert cache_key(varied) != cache_key(base)
 
 
 def test_cache_miss_then_hit(tmp_path: Path) -> None:

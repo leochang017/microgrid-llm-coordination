@@ -82,6 +82,29 @@ def test_estimate_cost_usd_by_model_family() -> None:
     assert _estimate_cost_usd("mock-model", 1_000_000, 1_000_000) == 0.0
 
 
+@pytest.mark.parametrize(
+    "prefix",
+    [
+        "claude-sonnet-5",
+        "claude-opus-4-7",
+        "claude-opus-4-8",
+        "claude-fable-5",
+        "claude-mythos-5",
+    ],
+)
+def test_estimate_cost_usd_covers_every_temperature_deprecated_model_family(
+    prefix: str,
+) -> None:
+    """sim/agents/llm.py's _TEMPERATURE_DEPRECATED_PREFIXES treats these as real,
+    live-callable models — the cost table must not silently report $0.00 for any
+    of them (C5-1). This list is a literal copy, not an import, so it also
+    catches the two lists drifting apart in either direction."""
+    from sim.agents.llm import _TEMPERATURE_DEPRECATED_PREFIXES
+
+    assert prefix in _TEMPERATURE_DEPRECATED_PREFIXES
+    assert _estimate_cost_usd(f"{prefix}-20260101", 1_000_000, 1_000_000) > 0.0
+
+
 def test_llm_fallback_run_writes_message_log_and_counters(tmp_path, monkeypatch):
     monkeypatch.chdir(REPO_ROOT)  # repo root for configs/
     monkeypatch.setattr(

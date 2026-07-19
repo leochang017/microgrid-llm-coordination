@@ -352,10 +352,20 @@ def _decide_with_registry(
 
 
 # $/MTok (input, output) by model-id substring; used for the cost estimate.
+# Every family in sim.agents.llm._TEMPERATURE_DEPRECATED_PREFIXES must have a
+# row here (C5-1, 2026-07-19) — that list is where the codebase declares a
+# model family "real", so a family present there but absent here would
+# silently report $0.00 for an actual live spend.
 _PRICE_PER_MTOK: dict[str, tuple[float, float]] = {
     "haiku": (1.0, 5.0),
     "sonnet": (3.0, 15.0),
     "opus": (5.0, 25.0),  # Opus >= 4.5 pricing; the 4.1-era row was $15/$75
+    # fable/mythos have no published Anthropic rate card as of 2026-07-19;
+    # estimated at the opus tier pending a real posted price (best current
+    # basis: both are frontier-tier families like opus, not mid-tier like
+    # sonnet). Update these two rows the moment official pricing ships.
+    "fable": (5.0, 25.0),
+    "mythos": (5.0, 25.0),
 }
 
 
