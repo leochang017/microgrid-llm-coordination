@@ -270,9 +270,9 @@ explainability instrument, live re-runs under corrected physics.
 
 
 
-## Phase 3 — Benchmark & Experiments (in progress, 2026-07-07)
+## Phase 3 — Benchmark & Experiments (complete)
 
-Infrastructure complete (`phase3-infra-complete`); live LLM runs are budget-gated.
+Benchmark infrastructure, live LLM runs, and analysis are all complete (tags `phase3-infra-complete` → `phase3.3-complete`); the results story is in [`docs/phase3_results.md`](docs/phase3_results.md).
 
 **Information-flow rework (the validity gate).** Agents no longer see engine ground
 truth about peers. All peer knowledge is message-borne: every agent broadcasts its
