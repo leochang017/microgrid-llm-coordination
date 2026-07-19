@@ -340,3 +340,78 @@ def test_anthropic_client_disables_the_sdk_retry_loop(tmp_path) -> None:
     with patch("sim.agents.llm.anthropic.Anthropic") as ctor:
         AnthropicLLMClient(cache=PromptCache(local_dir=tmp_path), api_key="sk-ant-api-x")
     assert ctor.call_args.kwargs.get("max_retries") == 0
+
+
+def test_anthropic_client_raises_after_retry_exhaustion(tmp_path) -> None:
+    import anthropic as anthropic_sdk
+
+    fake_client = MagicMock()
+    err = anthropic_sdk.RateLimitError(
+        message="slow down", response=MagicMock(status_code=429), body=None
+    )
+    fake_client.messages.create.side_effect = err  # every attempt fails
+
+    with (
+        patch("sim.agents.llm.anthropic.Anthropic", return_value=fake_client),
+        patch("sim.agents.llm.time.sleep") as sleeper,
+    ):
+        adapter = AnthropicLLMClient(
+            cache=PromptCache(local_dir=tmp_path),
+            api_key="sk-test",
+            max_retries=3,
+            base_backoff_s=0.1,
+        )
+        req = LLMRequest(model="claude-haiku-4-5-20251001", system="sys", user="hi", max_tokens=64)
+        with pytest.raises(anthropic_sdk.RateLimitError):
+            adapter.call(req)
+
+    assert fake_client.messages.create.call_count == 3  # exactly max_retries attempts
+    assert sleeper.call_count == 3
+
+
+def test_anthropic_client_retries_on_connection_and_server_errors(tmp_path) -> None:
+    import anthropic as anthropic_sdk
+
+    fake_msg = MagicMock()
+    fake_msg.content = [MagicMock(text="ok")]
+    fake_msg.usage = MagicMock(input_tokens=1, output_tokens=1)
+
+    conn_err = anthropic_sdk.APIConnectionError(request=MagicMock())
+    server_err = anthropic_sdk.InternalServerError(
+        message="boom", response=MagicMock(status_code=500), body=None
+    )
+    fake_client = MagicMock()
+    fake_client.messages.create.side_effect = [conn_err, server_err, fake_msg]
+
+    with (
+        patch("sim.agents.llm.anthropic.Anthropic", return_value=fake_client),
+        patch("sim.agents.llm.time.sleep"),
+    ):
+        adapter = AnthropicLLMClient(
+            cache=PromptCache(local_dir=tmp_path),
+            api_key="sk-test",
+            max_retries=5,
+            base_backoff_s=0.1,
+        )
+        req = LLMRequest(model="claude-haiku-4-5-20251001", system="sys", user="hi", max_tokens=64)
+        resp = adapter.call(req)
+
+    assert resp.text == "ok"
+    assert fake_client.messages.create.call_count == 3
+
+
+def test_anthropic_client_oauth_key_routes_to_auth_token(tmp_path) -> None:
+    # sk-ant-oat… must construct the SDK client with auth_token= (Bearer header);
+    # anything else uses api_key=. Asserted at the constructor, not a wrapper.
+    with patch("sim.agents.llm.anthropic.Anthropic") as ctor:
+        AnthropicLLMClient(cache=PromptCache(local_dir=tmp_path), api_key="sk-ant-oat01-FAKE")
+    kwargs = ctor.call_args.kwargs
+    assert kwargs["auth_token"] == "sk-ant-oat01-FAKE"
+    assert kwargs["api_key"] == ""
+    assert kwargs["max_retries"] == 0
+
+    with patch("sim.agents.llm.anthropic.Anthropic") as ctor2:
+        AnthropicLLMClient(cache=PromptCache(local_dir=tmp_path), api_key="sk-ant-api-FAKE")
+    kwargs2 = ctor2.call_args.kwargs
+    assert kwargs2["api_key"] == "sk-ant-api-FAKE"
+    assert "auth_token" not in kwargs2
