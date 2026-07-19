@@ -35,7 +35,7 @@ ignore = ["E501"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-files = ["sim"]
+files = ["sim", "scripts"]
 
 [[tool.mypy.overrides]]
 module = ["pandas", "pandas.*"]
@@ -47,6 +47,10 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["anthropic", "anthropic.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["matplotlib", "matplotlib.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

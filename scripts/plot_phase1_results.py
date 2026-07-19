@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 import tempfile
 from pathlib import Path
+from typing import Any
 
 import matplotlib.pyplot as plt
 
@@ -33,7 +34,7 @@ SCENARIO_PATH = Path("configs/scenarios/24h_resstock_outage.yaml")
 OUT_PATH = Path("docs/figures/phase1_real_data_result.png")
 
 
-def _run_strategy(strategy, out_dir: Path) -> tuple[dict, dict[str, float]]:  # type: ignore[no-untyped-def]
+def _run_strategy(strategy, out_dir: Path) -> tuple[dict[str, Any], dict[str, float]]:  # type: ignore[no-untyped-def]
     """Run one strategy; return (summary, unmet_by_house)."""
     s = load_scenario(SCENARIO_PATH)
     logger = JsonlLogger(out_dir, scenario_id=s.scenario_id)
