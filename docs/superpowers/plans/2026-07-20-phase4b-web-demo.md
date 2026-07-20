@@ -106,7 +106,7 @@ Pure transformation functions + CLI. All functions take parsed data so tests can
 8. Placeholder `web/src/routes/+page.svelte` (h1 "Microgrid LLM coordination — demo") so build succeeds; `web/static/data/.gitkeep`. Append to root `.gitignore`: `web/node_modules/`, `web/.svelte-kit/`, `web/build/`. Commit `web/package-lock.json` (needed by `npm ci` in CI). Also add `web/vercel.json`: `{ "framework": null, "buildCommand": "npm run build", "outputDirectory": "build", "trailingSlash": true }`.
 9. **Verify:** from `web/` — `npm run check` → `svelte-check found 0 errors and 0 warnings`; `npm run build` → completes, `ls build/index.html` exists. From repo root: `pytest -q` still green (no Python touched).
 10. **Commit:** `feat(demo): scaffold SvelteKit static app under web/ (adapter-static, TS, dark theme tokens)` (+ Progress-log row, + checkbox).
-- [ ] Task 2 complete
+- [x] Task 2 complete
 
 ## Task 3 — Export the four cells, commit the data + drift-pin test
 

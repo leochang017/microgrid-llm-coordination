@@ -1,0 +1,72 @@
+:root {
+	--bg: #0e1116;
+	--panel: #171b22;
+	--border: #2a3038;
+	--text: #e6e9ee;
+	--muted: #9aa4b2;
+	--accent: #fde725;
+
+	color-scheme: dark;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	background: var(--bg);
+	color: var(--text);
+	font-family:
+		-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+		'Noto Sans', sans-serif;
+	font-size: 15px;
+	line-height: 1.55;
+}
+
+a {
+	color: var(--accent);
+}
+
+h1,
+h2,
+h3 {
+	line-height: 1.2;
+	margin: 0 0 0.5em;
+}
+
+.panel {
+	background: var(--panel);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	padding: 1rem;
+}
+
+.muted {
+	color: var(--muted);
+}
+
+/* Numbers must not jitter as a replay scrubs tick to tick. */
+.metric,
+.num,
+table.metrics td {
+	font-variant-numeric: tabular-nums;
+}
+
+code,
+pre,
+.mono {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	* {
+		animation: none !important;
+		transition: none !important;
+	}
+}

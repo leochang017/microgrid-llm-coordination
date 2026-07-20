@@ -36,3 +36,11 @@ reference_runs/*/round_robin_overlay/
 .DS_Store
 .vscode/
 .idea/
+
+# Phase 4b web demo (SvelteKit)
+web/node_modules/
+web/.svelte-kit/
+web/build/
+# The `data/` rule above matches any directory named data at any depth, which
+# would silently swallow the demo's committed payload. Re-include it explicitly.
+!web/static/data/
