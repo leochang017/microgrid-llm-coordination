@@ -45,13 +45,27 @@ DEMO_CELLS: dict[str, tuple[str, int]] = {
     "comm": ("haves_havenots_solar__comm", 23),
 }
 
-SCENARIO_BLURB = (
-    "30 households on a 5x6 distribution bus ride out a 24 h full outage. "
-    "Twelve 'haves' own rooftop PV and 35-40 kWh batteries; eighteen 'have-nots' "
-    "have no PV and 2-4 kWh. Energy is abundant but misplaced, so the whole game "
-    "is whether the agents move the haves' midday solar into have-not batteries "
-    "before nightfall."
-)
+
+def scenario_blurb(scenario: Scenario, houses: list[dict[str, Any]]) -> str:
+    """One-sentence framing of THIS cell's population, derived from its own houses.
+
+    The have/have-not split is re-derived per SEED, so it genuinely differs across
+    the demo cells (clean/noise/comm are seed 23 -> 9 haves / 21 have-nots;
+    defectors is seed 7 -> 12 / 18). A shared hardcoded sentence was wrong on three
+    of the four cards, so the counts are computed here and can never drift from the
+    ``houses`` list they describe. The battery ranges below DO hold for every
+    committed cell (haves 35.0-39.8 kWh, have-nots 2.07-3.96 kWh, measured).
+    """
+    n_have = sum(1 for h in houses if h["have"])
+    n_not = len(houses) - n_have
+    return (
+        f"{len(houses)} households on a {scenario.rows}x{scenario.cols} distribution bus "
+        f"ride out a 24 h full outage. {n_have} 'haves' own rooftop PV and 35-40 kWh "
+        f"batteries; {n_not} 'have-nots' have no PV and 2-4 kWh. Energy is abundant but "
+        "misplaced, so the whole game is whether the agents move the haves' midday solar "
+        "into have-not batteries before nightfall."
+    )
+
 
 FAILURE_DESCRIPTIONS: dict[str, str] = {
     "clean": ("No failure modes; hardest of three committed seeds (23; seeds 1/7 shown as spread)"),
@@ -380,7 +394,7 @@ def build_meta(
         "seed": seed,
         "runDir": f"reference_runs/{cell}/llm_agent/{run}",
         "model": scenario.llm.get("model"),
-        "scenarioBlurb": SCENARIO_BLURB,
+        "scenarioBlurb": scenario_blurb(scenario, houses),
         "failureDescription": FAILURE_DESCRIPTIONS[slug],
         "dtHours": scenario.dt_hours,
         "tickCount": len(tick_ts),

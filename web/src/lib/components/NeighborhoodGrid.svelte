@@ -14,6 +14,12 @@
 	select one. Every decorative overlay (sun dot, wedge, triangle, label text, the
 	selected-house outline) sits on top with `pointer-events: none` so it can never
 	steal the click/keyboard target away from the rect underneath it.
+
+	The wrapper <svg> is `role="group"`, deliberately NOT `role="img"`: the `img` role is
+	children-presentational in WAI-ARIA, so conforming assistive tech would expose the
+	whole grid as a single graphic and prune the subtree — every house rect would stay
+	keyboard-focusable while not being exposed as a button. `group` keeps the same
+	labelled container without hiding its children.
 -->
 <script lang="ts">
 	import { socColor } from '$lib/colors';
@@ -70,7 +76,7 @@
 <svg
 	class="grid"
 	viewBox="0 0 660 560"
-	role="img"
+	role="group"
 	aria-label="Neighborhood grid, {meta.rows} by {meta.cols} houses, coloured by state of charge"
 >
 	{#each meta.houses as house, idx (house.id)}

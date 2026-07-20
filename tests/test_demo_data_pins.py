@@ -73,6 +73,25 @@ def test_lp_is_ceiling() -> None:
             ), f"{slug}: LP {lp!r} below {method} {m['served_load_fraction']!r}"
 
 
+def test_scenario_blurb_counts_match_the_houses_it_describes() -> None:
+    """The have/have-not split is re-derived per SEED and really does differ per cell.
+
+    Measured on the committed payload: clean 9/21, noise 9/21, comm 9/21 (all seed 23)
+    and defectors 12/18 (seed 7). A shared hardcoded sentence was wrong on three of the
+    four cards; this pins the derivation instead of the literal.
+    """
+    expected = {"clean": (9, 21), "defectors": (12, 18), "noise": (9, 21), "comm": (9, 21)}
+    for slug in sorted(DEMO_CELLS):
+        meta = _meta(slug)
+        houses = meta["houses"]
+        n_have = sum(1 for h in houses if h["have"])
+        n_not = len(houses) - n_have
+        assert (n_have, n_not) == expected[slug], f"{slug}: {n_have}/{n_not}"
+        blurb = meta["scenarioBlurb"]
+        assert f"{n_have} 'haves'" in blurb, f"{slug}: blurb disagrees with houses: {blurb!r}"
+        assert f"{n_not} 'have-nots'" in blurb, f"{slug}: blurb disagrees with houses: {blurb!r}"
+
+
 def test_no_secrets_or_caches_in_data() -> None:
     files = [p for p in DATA.rglob("*") if p.is_file()]
     assert files, f"no files under {DATA}"

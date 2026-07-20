@@ -11,6 +11,7 @@
 -->
 <script lang="ts">
 	import type { CellMeta } from '$lib/types';
+	import { gapClosedPhrase } from '$lib/gap';
 
 	interface Props {
 		meta: CellMeta;
@@ -59,16 +60,10 @@
 		return Math.min(100, Math.max(0, v * 100));
 	}
 
-	// The gap-closed figure is signed: it is NEGATIVE on the comm cell (-0.0325), where
-	// the LLM condition did WORSE than the zero-LLM control. Phrasing must stay honest
-	// and readable for both signs — "closes -3% of the gap" would be nonsense.
+	// The gap-closed figure is signed (NEGATIVE on the comm cell). The phrasing is shared
+	// with the replay page via `$lib/gap` so the two sites can never drift apart.
 	const gap = $derived(meta.gapClosedControlToLp);
-	const gapPct = $derived(Math.round(Math.abs(gap) * 100));
-	const gapText = $derived(
-		gap >= 0
-			? `closes ${gapPct}% of the control→LP gap`
-			: `ends ${gapPct}% of the control→LP gap BELOW the zero-LLM control`
-	);
+	const gapText = $derived(gapClosedPhrase(gap));
 </script>
 
 <div class="bars">

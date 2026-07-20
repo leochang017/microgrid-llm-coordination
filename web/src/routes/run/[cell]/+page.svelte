@@ -11,10 +11,10 @@
 	negative on the comm cell) rather than `Math.abs`'d into a false positive framing.
 -->
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { base } from '$app/paths';
 	import { loadCell, type LoadedCell } from '$lib/load';
+	import { gapClosedPhrase } from '$lib/gap';
 	import type { Slug } from '$lib/types';
 	import { ReplayState } from '$lib/replay.svelte';
 	import NeighborhoodGrid from '$lib/components/NeighborhoodGrid.svelte';
@@ -28,20 +28,36 @@
 		return x !== undefined && (SLUGS as readonly string[]).includes(x);
 	}
 
-	const rawCell = page.params.cell;
-	const slug: Slug | null = isSlug(rawCell) ? rawCell : null;
+	const rawCell = $derived(page.params.cell);
+	const slug = $derived<Slug | null>(isSlug(rawCell) ? rawCell : null);
 
 	let loaded = $state<LoadedCell | null>(null);
 	let error = $state<string | null>(null);
 	const replay = new ReplayState();
 
-	onMount(async () => {
-		if (!slug) return;
-		try {
-			loaded = await loadCell(slug);
-		} catch (e) {
-			error = e instanceof Error ? e.message : String(e);
-		}
+	// Keyed on the slug, NOT `onMount`: a client-side nav from one /run/<cell>/ to another
+	// reuses this component instance, so an init-time read would keep showing the previous
+	// cell's data. Each (re)run resets the replay position and cancels a load still in
+	// flight, so a slow fetch for the cell we just left can't overwrite the new one.
+	$effect(() => {
+		const s = slug;
+		loaded = null;
+		error = null;
+		replay.tick = 0;
+		replay.playing = false;
+		replay.selectedHouse = null;
+		if (!s) return;
+		let cancelled = false;
+		loadCell(s)
+			.then((c) => {
+				if (!cancelled) loaded = c;
+			})
+			.catch((e: unknown) => {
+				if (!cancelled) error = e instanceof Error ? e.message : String(e);
+			});
+		return () => {
+			cancelled = true;
+		};
 	});
 
 	// Play loop: advances `replay.tick` every `450 / speed` ms while playing, auto-pausing
@@ -66,13 +82,8 @@
 		return v === null || !Number.isFinite(v) ? 'n/a' : v.toFixed(digits);
 	}
 
-	const gap = $derived(loaded ? loaded.meta.gapClosedControlToLp : 0);
-	const gapPct = $derived(Math.round(Math.abs(gap) * 100));
-	const gapText = $derived(
-		gap >= 0
-			? `closes ${gapPct}% of the control→LP gap`
-			: `ends ${gapPct}% of the control→LP gap BELOW the zero-LLM control`
-	);
+	// Same shared helper the overview card uses — see `$lib/gap` for why the sign matters.
+	const gapText = $derived(gapClosedPhrase(loaded ? loaded.meta.gapClosedControlToLp : 0));
 </script>
 
 <svelte:head>

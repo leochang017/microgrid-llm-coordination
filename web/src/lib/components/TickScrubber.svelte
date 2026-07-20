@@ -1,9 +1,12 @@
 <!--
 	Tick scrubber: a native range slider (free keyboard arrow-key support) plus
-	play/pause, a 1x/2x/4x speed toggle, a clock readout, and a tiny 96-bin strip
-	chart of total solar (yellow, above the baseline) vs total unmet load (red,
+	play/pause, a 1x/2x/4x speed toggle, a clock readout, and a tiny per-tick strip
+	chart of total solar (yellow, above the baseline) and total unmet load (red,
 	below it) so the day/night cycle and the "pain hours" are visible at a glance
-	without scrubbing to find them.
+	without scrubbing to find them. The two series are each normalized to their own
+	peak, so the chart is not a magnitude comparison between them — the caption says
+	so, and carries the peak-solar / worst-unmet hours as the SVG's text equivalent
+	(the SVG itself is aria-hidden).
 -->
 <script lang="ts">
 	import type { CellMeta, CellTicks } from '$lib/types';
@@ -36,7 +39,9 @@
 		const startLabel = hhmm(start);
 		const crossesDay = datePart(end) !== datePart(start);
 		const endLabel = crossesDay && hhmm(end) === '00:00' ? '24:00' : hhmm(end);
-		return `grid down ${startLabel}–${endLabel} for all ${meta.houses.length} houses`;
+		// No affected-house list is exported (`meta.outage` is only {start, end}), so this
+		// deliberately makes no claim about WHICH houses the outage covers.
+		return `grid down ${startLabel}–${endLabel}`;
 	});
 
 	function onSliderInput(e: Event): void {
@@ -65,6 +70,28 @@
 
 	const STRIP_H = 40;
 	const STRIP_MID = STRIP_H / 2;
+
+	// Textual equivalent of the (aria-hidden) strip chart: the two facts it exists to
+	// convey — when the sun peaks and when the pain is worst — computed from the same
+	// arrays the bars are drawn from, never asserted.
+	function argmax(xs: number[]): number {
+		let best = 0;
+		for (let i = 1; i < xs.length; i++) if (xs[i] > xs[best]) best = i;
+		return best;
+	}
+	const peakSolar = $derived(argmax(totalSolar));
+	const worstUnmet = $derived(argmax(totalUnmet));
+	const stripSummary = $derived.by(() => {
+		const solarPart =
+			totalSolar[peakSolar] > 0
+				? `neighborhood solar peaks at ${hhmm(meta.tickTimes[peakSolar])} (${totalSolar[peakSolar].toFixed(1)} kW)`
+				: 'no solar generation at any tick';
+		const unmetPart =
+			totalUnmet[worstUnmet] > 0
+				? `unmet load is worst at ${hhmm(meta.tickTimes[worstUnmet])} (${totalUnmet[worstUnmet].toFixed(2)} kWh that tick)`
+				: 'no unmet load at any tick';
+		return `${solarPart}; ${unmetPart}.`;
+	});
 </script>
 
 <!--
@@ -79,6 +106,7 @@
 			type="button"
 			class="play"
 			aria-pressed={state.playing}
+			aria-keyshortcuts="Space"
 			onclick={() => state.togglePlay()}
 		>
 			{state.playing ? '⏸ Pause' : '▶ Play'}
@@ -122,7 +150,11 @@
 		{/each}
 		<rect x={state.tick} y="0" width="1" height={STRIP_H} class="playhead" />
 	</svg>
-	<p class="strip-caption muted">solar (yellow) vs unmet load (red) across all 96 ticks</p>
+	<p class="strip-caption muted">
+		solar (yellow, above) and unmet load (red, below) across all {meta.tickCount} ticks — each
+		series is normalized to its own peak, so bar heights compare within a series, not between
+		them. {stripSummary}
+	</p>
 
 	<p class="outage muted">{outageLabel}</p>
 </div>
