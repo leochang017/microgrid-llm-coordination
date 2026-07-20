@@ -12,9 +12,12 @@
 	  * COLOUR is the performative (`PERF_COLORS`) — decoration only. Every message is
 	    also listed as text in the MessagePanel beside the grid, and the grid's own
 	    aria-label carries this tick's message count, so nothing here is colour-only.
-	  * SHAPE is the outcome: a delivered message is a solid arc, a dropped one is dashed
-	    at half opacity. Curvature is signed by direction, so a->b and b->a bow to
-	    opposite sides instead of stacking on one line.
+	  * SHAPE is the outcome: a delivered message is a solid arc, one that never reached
+	    its recipient is dashed at half opacity. That covers BOTH `dropped` and
+	    `pending_at_end` (still in the bus queue when the run ended) — a pending message
+	    reached nobody either, so drawing it solid would read as a success it never was.
+	    The panel beside the grid keeps the two apart in text. Curvature is signed by
+	    direction, so a->b and b->a bow to opposite sides instead of stacking on one line.
 
 	The layer is `aria-hidden` + `pointer-events: none`. Both are deliberate: 80 arcs
 	crossing the cells would intercept hover and steal the house rects' click target,
@@ -27,8 +30,13 @@
 	rows in all four cells (every INFORM in these runs is templated and the exporter
 	drops those; the INFORM story lives in `CellTicks.informCounts`), so the INFORM tiers
 	are dead today by construction and exist only so the rule is honest if that changes.
-	The "+N more" note counts messages that had geometry and were cut by the cap — NOT
-	messages skipped for having no drawable endpoints, which would make the note a lie.
+	The "+N more" note counts EVERY message at this tick that is not drawn: the ones cut
+	by the cap, and the ones skipped for having no drawable endpoints (an unknown house id,
+	or a chord too short to trim). A reader takes "+6 more messages this tick" to mean six
+	messages at this tick are missing from the canvas, so excluding the geometry skips
+	would make the note undercount what is missing. `hidden` is therefore just
+	`msgs.length - arcs.length`, computed by incrementing on each skip so the reason for
+	every skip stays visible at its own `continue`.
 -->
 <script lang="ts">
 	import { PERF_COLORS } from '$lib/colors';
@@ -62,7 +70,8 @@
 		key: string;
 		d: string;
 		color: string;
-		dropped: boolean;
+		/** True for anything that never reached the recipient — dropped OR pending at run end. */
+		undelivered: boolean;
 	}
 
 	const layer = $derived.by<{ arcs: Arc[]; hidden: number }>(() => {
@@ -71,17 +80,27 @@
 		const ordered = msgs.map((m, i) => ({ m, i })).sort((a, b) => rank(a.m) - rank(b.m) || a.i - b.i);
 
 		const arcs: Arc[] = [];
-		let drawable = 0;
+		let hidden = 0;
 		for (const { m } of ordered) {
 			const a = centers.get(m.from);
 			const b = centers.get(m.to);
-			if (!a || !b) continue;
+			// No endpoint to draw from: still a message this tick that the canvas omits.
+			if (!a || !b) {
+				hidden += 1;
+				continue;
+			}
 			const dx = b[0] - a[0];
 			const dy = b[1] - a[1];
 			const len = Math.hypot(dx, dy);
-			if (len <= 2 * TRIM) continue;
-			drawable += 1;
-			if (arcs.length >= MAX_ARCS) continue;
+			// Chord shorter than the two trims would invert the arc; omit rather than draw junk.
+			if (len <= 2 * TRIM) {
+				hidden += 1;
+				continue;
+			}
+			if (arcs.length >= MAX_ARCS) {
+				hidden += 1;
+				continue;
+			}
 			const ux = dx / len;
 			const uy = dy / len;
 			const x1 = a[0] + ux * TRIM;
@@ -96,16 +115,16 @@
 				key: m.id,
 				d: `M ${x1.toFixed(1)} ${y1.toFixed(1)} Q ${cx.toFixed(1)} ${cy.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}`,
 				color: PERF_COLORS[m.perf],
-				dropped: m.outcome === 'dropped'
+				undelivered: m.outcome !== 'delivered'
 			});
 		}
-		return { arcs, hidden: Math.max(0, drawable - arcs.length) };
+		return { arcs, hidden };
 	});
 </script>
 
 <g class="messages" aria-hidden="true">
 	{#each layer.arcs as arc (arc.key)}
-		<path class="arc" class:dropped={arc.dropped} d={arc.d} stroke={arc.color} fill="none" />
+		<path class="arc" class:undelivered={arc.undelivered} d={arc.d} stroke={arc.color} fill="none" />
 	{/each}
 	{#if layer.hidden > 0}
 		<text class="more" x="8" y={VIEW_H - 6}>+{layer.hidden} more messages this tick</text>
@@ -122,7 +141,7 @@
 		opacity: 0.85;
 	}
 
-	.arc.dropped {
+	.arc.undelivered {
 		opacity: 0.5;
 		stroke-dasharray: 4 4;
 	}

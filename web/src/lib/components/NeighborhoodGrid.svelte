@@ -160,11 +160,15 @@
 		return `M ${x} ${bottom - a} L ${x} ${bottom - b} L ${x + b} ${bottom} L ${x + a} ${bottom} Z`;
 	}
 
+	// The message clause says "see the message panel", not "listed in the message panel":
+	// the panel's filters (performative toggles, authored-only, house filter) do not apply
+	// to the arcs, so a tick with 170 messages can show 55 rows in the panel. Promising a
+	// one-to-one listing would over-claim; the panel discloses its own "N of M" count.
 	const gridLabel = $derived(
 		`Neighborhood grid, ${meta.rows} by ${meta.cols} houses, coloured by state of charge` +
 			(state.showTransfers ? `; ${transfers.length} transfers at this tick` : '') +
 			(state.showMessages
-				? `; ${(msgsByTick.get(state.tick) ?? []).length} messages sent at this tick, listed in the message panel`
+				? `; ${(msgsByTick.get(state.tick) ?? []).length} messages sent at this tick, see the message panel`
 				: '')
 	);
 </script>

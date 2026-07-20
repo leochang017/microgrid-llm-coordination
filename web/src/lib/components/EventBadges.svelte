@@ -20,8 +20,12 @@
 	cap the engine actually applies, not against the name. `_transfer_caps` in
 	`sim/engine.py` sets the receiver cap to
 	`max(0, load - solar) + max(0, absorb_batt_kw - own_surplus)` — the receiver's own
-	unmet load (served by DC bypass, needing no battery headroom at all) plus only the
-	battery intake its own solar surplus is not already consuming. So the event also fires
+	unmet load (served directly, without passing through the battery, so it needs no
+	battery headroom at all) plus only the battery intake its own solar surplus is not
+	already consuming. There is no DC/AC distinction in the model: `sim/household.py::step`
+	nets solar, load, sent and received and routes only the RESIDUAL through the battery,
+	which is the whole of the mechanism (the simulator calls that netting choice
+	"DC-bypass", but it models no separate DC path). So the event also fires
 	on a receiver with plenty of headroom that is busy filling it from its own panels, or
 	one whose load deficit is simply used up. "Battery full" is one case of several.
 

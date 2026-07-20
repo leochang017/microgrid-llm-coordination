@@ -346,7 +346,7 @@
 	}
 
 	.pill {
-		color: #0e1116;
+		color: var(--bg);
 		border-radius: 4px;
 		padding: 0.05rem 0.35rem;
 		font-size: 0.68rem;
