@@ -1,10 +1,12 @@
 # Microgrid LLM Coordination
 
+[![CI](https://github.com/leochang017/microgrid-llm-coordination/actions/workflows/ci.yml/badge.svg)](https://github.com/leochang017/microgrid-llm-coordination/actions/workflows/ci.yml)
+
 A research project asking: can a population of LLM agents — one per household — negotiate peer-to-peer to allocate scarce energy during a grid outage in a way that is **fair across heterogeneous households**, **robust to incomplete or incorrect information**, and **explainable to residents**?
 
 The contribution is on the CS/ML axis (natural-language coordination, robustness, explainability), not power systems. Classical optimization handles fairness under strong assumptions, struggles with robustness, and doesn't attempt explainability. That gap is what this project explores.
 
-**Status:** Phases 1–2.9 complete; Phase 3 infrastructure + pre-live hardening complete; live runs complete; **Phase 3.3 analysis & results complete** (`phase3.3-complete`, 2026-07-16); **all Phase 3.2 playbook stages done, including the optional Stage 3 Sonnet capability ablation (2026-07-18) and Stage 4 live explanation judging (2026-07-17)**. Run `pytest` for the current test count (364 as of 2026-07-19); ruff + mypy --strict (sim/ + scripts/) clean. **Headline: live Haiku beats the zero-LLM control on 3/3 seeds (+5.8 ± 1.0 pts, closing 29% of the control→LP gap)** — the first replicated evidence the LLM layer adds coordination value; failure-cell probes then show it retains 89% of that value under 33.6% defection and tolerates observation noise, while a bandwidth-constrained comm cell is the one regime with a residual net loss vs the control (−0.86 pts after a 2026-07-19 re-run fixing two commitment-integrity bugs that had inflated the original −4.6). **Capability ablation: swapping Haiku for Sonnet on the clean cell ties (0.6685 vs 0.6726) — model capability does not move clean-cell coordination quality; the LLM advantage is about scenario difficulty, not raw reasoning power.** **Explanation judging (Sonnet judge, ≠ author family): rationales score 3.03/4.05/4.46 (state_accuracy/actionability/consistency) on the clean cell, 3.00/3.97/4.52 on defectors — actionable and consistent, self-reported state figures are the weakest axis.** The results story with real numbers is in [`docs/phase3_results.md`](docs/phase3_results.md); every figure + table regenerates from committed artifacts with `python -m scripts.figures --all` ($0, no API calls). Next: Phase 4 (paper + demo). Deferred, not scheduled: VT/AZ cross-climate cells.
+**Status:** Phases 1–2.9 complete; Phase 3 infrastructure + pre-live hardening complete; live runs complete; **Phase 3.3 analysis & results complete** (`phase3.3-complete`, 2026-07-16); **all Phase 3.2 playbook stages done, including the optional Stage 3 Sonnet capability ablation (2026-07-18) and Stage 4 live explanation judging (2026-07-17)**. Run `pytest` for the current test count (407 as of 2026-07-20); ruff + mypy --strict (sim/ + scripts/) clean. **Headline: live Haiku beats the zero-LLM control on 3/3 seeds (+5.8 ± 1.0 pts, closing 29% of the control→LP gap)** — the first replicated evidence the LLM layer adds coordination value; failure-cell probes then show it retains 89% of that value under 33.6% defection and tolerates observation noise, while a bandwidth-constrained comm cell is the one regime with a residual net loss vs the control (−0.86 pts after a 2026-07-19 re-run fixing two commitment-integrity bugs that had inflated the original −4.6). **Capability ablation: swapping Haiku for Sonnet on the clean cell ties (0.6685 vs 0.6726) — model capability does not move clean-cell coordination quality; the LLM advantage is about scenario difficulty, not raw reasoning power.** **Explanation judging (Sonnet judge, ≠ author family): rationales score 3.03/4.05/4.46 (state_accuracy/actionability/consistency) on the clean cell, 3.00/3.97/4.52 on defectors — actionable and consistent, self-reported state figures are the weakest axis.** The results story with real numbers is in [`docs/phase3_results.md`](docs/phase3_results.md); every figure + table regenerates from committed artifacts with `python -m scripts.figures --all` ($0, no API calls). Next: Phase 4 (paper + demo). Deferred, not scheduled: VT/AZ cross-climate cells.
 
 📐 [Phase 1 spec](docs/superpowers/archive/specs/2026-05-14-phase1-simulator-design.md) · [Phase 1.6 spec](docs/superpowers/archive/specs/2026-05-29-phase1.6-hardening-design.md) · [Phase 2 spec](docs/superpowers/archive/specs/2026-06-13-phase2-llm-agent-design.md) · [Phase 3 spec](docs/superpowers/archive/specs/2026-07-07-phase3-benchmark-design.md) · [Phase 3.1 spec](docs/superpowers/archive/specs/2026-07-12-phase3.1-prelive-hardening.md) · 📋 [Phase 1 plan](docs/superpowers/archive/plans/2026-05-14-phase1-simulator.md) · [Phase 1.6 plan](docs/superpowers/archive/plans/2026-05-29-phase1.6-hardening.md) · [Phase 2 plan](docs/superpowers/archive/plans/2026-06-13-phase2-llm-agent.md) · 🧠 [Project context (CLAUDE.md)](CLAUDE.md)
 
@@ -17,6 +19,14 @@ pip install -e ".[dev,data]"
 ```
 
 Requires Python ≥ 3.12.
+
+**Why the checkout is large.** `reference_runs/` is ~35.5k tracked files / ~266 MB, and
+that is the deliberate reproducibility mechanism, not clutter: ~35.5k of those files are
+the content-addressed LLM prompt caches (~102 MB) that let every live result replay
+byte-identically with **zero API calls**, and the rest are the frozen run artifacts
+(`state.jsonl` / `events.jsonl` / `messages.jsonl` / `summary.json`) every published figure
+and table is re-derived from. `python -m scripts.figures --all` regenerates the whole
+results section from them for $0. A `--depth 1` clone skips the history but not these files.
 
 ## Run a scenario
 
@@ -39,7 +49,7 @@ Add `--no-strict` to disable the SoC-bound assertions while hacking on physics.
 ## Run the tests
 
 ```bash
-pytest                  # full suite; see CI badge/logs for the current count
+pytest                  # full suite; the CI badge at the top links the current run
 ruff check sim tests scripts
 mypy
 ```
@@ -79,7 +89,7 @@ sim/            engine.py · household.py · network.py · scenario.py · loggin
 sim/agents/     agent.py · policy.py · memory.py · protocol.py · cache.py · llm.py · failure_modes.py · seeding.py
 sim/adapters/   nrel_solar.py · resstock.py · pecan_street.py
 sim/strategies/ no_coordination.py · round_robin.py · round_robin_overlay.py · lp_optimal.py · llm_agent.py · llm_fallback.py
-scripts/        run.py · compare.py · sweep.py · eval_explanations.py · fetch_data.py
+scripts/        figures.py · run.py · compare.py · sweep.py · eval_explanations.py · dose_check.py · fetch_data.py
 ```
 
 The **coordination strategy is an injected callback** — `decide_transfers(t, states, households, solar, load, grid, neighborhood, dt) -> list[Transfer]`. Phase 2 added `sim/strategies/llm_agent.py` (the LLM strategy facade) and Phase 2.9 added `llm_fallback.py` (the zero-LLM control).

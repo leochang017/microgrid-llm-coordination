@@ -8,8 +8,13 @@ repos:
       - id: ruff-format
         files: ^(sim|tests|scripts)/.*\.py$
 
+  # Keep `rev` in step with the mypy the repo/CI actually resolve (`mypy>=1.11`
+  # -> 2.3.0 as of 2026-07-20). A stale pin here is not a conservative choice:
+  # v1.11.2 against numpy 2.5.1's stubs false-positived on lp_optimal.py's
+  # `np.zeros(n)` indexed assignment, so the local gate rejected commits CI
+  # accepts. Bump this when CI's mypy moves.
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.2
+    rev: v2.3.0
     hooks:
       - id: mypy
         files: ^(sim|scripts)/.*\.py$

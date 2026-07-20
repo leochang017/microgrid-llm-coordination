@@ -204,6 +204,22 @@ else changed.
   before and after.
 - **Commitment expiry is only counted while islanded** — a pre-existing scope
   note carried over unchanged by C1/C2.
+- **Commitment counters are bookkept at emission, not settlement.** An agent
+  decrements a commitment by the kWh it *asks* the engine to move; the engine
+  then settles that request against sender caps, receiver caps, and the bus
+  limit, and routinely scales it down (committed clean@23: 906
+  `sender_dod_floor` clip events against 1,632 executed transfers). No
+  settlement result is fed back to the agent — `MemoryKind`'s
+  `transfer_outcome` slot is declared but never written — so a commitment the
+  instrumentation counts as fulfilled may have been only partly delivered.
+  **Every headline number is unaffected:** served-load, Gini, Jain, and the
+  gap-closed figures are all computed from settled physics, which is
+  authoritative. What this does qualify is the promise-side reading of §4 —
+  including the noise-cell aside that agents "committed less and fulfilled more
+  reliably", which rests on emission-side counters and is therefore a statement
+  about promising behavior, not about delivered energy. Feeding settlement back
+  to the agents is a Phase-4 candidate (it changes prompts and cache keys, so it
+  would re-pay every committed live cell).
 - **The committed `defectors@7` artifact predates the C3 provenance fix.** Its
   `summary.json`'s `failure_modes_active.defector_house_ids` reads `[]` even
   though 6 defector houses (33.6% dose) actually were realized — C3 (wiring

@@ -102,6 +102,12 @@ def settle_transfers(
     Two-stage clipping:
       1. Per sender: if total requested out > sender cap, scale each outgoing
          transfer proportionally and emit a SENDER_DOD_FLOOR event.
+
+         The event name is historical and narrower than what it means: it fires on
+         ANY sender-cap clip — the sender's own load deficit, its battery discharge
+         rate limit, or the DoD floor — not the DoD floor specifically. Do NOT
+         rename it: committed ``events.jsonl`` artifacts under ``reference_runs/``
+         and the replay/golden pins that read them depend on the literal kind string.
       2. Per receiver: if total *received* (post-bus-loss) > receiver cap, scale
          all transfers into that receiver proportionally and emit RECEIVER_FULL.
          The sender's actual_sent is reduced accordingly.

@@ -15,7 +15,7 @@ Executor-ready plans produced by `/planbatch` (distinct from the per-phase specs
 
 | # | Plan | Covers | Status |
 |---|------|--------|--------|
-| 1 | [2026-07-20-oss-polish-plan.md](2026-07-20-oss-polish-plan.md) | README staleness (test count 364→407, CI badge, scripts listing, reference_runs note), pyproject OSS metadata, docs-only honesty caveats (commitment emission-vs-settlement I-1, SENDER_DOD_FLOOR misnomer, adapter boundary note, LP-Gini vertex caveat). Docs + metadata only — zero logic/cache-key changes. Includes the 2026-07-20 3-reviewer review record (security: clean; accuracy: no published number wrong). | pending |
+| 1 | [2026-07-20-oss-polish-plan.md](2026-07-20-oss-polish-plan.md) | README staleness (test count 364→407, CI badge, scripts listing, reference_runs note), pyproject OSS metadata, docs-only honesty caveats (commitment emission-vs-settlement I-1, SENDER_DOD_FLOOR misnomer, adapter boundary note, LP-Gini vertex caveat). Docs + metadata only — zero logic/cache-key changes. Includes the 2026-07-20 3-reviewer review record (security: clean; accuracy: no published number wrong). | **done** (2026-07-20; 13/13 boxes, 407 tests unchanged, `docs/phase3_tables.md` the only generated diff) |
 
 Flip a row to **done** in the executing session's wrap task.
 

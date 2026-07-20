@@ -85,6 +85,12 @@ class NRELSolar:
         return float(rng.normal(0.0, self.noise_std))
 
     def get_kw(self, t: datetime) -> float:
+        # NOTE for scenario authors: a `t` before the CSV's first sample returns 0.0
+        # (dark), it does NOT raise — unlike ResStockLoad.get_kw, which raises on the
+        # same out-of-range condition. The asymmetry is intentional (missing irradiance
+        # is physically "night"; missing load is not physically "no demand"), but it
+        # means a scenario horizon that starts before the solar file silently runs with
+        # zero generation instead of failing. Check the file's horizon() when authoring.
         idx = self.df.index.searchsorted(t, side="right") - 1
         if idx < 0:
             return 0.0

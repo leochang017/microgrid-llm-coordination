@@ -409,7 +409,16 @@ _FAIRNESS = [
 
 
 def render_fairness_panel(out_dir: Path = FIG_DIR) -> Path:
-    """Four fairness metrics, per method per cell — Gini never shown alone."""
+    """Four fairness metrics, per method per cell — Gini never shown alone.
+
+    Caveat on the ``lp_optimal`` Gini bar (the only fairness metric LP defines):
+    the LP objective maximizes served load with **no fairness tiebreak**, so under
+    degenerate optima the reported Gini is whichever alternate optimum — whichever
+    vertex — the solver happened to select. It is not "the fairest allocation
+    achieving the ceiling", and it can move with the solver version. See
+    ``sim/strategies/lp_optimal.py``'s docstring. Read the LP bar as a
+    throughput ceiling that happens to have a Gini, not as a fairness target.
+    """
     metrics = {cell: cell_metrics(cell) for cell in CELL_ORDER}
     fig, axes = _new_axes(2, 2, (12.0, 9.0))
     flat = [axes[r][c] for r in range(2) for c in range(2)]
@@ -777,6 +786,20 @@ def render_tables(out_path: Path = REPO / "docs" / "phase3_tables.md") -> Path:
         "committer's own `share_min_soc_frac` threshold) — pre/post-fix "
         "expiry percentages measure different things and should not be "
         "diffed as if they were the same metric.",
+        "",
+        "**These are promise-side counters, bookkept at emission — not delivered "
+        "kWh.** An agent decrements a commitment by the amount it *asks* the "
+        "engine to move (`sim/agents/agent.py`, the commitment-serving loop in "
+        "`act()`); physical delivery is settled separately by "
+        "`sim/network.py::settle_transfers`, which routinely scales a transfer "
+        "down against the sender cap, the receiver cap, or the bus limit (in the "
+        "committed clean@23 run: 906 `sender_dod_floor` clip events against 1,632 "
+        "executed transfers). No settlement result is fed back to the agents, so a "
+        "commitment counted as fulfilled here may have been delivered only in "
+        "part. This affects the *negotiation instrumentation only* — served-load, "
+        "Gini, and Jain are computed from settled physics and are unaffected. "
+        "Closing that loop is a Phase-4 candidate (it would change prompts and "
+        "cache keys, and so re-pay every committed live cell).",
         "",
         "## Explanation quality (Sonnet judge)",
         "",

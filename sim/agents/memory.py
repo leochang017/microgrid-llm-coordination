@@ -14,6 +14,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal
 
+# NOTE: "transfer_outcome" is reserved for Phase-4 settlement feedback and is never
+# written today — nothing tells an agent how much of a transfer the engine actually
+# settled, so commitment bookkeeping is emission-side only (see docs/phase3_results.md §6).
 MemoryKind = Literal["obs", "msg_sent", "msg_recv", "transfer_outcome", "reflection"]
 
 
