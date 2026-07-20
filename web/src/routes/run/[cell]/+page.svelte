@@ -19,6 +19,8 @@
 	import { ReplayState } from '$lib/replay.svelte';
 	import NeighborhoodGrid from '$lib/components/NeighborhoodGrid.svelte';
 	import TickScrubber from '$lib/components/TickScrubber.svelte';
+	import OverlayToggles from '$lib/components/OverlayToggles.svelte';
+	import EventBadges from '$lib/components/EventBadges.svelte';
 
 	const SLUGS: Slug[] = ['clean', 'defectors', 'noise', 'comm'];
 	// `page.params` is typed as the union of every route's params app-wide (it's a global,
@@ -140,7 +142,11 @@
 
 			<div class="layout">
 				<section class="panel replay-col">
+					<div>
+						<OverlayToggles meta={loaded.meta} state={replay} />
+					</div>
 					<NeighborhoodGrid meta={loaded.meta} ticks={loaded.ticks} state={replay} />
+					<EventBadges ticks={loaded.ticks} state={replay} />
 					<TickScrubber meta={loaded.meta} ticks={loaded.ticks} state={replay} />
 				</section>
 

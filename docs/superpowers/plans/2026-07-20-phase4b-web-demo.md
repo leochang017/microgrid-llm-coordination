@@ -158,7 +158,7 @@ Pure transformation functions + CLI. All functions take parsed data so tests can
 3. Event badges: for `ticks.events[state.tick]`, render a compact strip under the grid: `sender_dod_floor ×3 · receiver_full ×1 · bus_saturated` with house ids on hover — this is the physics-said-no channel that explains why promised energy didn't move.
 4. **Verify:** `npm run check` 0 errors; `npm run build`; preview `/run/clean/` at tick 2 (00:30) shows the first transfer arrow; circles toggle shows the owner_a ribbon on exactly r0c0, r2c3, r4c5.
 5. **Commit:** `feat(demo): transfer arrows, trust-circle overlay, physics event badges` (+ Progress-log row, + checkbox).
-- [ ] Task 6 complete
+- [x] Task 6 complete
 
 ## Task 7 — Message-flow overlay + per-tick message panel (drop reasons)
 
