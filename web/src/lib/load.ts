@@ -1,3 +1,4 @@
+import { base } from '$app/paths';
 import type { CellExplanations, CellMessages, CellMeta, CellTicks, Msg, Slug } from './types';
 
 export interface LoadedCell {
@@ -23,11 +24,21 @@ async function getJson<T>(url: string, fetchFn: FetchFn): Promise<T> {
  *
  * Only the noise and comm cells lack `explanations.json` today, but the whole
  * point of the `| null` return is that callers cannot assume otherwise.
+ *
+ * "Missing" means a real 404 — the file genuinely isn't in the export. A 500,
+ * a CDN failure, or any other non-404 non-ok status is a real failure and must
+ * throw, not be swallowed into a silent `null` that the UI would render as
+ * "no explanations available" for a cell that actually has them.
+ *
+ * The one exception is `res.json()` itself throwing a parse error: a static
+ * host serving a 200 HTML SPA-fallback page in place of a missing file is a
+ * real deployment scenario, and it should also read as "absent."
  */
 async function getJsonOrNull<T>(url: string, fetchFn: FetchFn): Promise<T | null> {
+	const res = await fetchFn(url);
+	if (res.status === 404) return null;
+	if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
 	try {
-		const res = await fetchFn(url);
-		if (!res.ok) return null;
 		return (await res.json()) as T;
 	} catch {
 		return null;
@@ -36,12 +47,15 @@ async function getJsonOrNull<T>(url: string, fetchFn: FetchFn): Promise<T | null
 
 /** Fetch one cell's committed JSON payload. All four requests go out in parallel. */
 export async function loadCell(slug: Slug, fetchFn: FetchFn = fetch): Promise<LoadedCell> {
-	const base = `/data/${slug}`;
+	// `base` (imported above from `$app/paths`) is `paths.base` — empty string
+	// unless a base path is configured; prefixing here keeps this working under
+	// any deploy path, not just root.
+	const dataBase = `${base}/data/${slug}`;
 	const [meta, ticks, messages, explanations] = await Promise.all([
-		getJson<CellMeta>(`${base}/meta.json`, fetchFn),
-		getJson<CellTicks>(`${base}/ticks.json`, fetchFn),
-		getJson<CellMessages>(`${base}/messages.json`, fetchFn),
-		getJsonOrNull<CellExplanations>(`${base}/explanations.json`, fetchFn)
+		getJson<CellMeta>(`${dataBase}/meta.json`, fetchFn),
+		getJson<CellTicks>(`${dataBase}/ticks.json`, fetchFn),
+		getJson<CellMessages>(`${dataBase}/messages.json`, fetchFn),
+		getJsonOrNull<CellExplanations>(`${dataBase}/explanations.json`, fetchFn)
 	]);
 
 	const msgsByTick = new Map<number, Msg[]>();

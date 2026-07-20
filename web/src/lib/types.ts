@@ -118,9 +118,31 @@ export interface CellTicks {
 	informCounts: { sent: number; delivered: number; dropped: number }[];
 }
 
+/**
+ * `INFORM` is kept in this union because it is the simulator's own literal
+ * (the color map needs a stable key for it) — NOT because `messages.json`
+ * contains any. See `Msg` below: every INFORM in these runs is templated,
+ * and the exporter's `keep_message` filter (`scripts/export_demo_data.py`)
+ * drops templated INFORMs by design. Measured across all four committed
+ * cells: zero `INFORM` rows in any `messages.json`. Do not build an INFORM
+ * filter chip off the message list — there is nothing for it to filter.
+ */
 export type Performative = 'INFORM' | 'REQUEST' | 'OFFER' | 'ACCEPT' | 'COUNTER' | 'REJECT';
 
-/** One kept message. Templated INFORM broadcasts are downsampled out by the exporter. */
+/**
+ * One kept message. Templated INFORM broadcasts are downsampled out by the
+ * exporter (`keep_message`), and in practice EVERY INFORM in these runs is
+ * templated — so `messages.json` contains zero `perf: 'INFORM'` rows today
+ * (measured across all four cells; clean's performative histogram is
+ * `{REQUEST 4147, OFFER 4063, ACCEPT 2175, COUNTER 1168, REJECT 705}`, no
+ * INFORM). The INFORM story — sent/delivered/dropped per tick, which is
+ * exactly what makes the `comm` cell's message-loss visible — lives in
+ * `CellTicks.informCounts`, not here. Build any INFORM-related UI off that,
+ * not off this message list.
+ *
+ * Consequently `soc` (INFORM-only) is also present on zero rows today — do
+ * not build UI on it without re-measuring against a fresh export.
+ */
 export interface Msg {
 	/**
 	 * UNIQUE per message (`m00000`, `m00001`, …). This is the ONLY safe key for a
