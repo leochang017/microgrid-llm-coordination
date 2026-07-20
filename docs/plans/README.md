@@ -11,6 +11,12 @@ Executor-ready plans produced by `/planbatch` (distinct from the per-phase specs
 | 3 | [2026-07-18-repo-cleanup-claudemd-plan.md](2026-07-18-repo-cleanup-claudemd-plan.md) | Archive completed-phase planning files, remove dead code, condense CLAUDE.md (132 KB → 89 KB; ≤35 KB gate waived by Leo, recent detail kept), README refresh | **done** (2026-07-19; 6/6 tasks, 367→364 tests, 17 files archived, 4 dead funcs + plotter removed) |
 | 4 | [2026-07-18-full-repo-review-plan.md](2026-07-18-full-repo-review-plan.md) | Full fresh adversarial review of sim/ + scripts/ + tests/ + configs, verify → triage → TDD fixes → review record | **done** (2026-07-19; 8 reviewers + 8 skeptics, 29 findings + ENV-1, 20 fixed across 5 batches, 364→407 tests; record: `docs/superpowers/archive/2026-07-18-full-repo-review.md`) |
 
+## 2026-07-20 batch — OSS polish (post-review)
+
+| # | Plan | Covers | Status |
+|---|------|--------|--------|
+| 1 | [2026-07-20-oss-polish-plan.md](2026-07-20-oss-polish-plan.md) | README staleness (test count 364→407, CI badge, scripts listing, reference_runs note), pyproject OSS metadata, docs-only honesty caveats (commitment emission-vs-settlement I-1, SENDER_DOD_FLOOR misnomer, adapter boundary note, LP-Gini vertex caveat). Docs + metadata only — zero logic/cache-key changes. Includes the 2026-07-20 3-reviewer review record (security: clean; accuracy: no published number wrong). | pending |
+
 Flip a row to **done** in the executing session's wrap task.
 
 **Kickoff prompts** for all four plans live in [2026-07-18-kickoff-prompts.md](2026-07-18-kickoff-prompts.md) — after `/clear`, tell Claude to read that file and run the next pending kickoff.
