@@ -34,7 +34,6 @@ from sim.scenario import Scenario, load_scenario
 
 REPO = figures.REPO
 REF = figures.REF
-SCEN = figures.SCEN
 
 # The four cells the demo replays: slug -> (scenario cell, seed). Mirrors the
 # committed (cell, seed) pairs in ``figures.LIVE_CELLS``; the clean cell's other
@@ -162,14 +161,29 @@ def _msg_kwh(payload: dict[str, Any]) -> float | None:
 
 
 def build_messages(rows: list[dict[str, Any]], tick_of: dict[str, int]) -> dict[str, Any]:
-    """Slim the kept messages down to the fields the demo's message panel renders."""
+    """Slim the kept messages down to the fields the demo's message panel renders.
+
+    Two distinct ids ship per row, and they are NOT interchangeable:
+
+    * ``id`` is unique per message (a zero-padded index over the built list) — it
+      is what a keyed ``{#each}`` in the UI must use.
+    * ``cid`` is the THREAD id: a REQUEST and its ACCEPT/COUNTER/REJECT reply
+      deliberately share one ``correlation_id``, which is how a negotiation
+      thread is tracked. On clean@23 that makes 12,258 rows carry only 8,210
+      distinct ``cid`` values, so ``cid`` must never be used as a unique key.
+
+    ``t_sent`` is looked up with ``[]``, not ``.get``: an out-of-horizon message
+    would silently vanish and understate the message counts the demo reports, so
+    the drift fails loudly instead (there are 0 such messages in all four cells).
+    """
     out: list[dict[str, Any]] = []
     for m in rows:
         if not keep_message(m):
             continue
         payload = m.get("payload") or {}
         row: dict[str, Any] = {
-            "id": m["correlation_id"],
+            "id": f"m{len(out):05d}",
+            "cid": m["correlation_id"],
             "t": tick_of[str(m["t_sent"])],
             "perf": m["performative"],
             "from": m["sender"],
@@ -196,10 +210,14 @@ def _capacities(
     """Battery capacity per house, for the SoC-fraction grid.
 
     ``state.jsonl`` does not log capacity, so it is taken from the exact
-    ``soc_capacity`` an INFORM payload carries when available, and floored by the
-    largest observed ``soc_kwh`` otherwise. ``export_cell`` overrides this with
-    the re-derived household capacities; the fallback exists so ``build_ticks``
-    stays usable (and testable) on the raw artifacts alone.
+    ``soc_capacity`` an INFORM payload carries. ``export_cell`` overrides this
+    with the re-derived household capacities; the fallback exists so
+    ``build_ticks`` stays usable (and testable) on the raw artifacts alone.
+
+    A house with no INFORM-derived capacity raises rather than falling back to
+    its largest observed ``soc_kwh`` — that fallback produced a plausible-looking
+    but wrong curve peaking at exactly 1.0. Every house emits an INFORM in every
+    committed cell, so this is a drift tripwire, matching ``build_houses``.
     """
     caps: dict[str, float] = {}
     for m in messages_rows:
@@ -208,10 +226,21 @@ def _capacities(
         if cap is not None:
             hid = str(m["sender"])
             caps[hid] = max(caps.get(hid, 0.0), float(cap))
+    missing = [hid for hid in house_order if caps.get(hid, 0.0) <= 0.0]
+    if missing:
+        raise ValueError(
+            f"no INFORM-derived soc_capacity for {missing} — refusing to fall back to "
+            "max-observed SoC, which would render a socFrac curve that wrongly peaks at 1.0"
+        )
+    # state.jsonl is still consulted, purely as a floor sanity check.
     for row in state_rows:
         hid = str(row["house_id"])
-        caps[hid] = max(caps.get(hid, 0.0), float(row["soc_kwh"]))
-    return {hid: caps.get(hid, 0.0) for hid in house_order}
+        if hid in caps and float(row["soc_kwh"]) > caps[hid] + 1e-9:
+            raise ValueError(
+                f"{hid}: logged soc_kwh {row['soc_kwh']!r} exceeds INFORM-derived capacity "
+                f"{caps[hid]!r} — the artifacts have drifted"
+            )
+    return {hid: caps[hid] for hid in house_order}
 
 
 def build_ticks(
@@ -265,11 +294,11 @@ def build_ticks(
 
     transfers: list[list[dict[str, Any]]] = [[] for _ in range(n_t)]
     events: list[list[dict[str, Any]]] = [[] for _ in range(n_t)]
+    # ``[]`` not ``.get``: an out-of-horizon row would silently vanish and
+    # understate what the demo reports, so drift fails loudly instead (there are
+    # 0 such events/messages in all four committed cells).
     for e in events_rows:
-        ek = tick_of.get(str(e["t"]))
-        if ek is None:
-            continue
-        k = ek
+        k = tick_of[str(e["t"])]
         kind = str(e["kind"])
         if kind == "transfer_executed":
             ids = list(e["house_ids"])
@@ -281,10 +310,7 @@ def build_ticks(
     for m in messages_rows:
         if m["performative"] != "INFORM":
             continue
-        mk = tick_of.get(str(m["t_sent"]))
-        if mk is None:
-            continue
-        k = mk
+        k = tick_of[str(m["t_sent"])]
         inform[k]["sent"] += 1
         if m["outcome"] == "delivered":
             inform[k]["delivered"] += 1

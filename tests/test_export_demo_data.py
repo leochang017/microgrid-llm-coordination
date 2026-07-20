@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import itertools
 import json
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -111,6 +112,30 @@ def test_keep_message_policy() -> None:
     assert "t_decided" not in json.dumps(built)
 
 
+def _clean_messages() -> list[dict[str, Any]]:
+    return build_messages(load_jsonl(CLEAN_DIR / "messages.jsonl"), _tick_of(_clean_state()))[
+        "messages"
+    ]
+
+
+def test_message_ids_are_unique() -> None:
+    """``id`` is what a keyed Svelte ``{#each}`` uses — duplicates crash at runtime."""
+    msgs = _clean_messages()
+    assert len({m["id"] for m in msgs}) == len(msgs)
+
+
+def test_cid_is_a_shared_thread_id_not_a_unique_key() -> None:
+    """Measured on clean@23: 12,258 rows, only 8,210 distinct correlation ids.
+
+    A REQUEST and its ACCEPT/COUNTER/REJECT reply deliberately share one, which
+    is how a negotiation thread is tracked — so ``cid`` must stay non-unique.
+    """
+    cids = [m["cid"] for m in _clean_messages()]
+    assert len(cids) == 12258
+    assert len(set(cids)) == 8210
+    assert Counter(cids).most_common(1)[0][1] >= 2
+
+
 def test_build_messages_comm_drops() -> None:
     rows = load_jsonl(COMM_DIR / "messages.jsonl")
     state = load_jsonl(COMM_DIR / "state.jsonl")
@@ -183,3 +208,22 @@ def test_export_cell_integration(tmp_path: Path) -> None:
         "start": "2018-01-01T00:00:00",
         "end": "2018-01-02T00:00:00",
     }
+
+    # ``export_cell`` overrides build_ticks' capacities with the re-derived
+    # household values; without this the override path is unexercised (mutating
+    # it to ``capacities=None`` left every other assertion green). Pins BOTH that
+    # the override is wired and that the INFORM-derived fallback agrees with it.
+    state = _clean_state()
+    events = load_jsonl(CLEAN_DIR / "events.jsonl")
+    messages = load_jsonl(CLEAN_DIR / "messages.jsonl")
+    tick_of = _tick_of(state)
+    order = [h["id"] for h in meta["houses"]]
+    exact = {h["id"]: h["batteryKwh"] for h in meta["houses"]}
+    with_exact = build_ticks(state, events, messages, tick_of, order, 0.25, capacities=exact)
+    fallback = build_ticks(state, events, messages, tick_of, order, 0.25, capacities=None)
+    assert with_exact["socFrac"] == json.loads((out / "ticks.json").read_text())["socFrac"]
+    # socFrac ships rounded to 3 dp, so a sub-1e-6 real disagreement can still
+    # straddle one 1e-3 grid step; the tolerance is that step, not more.
+    for a, b in zip(with_exact["socFrac"], fallback["socFrac"], strict=True):
+        for x, y in zip(a, b, strict=True):
+            assert abs(x - y) <= 1e-3 + 1e-9
