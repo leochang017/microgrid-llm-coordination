@@ -130,7 +130,7 @@ Pure transformation functions + CLI. All functions take parsed data so tests can
 3. Loading + error states: skeleton cards while fetching; a visible error box if a fetch fails.
 4. **Verify:** `npm run check` → 0 errors; `npm run build`; `npm run preview` then open `http://localhost:4173/` in the browser — four cards, clean card shows served 0.673 with the comparison bars and a gap-closed annotation.
 5. **Commit:** `feat(demo): overview route — cell picker with baseline comparison bars and fairness chips` (+ Progress-log row, + checkbox).
-- [ ] Task 4 complete
+- [x] Task 4 complete
 
 ## Task 5 — Replay route: SoC neighborhood grid + tick scrubber
 
