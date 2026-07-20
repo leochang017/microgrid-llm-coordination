@@ -121,7 +121,7 @@ Pure transformation functions + CLI. All functions take parsed data so tests can
 3. `du -sh web/static/data` → expect ~12–13 MB; `ls -la web/static/data/clean` → 4 files, `messages.json` ≈ 3.5 MB.
 4. **Verify:** `pytest tests/test_demo_data_pins.py -q` → `5 passed`; full `pytest -q` green; `ruff check sim tests scripts` clean; `mypy` clean; pre-commit hooks pass on the staged data files (large-file + end-of-file).
 5. **Commit:** `feat(demo): commit exported four-cell demo data + golden-pin drift test` (+ Progress-log row, + checkbox).
-- [ ] Task 3 complete
+- [x] Task 3 complete
 
 ## Task 4 — Overview route `/` (cell picker + comparison bars)
 
