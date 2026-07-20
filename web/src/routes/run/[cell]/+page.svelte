@@ -1,9 +1,9 @@
 <!--
 	Replay route — one committed simulation cell, scrubbed tick by tick.
 
-	Left column: the SoC neighborhood grid + tick scrubber (this task). Right column
-	is a placeholder aside; the message panel and per-house "why" panel land in Tasks
-	7-8 and must not be built ahead of them here.
+	Left column: the SoC neighborhood grid + tick scrubber. Right column: the per-tick
+	message panel (Task 7). The per-house "why" panel lands in Task 8 and turns that
+	column's single heading into a two-tab strip; it must not be built ahead of it here.
 
 	Honesty constraints carried over from the overview route: Gini is never rendered
 	without Jain adjacent; the comparison implied by "gap-closed" is always control->LP,
@@ -21,6 +21,7 @@
 	import TickScrubber from '$lib/components/TickScrubber.svelte';
 	import OverlayToggles from '$lib/components/OverlayToggles.svelte';
 	import EventBadges from '$lib/components/EventBadges.svelte';
+	import MessagePanel from '$lib/components/MessagePanel.svelte';
 
 	const SLUGS: Slug[] = ['clean', 'defectors', 'noise', 'comm'];
 	// `page.params` is typed as the union of every route's params app-wide (it's a global,
@@ -147,17 +148,27 @@
 					<div>
 						<OverlayToggles meta={loaded.meta} state={replay} />
 					</div>
-					<NeighborhoodGrid meta={loaded.meta} ticks={loaded.ticks} state={replay} />
+					<NeighborhoodGrid
+						meta={loaded.meta}
+						ticks={loaded.ticks}
+						msgsByTick={loaded.msgsByTick}
+						state={replay}
+					/>
 					<EventBadges ticks={loaded.ticks} state={replay} />
 					<TickScrubber meta={loaded.meta} ticks={loaded.ticks} state={replay} />
 				</section>
 
+				<!-- One titled section today. Task 8 adds the per-house panel and turns this
+				     heading into a two-tab strip; keeping the content behind a single heading
+				     means that change is a swap of the heading, not a rebuild of the column. -->
 				<aside class="panel side-col">
-					<p class="muted">
-						Message and per-house detail panels land in a later task. For now, click a house on
-						the grid to select it — <span class="mono">state.selectedHouse</span> is wired, just not
-						yet rendered here.
-					</p>
+					<h2 class="side-title">Messages</h2>
+					<MessagePanel
+						meta={loaded.meta}
+						msgsByTick={loaded.msgsByTick}
+						informCounts={loaded.ticks.informCounts}
+						state={replay}
+					/>
 				</aside>
 			</div>
 		{/if}
@@ -251,6 +262,14 @@
 
 	.side-col {
 		min-height: 8rem;
+	}
+
+	.side-title {
+		margin: 0 0 0.6rem;
+		font-size: 0.8rem;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--muted);
 	}
 
 	.errorbox {

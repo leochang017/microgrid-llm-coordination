@@ -21,7 +21,7 @@
 	keyboard-focusable while not being exposed as a button. `group` keeps the same
 	labelled container without hiding its children.
 
-	Two optional overlays sit on this same canvas (Task 6):
+	Three optional overlays sit on this same canvas:
 
 	* TRANSFERS (`state.showTransfers`) — one arrow per settled transfer at the current
 	  tick, drawn on top of the houses. Direction is an arrowhead (shape, not colour),
@@ -33,6 +33,12 @@
 	  where an arrow does cross a cell its stroke intercepts hover along that stripe.
 	  The house rect stays clickable everywhere else and fully keyboard-reachable, and
 	  the layer is toggleable.
+	* MESSAGES (`state.showMessages`, Task 7) — one thin arc per message sent at this tick.
+	  That layer lives in its own component (`MessageArcs.svelte`) rather than inline here:
+	  this file was already carrying three layers, and it renders a `<g>` that drops into
+	  the same `<svg>`, sharing the canvas contract through `$lib/geom` instead of the file.
+	  It is aria-hidden; the MessagePanel beside the grid is its text equivalent, and the
+	  svg's aria-label carries this tick's message count.
 	* CIRCLES (`state.showCircles`) — the geographic 4-neighbour lattice as faint dashed
 	  lines drawn OVER the houses (deliberately — see the comment at the lattice markup;
 	  underneath, the 13-unit gutters leave it invisible), plus corner ribbons on
@@ -44,27 +50,19 @@
 <script lang="ts">
 	import { socColor } from '$lib/colors';
 	import { circleGroups, groupsByHouse } from '$lib/circles';
-	import type { CellMeta, CellTicks } from '$lib/types';
+	import { CELL, VIEW_H, VIEW_W, cellX, cellY, houseCenters } from '$lib/geom';
+	import MessageArcs from './MessageArcs.svelte';
+	import type { CellMeta, CellTicks, Msg } from '$lib/types';
 	import type { ReplayState } from '$lib/replay.svelte';
 
 	interface Props {
 		meta: CellMeta;
 		ticks: CellTicks;
+		msgsByTick: Map<number, Msg[]>;
 		state: ReplayState;
 	}
 
-	const { meta, ticks, state }: Props = $props();
-
-	const CELL = 96;
-	const STEP = 109;
-	const ORIGIN = 6;
-
-	function cellX(col: number): number {
-		return ORIGIN + col * STEP;
-	}
-	function cellY(row: number): number {
-		return ORIGIN + row * STEP;
-	}
+	const { meta, ticks, msgsByTick, state }: Props = $props();
 
 	function pct(frac: number): number {
 		return Math.round(Math.max(0, Math.min(1, frac)) * 100);
@@ -95,7 +93,6 @@
 
 	// --- overlay geometry -------------------------------------------------------
 
-	const HALF = CELL / 2;
 	/** How far each arrow is pulled back from both house centres, in user units. */
 	const TRIM = 30;
 	/** Innermost ribbon band's distance from the cell corner; clears the unmet triangle. */
@@ -106,11 +103,7 @@
 	const groups = $derived(circleGroups(meta));
 	const byHouse = $derived(groupsByHouse(groups));
 
-	const centers = $derived(
-		new Map<string, [number, number]>(
-			meta.houses.map((h) => [h.id, [cellX(h.col) + HALF, cellY(h.row) + HALF]])
-		)
-	);
+	const centers = $derived(houseCenters(meta));
 
 	/** Geographic 4-neighbour adjacency, derived from row/col (it is not in `meta.circles`). */
 	const lattice = $derived.by(() => {
@@ -169,11 +162,14 @@
 
 	const gridLabel = $derived(
 		`Neighborhood grid, ${meta.rows} by ${meta.cols} houses, coloured by state of charge` +
-			(state.showTransfers ? `; ${transfers.length} transfers at this tick` : '')
+			(state.showTransfers ? `; ${transfers.length} transfers at this tick` : '') +
+			(state.showMessages
+				? `; ${(msgsByTick.get(state.tick) ?? []).length} messages sent at this tick, listed in the message panel`
+				: '')
 	);
 </script>
 
-<svg class="grid" viewBox="0 0 660 560" role="group" aria-label={gridLabel}>
+<svg class="grid" viewBox="0 0 {VIEW_W} {VIEW_H}" role="group" aria-label={gridLabel}>
 	<defs>
 		<!-- userSpaceOnUse so the head stays one size while the shaft width encodes kW. -->
 		<marker
@@ -275,6 +271,12 @@
 				<line x1={edge.x1} y1={edge.y1} x2={edge.x2} y2={edge.y2} />
 			{/each}
 		</g>
+	{/if}
+
+	<!-- Under the transfer arrows on purpose: transfers are the settled physics and keep
+	     both the visual and the hit-testing priority; message arcs are pointer-inert. -->
+	{#if state.showMessages}
+		<MessageArcs {meta} {msgsByTick} {state} />
 	{/if}
 
 	{#if state.showTransfers}

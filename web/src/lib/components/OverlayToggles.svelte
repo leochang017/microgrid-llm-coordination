@@ -38,6 +38,17 @@
 	>
 		<span class="dot" aria-hidden="true"></span> Transfers
 	</button>
+	<!-- Task 7 gave `state.showMessages` a layer (`MessageArcs`), so its button comes back
+	     in the same change — the rule is that only overlays which actually draw something
+	     get a control. -->
+	<button
+		type="button"
+		class="toggle"
+		aria-pressed={state.showMessages}
+		onclick={() => (state.showMessages = !state.showMessages)}
+	>
+		<span class="dot" aria-hidden="true"></span> Messages
+	</button>
 	<button
 		type="button"
 		class="toggle"
@@ -46,10 +57,6 @@
 	>
 		<span class="dot" aria-hidden="true"></span> Trust circles
 	</button>
-	<!-- Only overlays that actually draw something get a button. `state.showMessages`
-	     exists on ReplayState but has no layer behind it yet, and a control that visibly
-	     does nothing is worse than an absent one — it gets its button back in the same
-	     change that gives it something to toggle. -->
 </div>
 
 {#if state.showCircles}

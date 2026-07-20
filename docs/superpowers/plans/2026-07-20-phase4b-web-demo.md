@@ -167,7 +167,7 @@ Pure transformation functions + CLI. All functions take parsed data so tests can
 3. Wire the panel into `/run/[cell]/+page.svelte` right column (tab 1 of 2; tab 2 is HousePanel, Task 8).
 4. **Verify:** `npm run check` 0 errors; `npm run build`; preview `/run/comm/` — message panel shows rows with `dropped: comm_drop` badges and the INFORM strip shows large dropped counts; on `/run/clean/` filter to REQUEST shows amber pills with kWh amounts and rationale text.
 5. **Commit:** `feat(demo): message-flow overlay + per-tick message panel with drop reasons` (+ Progress-log row, + checkbox).
-- [ ] Task 7 complete
+- [x] Task 7 complete
 
 ## Task 8 — Per-house "why" panel (rationales + judge scores)
 
