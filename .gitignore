@@ -11,8 +11,8 @@ build/
 # Data + outputs
 data/
 runs/
-# reference_runs/ is EXPLICITLY TRACKED (the in-repo reproducibility artifact
-# for Phase 2 LLM-agent runs — see docs/superpowers/specs/2026-06-13-phase2-llm-agent-design.md §6).
+# reference_runs/ is EXPLICITLY TRACKED — it is the in-repo reproducibility
+# artifact for the paid LLM-agent runs (see README "Why the checkout is large").
 #
 # ...but only the llm_agent runs. Those cost money and ship an llm_cache that
 # replays them for $0, so they are worth their size. The zero-dollar baselines
@@ -31,6 +31,11 @@ reference_runs/*/round_robin_overlay/
 .env
 .env.local
 *.envrc
+
+# Local working files (not part of the public project)
+CLAUDE.md
+internal/
+.superpowers/
 
 # Editor
 .DS_Store

@@ -84,8 +84,8 @@ deltas, reported honestly as such.
   11,194 of 16,954 messages budget-dropped this run). **Scope: "a negotiation
   protocol costs *some* bandwidth under scarcity" — much smaller than first
   measured, and most of the original apparent loss was measurement bugs, not
-  fundamental LLM fragility.** n=1; send-order hardening still tracked in
-  CLAUDE.md.
+  fundamental LLM fragility.** n=1; send-order hardening remains open
+  follow-up work.
 
 ## 3. Fairness and the efficiency–equity (non-)tradeoff
 
@@ -239,4 +239,4 @@ workshop) with the advisor at Phase 3.3 exit. Stage 4 explanation judging is
 all Phase 3.2 playbook stages (1-5, including optional Stage 3) are now
 complete. Remaining deferred, not scheduled: cross-climate VT/AZ cells and the
 `all`@7 failure cell (its comm component is confounded with the shipped
-`comm`@23 cell — see CLAUDE.md Phase 3.2 status).
+`comm`@23 cell).

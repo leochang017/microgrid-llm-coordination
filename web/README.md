@@ -2,7 +2,7 @@
 
 A static viewer that replays four committed simulation runs from the
 microgrid LLM-coordination research project (see the repo root
-`CLAUDE.md`/`docs/phase3_results.md` for the research question and results).
+`README.md` and `docs/phase3_results.md` for the research question and results).
 
 This is a **read-only replay of already-run experiments**. There is no
 backend, no API keys, and no live model calls — everything the browser
