@@ -55,7 +55,11 @@ SCENARIO_BLURB = (
 
 FAILURE_DESCRIPTIONS: dict[str, str] = {
     "clean": ("No failure modes; hardest of three committed seeds (23; seeds 1/7 shown as spread)"),
-    "defectors": "20% of agents (6 houses, seeded assignment) are prompted to hoard and mislead",
+    "defectors": (
+        "20% of agents (6 houses, seed 7) are prompted to hoard charge and decline "
+        "requests, not to misreport — INFORMs stay truthful. Realized dose: 33.6% of "
+        "generation withheld."
+    ),
     "noise": "Agents observe SoC with 10% and load with 15% Gaussian noise",
     "comm": (
         "2-msg/tick send budget + per-circle drops (geo 30%, owner 5%, DR 10%) "
