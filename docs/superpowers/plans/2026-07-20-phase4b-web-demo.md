@@ -58,7 +58,7 @@ Pure transformation functions + CLI. All functions take parsed data so tests can
 3. Run `pytest tests/test_export_demo_data.py -q` → green. Do NOT run the CLI against `web/` yet (dir doesn't exist until Task 2; data lands in Task 3).
 4. **Verify:** in the venv — `pytest tests/test_export_demo_data.py -q` → `9 passed`; `ruff check sim tests scripts` → `All checks passed!`; `mypy` → success; full `pytest -q` still green (416 total expected).
 5. **Commit:** `feat(demo): export_demo_data script — compact per-cell JSON for the web demo` (+ Progress-log row, + checkbox).
-- [ ] Task 1 complete
+- [x] Task 1 complete
 
 ## Task 2 — Scaffold `web/` SvelteKit static app
 
