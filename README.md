@@ -89,10 +89,32 @@ sim/            engine.py · household.py · network.py · scenario.py · loggin
 sim/agents/     agent.py · policy.py · memory.py · protocol.py · cache.py · llm.py · failure_modes.py · seeding.py
 sim/adapters/   nrel_solar.py · resstock.py · pecan_street.py
 sim/strategies/ no_coordination.py · round_robin.py · round_robin_overlay.py · lp_optimal.py · llm_agent.py · llm_fallback.py
-scripts/        figures.py · run.py · compare.py · sweep.py · eval_explanations.py · dose_check.py · fetch_data.py
+scripts/        figures.py · run.py · compare.py · sweep.py · eval_explanations.py · dose_check.py · export_demo_data.py · fetch_data.py
+web/            SvelteKit static demo (see "Web demo" below)
 ```
 
 The **coordination strategy is an injected callback** — `decide_transfers(t, states, households, solar, load, grid, neighborhood, dt) -> list[Transfer]`. Phase 2 added `sim/strategies/llm_agent.py` (the LLM strategy facade) and Phase 2.9 added `llm_fallback.py` (the zero-LLM control).
+
+## Web demo
+
+**Live URL:** _(not deployed yet — placeholder, filled in when the site goes up)_
+
+`web/` is a SvelteKit static site (`@sveltejs/adapter-static`) that replays four
+already-committed live runs — clean, defectors, noise, comm — in the browser:
+per-tick battery state across the 30-house grid, the transfers and messages the
+agents actually exchanged, and the judged rationales. It is a **research demo, not
+a deployment**, and it is purely a viewer: no backend, no API keys, no live model
+calls. Everything it fetches is static JSON that
+`python -m scripts.export_demo_data --out web/static/data` writes from the
+committed `reference_runs/` artifacts, pinned against the published numbers by
+`tests/test_demo_data_pins.py` so the demo cannot drift from the results section.
+
+```bash
+cd web && npm ci && npm run dev      # or: npm run build && npm run preview
+```
+
+Details — data contract, regeneration, and where the SvelteKit config actually
+lives — are in [`web/README.md`](web/README.md).
 
 ## Phase 1 status
 

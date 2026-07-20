@@ -201,7 +201,7 @@ Pure transformation functions + CLI. All functions take parsed data so tests can
 4. Root `README.md`: add a "Web demo" section (architecture one-liner; URL placeholder filled in Task 10). `CLAUDE.md`: add `web/` + this plan to Critical files; note the JS gate (svelte-check + build; TDD Python-only).
 5. **Verify:** venv `ruff check sim tests scripts` + `mypy` + `pytest -q` green; `web/` `npm ci && npm run check && npm run build` green from a clean `node_modules` (proves the CI job as written); `git diff --cached | grep -cE 'sk-ant-(api|oat)[0-9a-zA-Z_-]{15,}'` → `0`.
 6. **Commit:** `ci(demo): web build job (npm ci + svelte-check + build) + demo docs sync` (+ Progress-log row, + checkbox).
-- [ ] Task 9 complete
+- [x] Task 9 complete
 
 ## Task 10 — Scripted click-through, Vercel deploy (Leo-gated), wrap
 

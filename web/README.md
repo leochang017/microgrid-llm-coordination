@@ -11,9 +11,11 @@ under `reference_runs/` at the repo root.
 
 ## Regenerating the data
 
-The JSON under `static/data/` is not checked into this directory directly —
-it's produced by a Python exporter that reads the committed run artifacts.
-From the **repo root** (not `web/`), with the project's `.venv` active:
+The JSON under `static/data/` **is committed** (~12 MB across the four cells,
+so the deployed site needs no build-time Python), but it is generated, not
+hand-written: a Python exporter reads the committed run artifacts and writes
+it. To regenerate it, run this from the **repo root** (not `web/`), with the
+project's `.venv` active, then commit the diff:
 
 ```sh
 python -m scripts.export_demo_data --out web/static/data
