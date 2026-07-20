@@ -92,7 +92,10 @@
 
 	// --- right-column tabs ------------------------------------------------------
 	// Real ARIA tabs, not styled buttons: roving tabindex, Arrow/Home/End on the strip,
-	// and only the selected panel in the DOM.
+	// and only the selected panel in the DOM. Keeping the unselected panel out of the DOM
+	// costs more than rendering: the panel component is destroyed, so its local UI state
+	// (the message filters, the "show all ticks" toggle) resets on every tab switch. That
+	// is accepted — the panels re-derive everything shared from `replay` on mount.
 	const TABS = [
 		{ id: 'messages', label: 'Messages' },
 		{ id: 'house', label: 'House' }

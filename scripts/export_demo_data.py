@@ -69,10 +69,17 @@ def scenario_blurb(scenario: Scenario, houses: list[dict[str, Any]]) -> str:
 
 FAILURE_DESCRIPTIONS: dict[str, str] = {
     "clean": ("No failure modes; hardest of three committed seeds (23; seeds 1/7 shown as spread)"),
+    # The selfish PLAN prompt (`sim/agents/agent.py:44-52`) does license misreporting
+    # verbatim, so the blurb must not claim otherwise. It stays inert because
+    # `emit_informs` (agent.py:905-934) is pure Python emitting the agent's own
+    # `last_visible_own`, and `peer_beliefs` is fed ONLY by INFORMs (agent.py:245-247)
+    # — the payload-mutating corruption wrapper is off in this cell
+    # (`defector_realization: prompt`). Withholding is the only mechanism that operates.
     "defectors": (
-        "20% of agents (6 houses, seed 7) are prompted to hoard charge and decline "
-        "requests, not to misreport — INFORMs stay truthful. Realized dose: 33.6% of "
-        "generation withheld."
+        "6 of 30 households (seed 7) are prompted to put their own survival first — "
+        "hoarding charge and declining requests. The prompt also permits misreporting, "
+        "but state broadcasts are pure Python and unaffected, so withholding is the "
+        "mechanism that actually operates. Realized dose: 33.6% of generation withheld."
     ),
     "noise": "Agents observe SoC with 10% and load with 15% Gaussian noise",
     "comm": (

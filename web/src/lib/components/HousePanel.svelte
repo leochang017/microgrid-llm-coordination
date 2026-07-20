@@ -12,9 +12,14 @@
 	    `defector_realization: prompt`): the selfish system prompts in
 	    `sim/agents/agent.py` (`_PLAN_SYSTEM_PROMPT_SELFISH` / `_REACT_SYSTEM_PROMPT_SELFISH`)
 	    raise `share_min_soc_frac`, lower `max_share_kw_per_tick` and default to REJECT on
-	    incoming REQUESTs — i.e. hoarding and declining. The copy stops there and makes no
-	    claim about misreporting, matching the exporter's own `failureDescription`
-	    ("prompted to hoard charge and decline requests, not to misreport").
+	    incoming REQUESTs — i.e. hoarding and declining. `_PLAN_SYSTEM_PROMPT_SELFISH`
+	    (`sim/agents/agent.py:44-52`) ALSO licenses misreporting ("You MAY misreport your
+	    state (SoC, load, need) to neighbors"), but the agent has no channel to act on it:
+	    `emit_informs` (`agent.py:905-934`) is pure Python emitting `last_visible_own`, and
+	    `peer_beliefs` is fed ONLY by INFORMs (`agent.py:245-247`), so a misreport could
+	    only ever appear as words in a free-text rationale that updates nobody's belief.
+	    Hence "INFORM broadcasts stay truthful" below — a statement about the mechanism,
+	    not about what the prompt permits.
 	  * `meta.circles` carries ONLY owner/manager/aggregator affiliations — geographic
 	    4-neighbour adjacency is not in it (see `types.ts`) — so "no circles" is written
 	    as "no owner/aggregator circle", never as "no neighbours".
@@ -64,7 +69,10 @@
 	}
 
 	const house = $derived(meta.houses.find((h) => h.id === replay.selectedHouse) ?? null);
-	const idx = $derived(house ? meta.houses.indexOf(house) : -1);
+	// Indexed against `ticks.houseIds`, which is the documented column order of every
+	// `CellTicks` matrix (`types.ts`). `meta.houses` happens to agree today, but it is a
+	// separate array and using it would silently plot another house if an export reordered it.
+	const idx = $derived(house ? ticks.houseIds.indexOf(house.id) : -1);
 
 	const circleChips = $derived(
 		house ? Object.entries(house.circles).map(([type, group]) => ({ type, group })) : []
@@ -169,13 +177,11 @@
 			? []
 			: explanations.samples
 					.filter((s) => s.sender === house.id)
-					.slice()
 					.sort((a, b) => a.t - b.t)
 	);
 
 	function onJudgeClick(t: number): void {
 		replay.seek(t, maxTick);
-		replay.houseFilterEpoch += 1;
 		onShowMessages();
 	}
 </script>
@@ -261,12 +267,15 @@
 
 		<p class="count muted">
 			{#if showAll}
-				showing {rows.length} of {allRows.length} messages involving {house.id} across all ticks{allRows.length >
-				ALL_CAP
-					? ` (capped at ${ALL_CAP})`
+				showing {allRows.length > ALL_CAP ? 'the first ' : ''}{rows.length} of {allRows.length}
+				messages involving {house.id} across all ticks{allRows.length > ALL_CAP
+					? ` (capped at ${ALL_CAP} — later ticks are not listed)`
 					: ''}
 			{:else}
-				{rows.length} messages sent or received at tick {replay.tick}
+				{rows.length}
+				{rows.length === 1 ? 'message' : 'messages'} sent or received at {hhmm(
+					meta.tickTimes[replay.tick]
+				)}
 			{/if}
 		</p>
 
@@ -314,7 +323,15 @@
 			</p>
 		{:else}
 			<ul class="judge">
-				{#each judgeRows as s (`${s.sender}-${s.t}`)}
+				<!--
+					Keyed by position, not by `(sender, t)`: that pair is NOT unique in the
+					committed data — clean has one collision (r1c2 @ 32) and defectors two
+					(r0c3 @ 65, r1c1 @ 36) — and Svelte 5 throws `each_key_duplicate` in prod
+					as well as dev. The very ambiguity the note below discloses is what makes
+					the pair unusable as a key. Index keying is safe here because `judgeRows`
+					is `$derived` and fully recreated whenever the selected house changes.
+				-->
+				{#each judgeRows as s, i (i)}
 					<li>
 						<button type="button" onclick={() => onJudgeClick(s.t)}>
 							<span class="mono">{hhmm(meta.tickTimes[s.t])}</span>

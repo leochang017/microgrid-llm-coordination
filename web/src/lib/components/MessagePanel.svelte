@@ -65,12 +65,12 @@
 
 	// House filter follows the grid selection, but is independently clearable: clicking
 	// "clear" empties it without deselecting the house on the grid, and the effect below
-	// only re-fires when `replay.selectedHouse` itself changes — or when another panel
-	// explicitly asks for the filter back by bumping `houseFilterEpoch` (HousePanel's
-	// judge rows hand the reader over to this tab and must not land on a cleared filter).
+	// only re-fires when `replay.selectedHouse` itself changes. A hand-off from another
+	// tab (HousePanel's judge rows) needs no extra signal: the host page renders the two
+	// tab panels under `{#if}/{:else}`, so this component is destroyed on tab switch and
+	// remounts with `houseFilter = null`, and the effect re-applies the selection on mount.
 	let houseFilter = $state<string | null>(null);
 	$effect(() => {
-		void replay.houseFilterEpoch;
 		houseFilter = replay.selectedHouse;
 	});
 
