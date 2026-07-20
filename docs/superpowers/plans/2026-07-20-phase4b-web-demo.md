@@ -179,7 +179,7 @@ Pure transformation functions + CLI. All functions take parsed data so tests can
 2. Right column becomes tabs: `Messages` / `House`. Selecting a house on the grid switches to the House tab.
 3. **Verify:** `npm run check` 0 errors; `npm run build`; preview `/run/clean/`, click `r4c4`, judge section lists a sample with three axis scores; clicking it moves the scrubber to that tick.
 4. **Commit:** `feat(demo): per-house why panel — rationales, SoC sparkline, judge scores` (+ Progress-log row, + checkbox).
-- [ ] Task 8 complete
+- [x] Task 8 complete
 
 ## Task 9 — CI web job + docs sync
 
