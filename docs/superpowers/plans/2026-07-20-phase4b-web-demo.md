@@ -22,7 +22,7 @@
 2. Check node: `node --version` must be ≥ 20.19 (Vite 7 floor) and `npm --version` works (v24.10.0 / 11.6.0 confirmed present at planning time). If node is missing/old, STOP and ask Leo before proceeding.
 3. Confirm `python -m scripts.figures --check` passes (golden pins intact) using the venv.
 4. **Verify:** all four commands green. This venv + node are what every later verify uses.
-- [ ] Task 0 complete
+- [x] Task 0 complete
 
 ## Task 1 — `scripts/export_demo_data.py` data layer (TDD)
 
@@ -149,7 +149,7 @@ Pure transformation functions + CLI. All functions take parsed data so tests can
 4. `web/src/routes/run/[cell]/+page.svelte`: reads `page.params.cell`, validates against the four slugs (else "unknown cell" message + link home); `onMount` → `loadCell`; layout: header (cell label, blurb, live served + gap-closed, link back), left = grid + scrubber, right = panels (Tasks 7–8; placeholder aside for now). Headline stat row: served / gini / Jain / transfers (from meta, tabular-nums).
 5. **Verify:** `npm run check` → 0 errors; `npm run build` → prerenders `/run/clean/` etc. (4 entries); `npm run preview` → open `http://localhost:4173/run/clean/`, scrub to ~12:00 — the 12 have-house cells visibly brighten (viridis toward yellow) as midday solar charges them; keyboard arrows move the slider; space toggles play.
 6. **Commit:** `feat(demo): replay view — SoC neighborhood grid + tick scrubber with day/night strip` (+ Progress-log row, + checkbox).
-- [ ] Task 5 complete
+- [x] Task 5 complete
 
 ## Task 6 — Transfer arrows, trust-circle overlay, event badges
 
