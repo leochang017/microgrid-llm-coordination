@@ -14,9 +14,14 @@
 import type { CellMeta } from './types';
 
 export const CELL = 96;
-export const STEP = 109;
-export const ORIGIN = 6;
-export const HALF = CELL / 2;
+
+// Deliberately NOT exported: nothing outside this module has ever needed the pitch,
+// the origin or the half-cell offset — every layer goes through `cellX`/`cellY`/
+// `houseCenters` instead. Exporting them would widen the canvas contract with three
+// names no consumer depends on. The doc comment above documents the numbers.
+const STEP = 109;
+const ORIGIN = 6;
+const HALF = CELL / 2;
 
 export const VIEW_W = 660;
 export const VIEW_H = 560;

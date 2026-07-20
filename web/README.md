@@ -21,9 +21,10 @@ project's `.venv` active, then commit the diff:
 python -m scripts.export_demo_data --out web/static/data
 ```
 
-The exported numbers are pinned against the paper's published results by
-`tests/test_demo_data_pins.py` (also at the repo root) — that test fails if
-the export ever drifts from `EXPECTED_LIVE`.
+The exported numbers are pinned by `tests/test_demo_data_pins.py` (also at the
+repo root) against `scripts.figures.EXPECTED_LIVE` — the same golden pins
+`python -m scripts.figures --check` asserts the committed run artifacts against.
+That test fails, on exact float equality, if the export ever drifts from them.
 
 ## Data contract
 

@@ -205,13 +205,15 @@
 					     exactly what the a11y linter flags. -->
 					<div class="tabs" role="tablist" aria-label="replay detail">
 						{#each TABS as t (t.id)}
+							<!-- Only the selected panel is in the DOM, so pointing the UNSELECTED tab
+							     at `panel-<id>` would be a dangling IDREF — omit it there instead. -->
 							<button
 								type="button"
 								id="tab-{t.id}"
 								class="tab"
 								role="tab"
 								aria-selected={tab === t.id}
-								aria-controls="panel-{t.id}"
+								aria-controls={tab === t.id ? `panel-${t.id}` : undefined}
 								tabindex={tab === t.id ? 0 : -1}
 								onclick={() => (tab = t.id)}
 								onkeydown={onTabKeydown}

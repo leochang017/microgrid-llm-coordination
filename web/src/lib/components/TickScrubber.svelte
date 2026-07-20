@@ -106,7 +106,6 @@
 			type="button"
 			class="play"
 			aria-pressed={state.playing}
-			aria-keyshortcuts="Space"
 			onclick={() => state.togglePlay()}
 		>
 			{state.playing ? '⏸ Pause' : '▶ Play'}
@@ -123,6 +122,11 @@
 		<span class="clock num mono">{clock}</span>
 	</div>
 
+	<!-- `aria-keyshortcuts` belongs HERE, not on the play button: on the button Space
+	     is plain native activation (and `onWrapperKeydown` explicitly skips BUTTON
+	     targets), so announcing it there is redundant. The delegated Space shortcut
+	     only does anything when this slider has focus, and that is the case a reader
+	     cannot guess. -->
 	<input
 		type="range"
 		class="slider"
@@ -131,6 +135,7 @@
 		value={state.tick}
 		oninput={onSliderInput}
 		aria-label="tick, {clock}"
+		aria-keyshortcuts="Space"
 	/>
 
 	<svg

@@ -8,7 +8,9 @@
 	Honesty constraints inherited from the project's advisor and enforced here:
 	  * Gini is NEVER rendered without Jain's index adjacent to it.
 	  * The comparison bar for the LLM condition is the zero-LLM control, not round-robin.
-	  * Nothing implies deployment readiness; the footer says so explicitly.
+	  * Nothing implies deployment readiness. The "research demo — not a deployment"
+	    footer lives in `+layout.svelte` so that EVERY route carries it, not just this
+	    one — the replay pages are the ones that render the performance numbers.
 	  * `judgeMeans` is absent for noise and comm — those cards show no judge chips at all
 	    rather than a zero or a dash that would read as a score.
 	  * `Metrics` fields other than `served_load_fraction` are `number | null` (the LP
@@ -21,7 +23,6 @@
 	import type { CellMeta, Slug } from '$lib/types';
 
 	const SLUGS: Slug[] = ['clean', 'defectors', 'noise', 'comm'];
-	const REPO = 'https://github.com/leochang017/microgrid-llm-coordination';
 
 	let cells = $state<CellMeta[] | null>(null);
 	let error = $state<string | null>(null);
@@ -144,17 +145,6 @@
 			{/each}
 		</ul>
 	{/if}
-
-	<footer>
-		<p>
-			<strong>Research demo — not a deployment.</strong> These are offline simulation replays produced
-			for a research project. Nothing here is a validated grid control system, and no claim of real-world
-			deployment readiness is intended.
-		</p>
-		<p class="muted">
-			Source and data: <a href={REPO}>{REPO}</a> · MIT licensed.
-		</p>
-	</footer>
 </main>
 
 <style>
@@ -308,17 +298,5 @@
 		overflow: hidden;
 		clip-path: inset(50%);
 		white-space: nowrap;
-	}
-
-	footer {
-		margin-top: 2.5rem;
-		border-top: 1px solid var(--border);
-		padding-top: 1.25rem;
-		font-size: 0.85rem;
-		max-width: 68ch;
-	}
-
-	footer p {
-		margin: 0 0 0.5rem;
 	}
 </style>

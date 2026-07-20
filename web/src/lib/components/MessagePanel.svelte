@@ -87,6 +87,22 @@
 		informCounts[replay.tick] ?? { sent: 0, delivered: 0, dropped: 0 }
 	);
 
+	// The exporter tallies `delivered` and `dropped` only (`export_demo_data.py`), so
+	// the remainder is the third outcome the bus can record: `pending_at_end`. The bus
+	// admits a message only once `t_sent + dt <= now` (`MessageBus.deliver_pending`,
+	// sim/agents/protocol.py), so INFORMs broadcast on the FINAL tick never get a
+	// delivery pass — the run ends first. Measured: this is non-zero at tick 95 and
+	// nowhere else, in all four cells. Rendering only `sent · delivered · dropped`
+	// there showed 126 broadcasts vanishing with no account of where they went.
+	const informPending = $derived(Math.max(0, inform.sent - inform.delivered - inform.dropped));
+
+	// Built as one string rather than inline markup: an `{#if}` inside the sentence
+	// eats the separator's surrounding whitespace and renders "0 dropped· 126 pending".
+	const informStrip = $derived(
+		`INFORMs: ${inform.sent} sent · ${inform.delivered} delivered · ${inform.dropped} dropped` +
+			(informPending > 0 ? ` · ${informPending} pending` : '')
+	);
+
 	function togglePerf(p: Performative): void {
 		const next = new Set(perfOff);
 		if (next.has(p)) next.delete(p);
@@ -139,8 +155,15 @@
 
 <div class="mp">
 	<p class="inform-strip mono">
-		INFORMs: {inform.sent} sent · {inform.delivered} delivered · {inform.dropped} dropped
+		{informStrip}
 	</p>
+	{#if informPending > 0}
+		<p class="inform-note muted">
+			Pending INFORMs were still in the bus queue when the run ended: the bus delivers a
+			message on the tick after it is sent, so anything broadcast at the last tick never gets
+			a delivery pass. They were not lost.
+		</p>
+	{/if}
 	{#if meta.slug === 'comm'}
 		<p class="inform-note muted">
 			INFORMs are the per-tick state broadcasts agents learn their neighbours' needs from, and

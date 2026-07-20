@@ -102,7 +102,8 @@
 		return best;
 	}
 
-	/** Text equivalent of the aria-hidden sparkline: its start, extremes and cursor. */
+	/** Text equivalent of the sparkline (which is NOT aria-hidden — see the file
+	    header; it is an operable ARIA slider): its start, extremes and cursor. */
 	const sparkSummary = $derived.by(() => {
 		if (socSeries.length === 0) return '';
 		const lo = argmin(socSeries);
