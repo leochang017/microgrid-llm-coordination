@@ -16,6 +16,15 @@
 	and its battery rate limit, not only the depth-of-discharge floor. The hover text says
 	so rather than letting the label mislead.
 
+	`receiver_full` is the same class of misnomer and its hover text is written against the
+	cap the engine actually applies, not against the name. `_transfer_caps` in
+	`sim/engine.py` sets the receiver cap to
+	`max(0, load - solar) + max(0, absorb_batt_kw - own_surplus)` — the receiver's own
+	unmet load (served by DC bypass, needing no battery headroom at all) plus only the
+	battery intake its own solar surplus is not already consuming. So the event also fires
+	on a receiver with plenty of headroom that is busy filling it from its own panels, or
+	one whose load deficit is simply used up. "Battery full" is one case of several.
+
 	Counts are text, not colour — the badge colour is decoration and every fact here is
 	also spelled out in the badge's own `title`.
 -->
@@ -33,7 +42,8 @@
 	const KIND_HELP: Record<string, string> = {
 		sender_dod_floor:
 			'the sender could not release the energy it had promised — its own load, battery rate limit or depth-of-discharge floor capped the send',
-		receiver_full: 'the receiver had no battery headroom left to absorb the energy'
+		receiver_full:
+			'more energy arrived than the receiver could usefully take — it can absorb only what its own load still needs, plus whatever battery headroom its own solar is not already filling'
 	};
 
 	interface Badge {

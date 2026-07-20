@@ -46,17 +46,10 @@
 	>
 		<span class="dot" aria-hidden="true"></span> Trust circles
 	</button>
-	<!-- The message overlay itself is added alongside the message panel in a later
-	     task; this button owns the shared flag it will read. -->
-	<button
-		type="button"
-		class="toggle"
-		aria-pressed={state.showMessages}
-		title="Message overlay is added together with the message panel"
-		onclick={() => (state.showMessages = !state.showMessages)}
-	>
-		<span class="dot" aria-hidden="true"></span> Messages
-	</button>
+	<!-- Only overlays that actually draw something get a button. `state.showMessages`
+	     exists on ReplayState but has no layer behind it yet, and a control that visibly
+	     does nothing is worse than an absent one — it gets its button back in the same
+	     change that gives it something to toggle. -->
 </div>
 
 {#if state.showCircles}

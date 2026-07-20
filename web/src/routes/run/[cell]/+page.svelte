@@ -142,6 +142,8 @@
 
 			<div class="layout">
 				<section class="panel replay-col">
+					<!-- OverlayToggles emits two root elements (.toggles + .legend); this
+					     wrapper keeps them one row of `replay-col`'s flex gap, not two. -->
 					<div>
 						<OverlayToggles meta={loaded.meta} state={replay} />
 					</div>

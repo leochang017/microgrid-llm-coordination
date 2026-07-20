@@ -33,8 +33,10 @@
 	  where an arrow does cross a cell its stroke intercepts hover along that stripe.
 	  The house rect stays clickable everywhere else and fully keyboard-reachable, and
 	  the layer is toggleable.
-	* CIRCLES (`state.showCircles`) — the geographic 4-neighbour lattice as faint lines
-	  UNDER the houses, plus corner ribbons on trust-circle members. Ribbons are
+	* CIRCLES (`state.showCircles`) — the geographic 4-neighbour lattice as faint dashed
+	  lines drawn OVER the houses (deliberately — see the comment at the lattice markup;
+	  underneath, the 13-unit gutters leave it invisible), plus corner ribbons on
+	  trust-circle members. Ribbons are
 	  `pointer-events: none` on purpose: the rect's existing aria-label/<title> already
 	  names every circle the house belongs to, so the ribbon needs no tooltip of its own
 	  and should not steal the cell's click target to provide one.
@@ -183,7 +185,9 @@
 			refY="5"
 			orient="auto"
 		>
-			<path d="M 0 0 L 9 5 L 0 10 Z" fill="#4ade80" />
+			<!-- Colour comes from `--transfer-color` on `.grid` so the head and the shaft
+			     below cannot drift apart. -->
+			<path class="arrowhead" d="M 0 0 L 9 5 L 0 10 Z" />
 		</marker>
 	</defs>
 
@@ -294,9 +298,16 @@
 
 <style>
 	.grid {
+		/* The single definition of the transfer green: the arrowhead's fill and the
+		   shaft's stroke both read it, so they can never drift apart. */
+		--transfer-color: #4ade80;
 		display: block;
 		width: 100%;
 		height: auto;
+	}
+
+	.arrowhead {
+		fill: var(--transfer-color);
 	}
 
 	.cell {
@@ -316,7 +327,7 @@
 	}
 
 	.arrow {
-		stroke: #4ade80;
+		stroke: var(--transfer-color);
 		stroke-linecap: round;
 		stroke-dasharray: 7 5;
 		animation: flow 0.9s linear infinite;
