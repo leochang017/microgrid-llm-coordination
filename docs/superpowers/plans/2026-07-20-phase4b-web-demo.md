@@ -217,7 +217,7 @@ Pure transformation functions + CLI. All functions take parsed data so tests can
 4. Fill the demo URL into root `README.md` "Web demo" section; final Progress-log row (payload size, URL, verification summary). No phase tag here — `paper-v1` lands with the paper half per the roadmap exit.
 5. **Verify:** live URL loads all four cells; `python -m scripts.figures --check` still green; full venv `pytest -q` green; secrets grep on staged diff → `0`.
 6. **Commit:** `docs(demo): live demo URL + phase 4b wrap` (+ Progress-log row, + checkbox). Push.
-- [ ] Task 10 complete
+- [x] Task 10 complete
 
 ---
 

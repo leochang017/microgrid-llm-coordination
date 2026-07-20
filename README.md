@@ -97,7 +97,7 @@ The **coordination strategy is an injected callback** — `decide_transfers(t, s
 
 ## Web demo
 
-**Live URL:** _(not deployed yet — placeholder, filled in when the site goes up)_
+**Live URL:** <https://microgrid-llm-coordination.vercel.app/>
 
 `web/` is a SvelteKit static site (`@sveltejs/adapter-static`) that replays four
 already-committed live runs — clean, defectors, noise, comm — in the browser:
