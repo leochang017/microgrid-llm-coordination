@@ -755,10 +755,13 @@ def render_tables(out_path: Path = REPO / "docs" / "phase3_tables.md") -> Path:
         "dropped comm | dropped budget |",
         "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
+    comm_mc: dict[str, int] | None = None
     for cell, seed in _live_runs():
         s = read_live_summary(cell, seed)
         d = s["llm_call_counts_detailed"]
         mc = s["message_counts"]
+        if CELL_LABEL[cell] == "comm":
+            comm_mc = mc
         made = d["commitments_made"]
         expired = d["commitments_expired"]
         pct = f"{expired / made:.1%}" if made else "n/a"
@@ -769,13 +772,20 @@ def render_tables(out_path: Path = REPO / "docs" / "phase3_tables.md") -> Path:
             f"{mc['sent']} | {mc['delivered']} | {mc['dropped_comm']} | "
             f"{mc['dropped_budget']} |"
         )
+    # comm_mc is read straight from the comm cell's own summary.json above (not
+    # hardcoded) so this prose can never drift from the table row again — it
+    # went stale once already, when the comm@23 cell was re-run post-C1/C2 and
+    # the message counts moved (4260/17647 -> the current values) but this
+    # sentence wasn't updated alongside it.
+    assert comm_mc is not None, "comm cell missing from _live_runs()"
     lines += [
         "",
         "Reading it: clean-cell expiry ranges 5.6-27.3% across seeds (highest at "
         "seed 23) — honest haves over-promising against depleted batteries, not "
         "reneging (the engine ships commitments before the discretionary filter). "
-        "The comm cell is where `dropped_budget` bites (only 4260 of 17647 "
-        "messages delivered); note zero comm/budget drops on every other run. "
+        f"The comm cell is where `dropped_budget` bites (only {comm_mc['delivered']} "
+        f"of {comm_mc['sent']} messages delivered); note zero comm/budget drops "
+        "on every other run. "
         "The final row (`clean (Sonnet)`) is the Stage-3 capability ablation — "
         "the same clean scenario run with `claude-sonnet-5` agents instead of "
         "Haiku, included here as a capability data point, not a fifth "
