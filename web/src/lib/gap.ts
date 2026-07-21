@@ -6,7 +6,7 @@
  * nonsense and `Math.abs`-ing the sign would reframe a loss as a win, so the phrasing
  * branches on the sign instead.
  *
- * This lives in one place on purpose: the overview card (`ComparisonBar.svelte`) and
+ * This lives in one place on purpose: the overview cards (`routes/+page.svelte`) and
  * the replay page (`routes/run/[cell]/+page.svelte`) both render this sentence, and
  * the two drifting apart is exactly the failure the rule exists to prevent.
  */
